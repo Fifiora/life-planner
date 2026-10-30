@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -31,13 +31,12 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-      - name: Report failure as a commit comment
-        if: failure() && github.event_name == 'push'
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Report failure as annotations
+        if: failure()
         run: |
-          { echo '```'; tail -c 7000 test.log 2>/dev/null; echo; tail -c 4000 build.log 2>/dev/null; echo '```'; } > body.md
-          gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments -F body=@body.md
+          emit() { m="$(tail -c 3500 "$1" 2>/dev/null)"; m="${m//'%'/'%25'}"; m="${m//$'\r'/}"; m="${m//$'\n'/'%0A'}"; echo "::error title=$2::$m"; }
+          emit test.log test-output
+          emit build.log build-output
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'
         with:
