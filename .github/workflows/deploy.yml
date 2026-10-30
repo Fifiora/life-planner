@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -24,11 +24,20 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - run: npm test
-      - run: npm run build
+      - name: Test
+        run: set -o pipefail; npm test 2>&1 | tee test.log
+      - name: Build
+        run: set -o pipefail; npm run build 2>&1 | tee build.log
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      - name: Report failure as a commit comment
+        if: failure() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo '```'; tail -c 7000 test.log 2>/dev/null; echo; tail -c 4000 build.log 2>/dev/null; echo '```'; } > body.md
+          gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments -F body=@body.md
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'
         with:
