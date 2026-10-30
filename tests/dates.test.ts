@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { todayCT, monthKeyCT, weekStart, addDays } from '../src/lib/dates'
+import { todayCT, monthKeyCT, weekStart, addDays, DEFAULT_ANCHOR } from '../src/lib/dates'
 
 describe('dates', () => {
   it('uses the Chicago date when UTC is already the next day', () => {
@@ -18,5 +18,9 @@ describe('dates', () => {
   it('adds days across a month boundary', () => {
     expect(addDays('2026-10-31', 1)).toBe('2026-11-01')
     expect(addDays('2026-11-01', -1)).toBe('2026-10-31')
+  })
+
+  it('uses a Monday as the default start of the 2-week cycle', () => {
+    expect(weekStart(DEFAULT_ANCHOR)).toBe(DEFAULT_ANCHOR)
   })
 })

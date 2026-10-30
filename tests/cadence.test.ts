@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { periodKey, periodProgress, streak, meetsTimeRule } from '../src/lib/cadence'
+import { periodKey, periodProgress, streak, meetsTimeRule, scopedLogs } from '../src/lib/cadence'
 import type { Routine, RoutineLog } from '../src/types'
 
 const ANCHOR = '2026-01-05'
@@ -101,5 +101,20 @@ describe('streak', () => {
     const r = routine({ cadence: 'weekly' })
     const logs = [log('2026-10-20'), log('2026-10-28'), log('2026-11-03')]
     expect(streak(r, logs, '2026-11-04', ANCHOR)).toBe(3)
+  })
+})
+
+describe('scopedLogs', () => {
+  const logs = [log('2026-11-02', 'm1'), log('2026-11-02', 'm2')]
+  it('keeps only my logs for a personal routine, so my partner ticking does not complete mine', () => {
+    const mine = scopedLogs(routine({ shared: false }), logs, 'm1')
+    expect(mine.map((l) => l.member_id)).toEqual(['m1'])
+    expect(periodProgress(routine({ shared: false }), scopedLogs(routine(), [log('2026-11-02', 'm2')], 'm1'), '2026-11-02', ANCHOR).done).toBe(false)
+  })
+  it('keeps everyone\'s logs for a shared routine', () => {
+    expect(scopedLogs(routine({ shared: true }), logs, 'm1')).toHaveLength(2)
+  })
+  it('treats a routine with no shared flag as personal', () => {
+    expect(scopedLogs(routine(), logs, 'm2').map((l) => l.member_id)).toEqual(['m2'])
   })
 })

@@ -30,4 +30,21 @@ describe('RoutineForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Yes, delete' }))
     expect(onDelete).toHaveBeenCalledTimes(1)
   })
+
+  it('keeps routines personal unless marked shared', async () => {
+    const onSave = vi.fn()
+    render(<RoutineForm onSave={onSave} />)
+    await userEvent.type(screen.getByLabelText('Name'), 'Run')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({ shared: false }))
+  })
+
+  it('saves a shared routine when the box is ticked', async () => {
+    const onSave = vi.fn()
+    render(<RoutineForm onSave={onSave} />)
+    await userEvent.type(screen.getByLabelText('Name'), 'Grocery run')
+    await userEvent.click(screen.getByLabelText(/shared/i))
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({ shared: true }))
+  })
 })

@@ -11,7 +11,7 @@ const members: Member[] = [
 const opt = (id: string, activity: string): NightOption => ({ id, slot_date: '2026-11-14', type: 'game', proposed_by: 'a', activity, snack: 'popcorn' })
 const vote = (option_id: string, member_id: string): NightVote => ({ id: option_id + member_id, option_id, member_id })
 
-const base = { members, meId: 'a', hostId: 'b', onVote: () => {}, onAdd: () => {}, onDone: () => {} }
+const base = { members, meId: 'a', hostId: 'b', finished: false, onVote: () => {}, onAdd: () => {}, onDone: () => {} }
 
 describe('NightsView', () => {
   it('shows an empty state with no options', () => {
@@ -39,5 +39,16 @@ describe('NightsView', () => {
     await userEvent.type(screen.getByLabelText('Snack'), 'Chips')
     await userEvent.click(screen.getByRole('button', { name: 'Add idea' }))
     expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ activity: 'Scrabble', snack: 'Chips' }))
+  })
+
+  it('lets you finish the night even after a tie', () => {
+    render(<NightsView {...base} options={[opt('x', 'Chess'), opt('y', 'Painting')]} votes={[vote('x', 'a'), vote('y', 'b')]} />)
+    expect(screen.getByRole('button', { name: /mark night done/i })).toBeInTheDocument()
+  })
+
+  it('hides the finish button once the night has been passed on', () => {
+    render(<NightsView {...base} finished options={[opt('x', 'Chess')]} votes={[vote('x', 'a')]} />)
+    expect(screen.queryByRole('button', { name: /mark night done/i })).not.toBeInTheDocument()
+    expect(screen.getByText(/night done/i)).toBeInTheDocument()
   })
 })
