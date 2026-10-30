@@ -11,6 +11,10 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  NO_COLOR: '1'
+  FORCE_COLOR: '0'
+
 concurrency:
   group: pages-${{ github.ref }}
   cancel-in-progress: true
