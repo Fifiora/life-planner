@@ -3,7 +3,7 @@ import { useHousehold } from '../data/household'
 import { useRoutineData } from '../data/useRoutineData'
 import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
-import { periodProgress } from '../lib/cadence'
+import { periodProgress, scopedLogs } from '../lib/cadence'
 import { monthKeyCT, weekStart } from '../lib/dates'
 import { monthView } from '../lib/finance'
 import type { Bill, Income, Milestone, Routine, TripPlan, Turn } from '../types'
@@ -34,7 +34,7 @@ export default function Today() {
   const [creating, setCreating] = useState(false)
 
   const dow = new Date(`${data.today}T00:00:00Z`).getUTCDay()
-  const isDone = (r: Routine) => periodProgress(r, data.logs, data.today, data.anchor).done
+  const isDone = (r: Routine) => periodProgress(r, scopedLogs(r, data.logs, me.id), data.today, data.anchor).done
   const todayItems = data.routines.filter((r) => r.cadence === 'daily' || r.weekday === dow)
   const laterItems = data.routines.filter((r) => !todayItems.includes(r) && !isDone(r))
 

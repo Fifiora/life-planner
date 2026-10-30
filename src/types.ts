@@ -21,6 +21,7 @@ export interface Routine {
   time_rule: string | null // e.g. 'before 22:30', 'after 04:00'
   weekday: number | null // 0=Sun .. 6=Sat
   active: boolean
+  shared?: boolean // true: either partner ticking counts; false/absent: each person ticks their own
 }
 
 export interface RoutineLog {
@@ -82,6 +83,7 @@ export interface Turn {
   id: string
   name: string
   current_member_id: string | null
+  last_rotated_slot?: string | null
 }
 
 export interface Milestone {

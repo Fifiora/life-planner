@@ -24,6 +24,7 @@ export function RoutineForm({
   const [weekday, setWeekday] = useState(initial?.weekday == null ? '' : String(initial.weekday))
   const [place, setPlace] = useState(initial?.place ?? '')
   const [rule, setRule] = useState(initial?.time_rule ?? '')
+  const [shared, setShared] = useState(initial?.shared ?? false)
   const [error, setError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
 
@@ -45,6 +46,7 @@ export function RoutineForm({
       time_rule: rule.trim() || null,
       weekday: weekday === '' ? null : Number(weekday),
       active: initial?.active ?? true,
+      shared,
     })
   }
 
@@ -105,6 +107,11 @@ export function RoutineForm({
 
       <label className="label" htmlFor={`${uid}-rule`}>Time rule (optional)</label>
       <input id={`${uid}-rule`} className="input" placeholder="before 22:30" value={rule} onChange={(e) => setRule(e.target.value)} />
+
+      <label className="label" htmlFor={`${uid}-shared`} style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', fontSize: '0.9rem' }}>
+        <input id={`${uid}-shared`} type="checkbox" checked={shared} onChange={(e) => setShared(e.target.checked)} />
+        Shared — either of us ticking counts
+      </label>
 
       {error && <p role="alert" className="error">{error}</p>}
 

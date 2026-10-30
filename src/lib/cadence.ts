@@ -85,3 +85,11 @@ export function meetsTimeRule(rule: string | null, hhmm: string): boolean {
   }
   return value >= limit
 }
+
+/**
+ * The logs that count toward `meId`'s progress on a routine: everyone's for a shared
+ * routine, only their own otherwise (a partner's tick must not complete mine).
+ */
+export function scopedLogs(routine: Routine, logs: RoutineLog[], meId: string): RoutineLog[] {
+  return routine.shared ? logs : logs.filter((l) => l.member_id === meId)
+}

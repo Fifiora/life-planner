@@ -35,6 +35,7 @@ create table routines (
   time_rule text,
   weekday int check (weekday between 0 and 6),
   active boolean not null default true,
+  shared boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -79,6 +80,7 @@ create table turns (
   household_id uuid not null references households(id) on delete cascade,
   name text not null,
   current_member_id uuid references members(id) on delete set null,
+  last_rotated_slot date,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (household_id, name)

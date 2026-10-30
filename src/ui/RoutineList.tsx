@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Bucket, Routine } from '../types'
 import type { RoutineData } from '../data/useRoutineData'
-import { periodProgress, streak } from '../lib/cadence'
+import { periodProgress, scopedLogs, streak } from '../lib/cadence'
 import { RoutineForm } from './RoutineForm'
 import { RoutineRow } from './RoutineRow'
 import { Sheet } from './Sheet'
@@ -13,16 +13,20 @@ export function RoutineRows({ routines, data, onEdit }: { routines: Routine[]; d
   return (
     <ul className="list">
       {routines.map((r) => {
-        const progress = periodProgress(r, data.logs, data.today, data.anchor)
-        const tickedBy = data.members.filter((m) =>
-          data.logs.some((l) => l.routine_id === r.id && l.member_id === m.id && l.done && l.date === data.today),
+        const mine = scopedLogs(r, data.logs, data.me.id)
+        const progress = periodProgress(r, mine, data.today, data.anchor)
+        // Shared routines name everyone who did it; personal ones only show what the partner did.
+        const tickedBy = data.members.filter(
+          (m) =>
+            (r.shared || m.id !== data.me.id) &&
+            data.logs.some((l) => l.routine_id === r.id && l.member_id === m.id && l.done && l.date === data.today),
         )
         return (
           <RoutineRow
             key={r.id}
             routine={r}
             done={progress.done}
-            streakCount={streak(r, data.logs, data.today, data.anchor)}
+            streakCount={streak(r, mine, data.today, data.anchor)}
             tickedBy={tickedBy}
             myLog={data.myLogToday(r)}
             color={bucketColor(r.bucket)}

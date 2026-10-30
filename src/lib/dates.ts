@@ -1,6 +1,9 @@
 const TZ = 'America/Chicago'
 const DAY_MS = 86_400_000
 
+/** Default start (a Monday) of the 2-week cycle until Settings saves one. */
+export const DEFAULT_ANCHOR = '2026-11-02'
+
 const ymdFormat = new Intl.DateTimeFormat('en-CA', {
   timeZone: TZ,
   year: 'numeric',

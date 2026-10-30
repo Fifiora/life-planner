@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useHousehold } from '../data/household'
 import { useSettings } from '../data/useSettings'
+import { DEFAULT_ANCHOR } from '../lib/dates'
 import { useTable } from '../data/useTable'
 import { buildExport } from '../lib/export'
 import { supabase } from '../lib/supabase'
@@ -58,14 +59,14 @@ export default function Settings() {
         <label className="label" htmlFor="target">Monthly savings target ($)</label>
         <input id="target" className="input" inputMode="decimal" value={target ?? settings.get('savings_target') ?? '10000'} onChange={(e) => setTarget(e.target.value)} />
         <label className="label" htmlFor="anchor">Start of the 2-week cycle (a Monday)</label>
-        <input id="anchor" className="input" type="date" value={anchor ?? settings.get('biweekly_anchor') ?? '2026-11-02'} onChange={(e) => setAnchor(e.target.value)} />
+        <input id="anchor" className="input" type="date" value={anchor ?? settings.get('biweekly_anchor') ?? DEFAULT_ANCHOR} onChange={(e) => setAnchor(e.target.value)} />
         <div className="actions">
           <button
             type="button"
             className="btn btn-primary"
             onClick={async () => {
               if (target !== null && Number.isFinite(Number(target)) && Number(target) >= 0) await settings.set('savings_target', String(Number(target)))
-              if (anchor) await settings.set('biweekly_anchor', anchor)
+              await settings.set('biweekly_anchor', anchor ?? settings.get('biweekly_anchor') ?? DEFAULT_ANCHOR)
               toast('Saved')
             }}
           >Save</button>

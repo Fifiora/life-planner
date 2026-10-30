@@ -77,8 +77,12 @@ export function RoutineRow({
         </button>
         <span className="muted small block-text">{describeRoutine(routine)}</span>
         {missed && <span className="miss">Missed ({myLog?.value}) — try again tomorrow</span>}
-        {done && tickedBy.length > 0 && (
-          <span className="muted small block-text">Done by {tickedBy.map((m) => m.display_name).join(' & ')}</span>
+        {tickedBy.length > 0 && (routine.shared ? done : true) && (
+          <span className="muted small block-text">
+            {routine.shared
+              ? `Done by ${tickedBy.map((m) => m.display_name).join(' & ')}`
+              : `${tickedBy.map((m) => m.display_name).join(' & ')} ✓ today`}
+          </span>
         )}
       </span>
       {streakCount > 1 && <span className="streak" aria-label={`${streakCount} in a row`}>🔥 {streakCount}</span>}

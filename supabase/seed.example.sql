@@ -1,17 +1,18 @@
 -- EXAMPLE starter data with made-up values. Copy to supabase/seed.sql (git-ignored)
 -- and put your real values there. Run it in the Supabase SQL editor after bootstrap.sql.
 
+-- shared = true: either of you ticking counts. shared = false: each of you ticks your own.
 with h as (select id from households limit 1)
-insert into routines (household_id, name, bucket, sub_bucket, cadence, times_per_period, place, time_rule, weekday)
-select h.id, r.name, r.bucket, r.sub_bucket, r.cadence, r.times, r.place, r.time_rule, r.weekday
+insert into routines (household_id, name, bucket, sub_bucket, cadence, times_per_period, place, time_rule, weekday, shared)
+select h.id, r.name, r.bucket, r.sub_bucket, r.cadence, r.times, r.place, r.time_rule, r.weekday, r.shared
 from h, (values
-  ('Daily activity',  'health', 'physical',  'daily',   1, null,          null,           null::int),
-  ('Lights out',      'health', 'physical',  'daily',   1, null,          'before 22:30', null),
-  ('Morning prayer',  'health', 'spiritual', 'daily',   1, null,          null,           null),
-  ('Sunday mass',     'health', 'spiritual', 'weekly',  1, null,          null,           0),
-  ('Salon visit',     'health', 'physical',  'monthly', 1, 'Example Salon', null,         null),
-  ('Grocery run',     'food',   null,        'biweekly',1, null,          null,           null)
-) as r(name, bucket, sub_bucket, cadence, times, place, time_rule, weekday);
+  ('Daily activity',  'health', 'physical',  'daily',   1, null,            null,           null::int, false),
+  ('Lights out',      'health', 'physical',  'daily',   1, null,            'before 22:30', null,      false),
+  ('Morning prayer',  'health', 'spiritual', 'daily',   1, null,            null,           null,      false),
+  ('Sunday mass',     'health', 'spiritual', 'weekly',  1, null,            null,           0,         true),
+  ('Salon visit',     'health', 'physical',  'monthly', 1, 'Example Salon', null,           null,      true),
+  ('Grocery run',     'food',   null,        'biweekly',1, null,            null,           null,      true)
+) as r(name, bucket, sub_bucket, cadence, times, place, time_rule, weekday, shared);
 
 with h as (select id from households limit 1)
 insert into income (household_id, name, monthly_amount) select h.id, 'Combined contributions', 10000 from h;
