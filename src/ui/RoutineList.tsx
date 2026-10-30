@@ -1,0 +1,102 @@
+import { useState } from 'react'
+import type { Bucket, Routine } from '../types'
+import type { RoutineData } from '../data/useRoutineData'
+import { periodProgress, streak } from '../lib/cadence'
+import { RoutineForm } from './RoutineForm'
+import { RoutineRow } from './RoutineRow'
+import { Sheet } from './Sheet'
+
+export const bucketColor = (b: Bucket | string) => `var(--${b})`
+
+/** The rows only (no card), reused by Today and the bucket screens. */
+export function RoutineRows({ routines, data, onEdit }: { routines: Routine[]; data: RoutineData; onEdit: (r: Routine) => void }) {
+  return (
+    <ul className="list">
+      {routines.map((r) => {
+        const progress = periodProgress(r, data.logs, data.today, data.anchor)
+        const tickedBy = data.members.filter((m) =>
+          data.logs.some((l) => l.routine_id === r.id && l.member_id === m.id && l.done && l.date === data.today),
+        )
+        return (
+          <RoutineRow
+            key={r.id}
+            routine={r}
+            done={progress.done}
+            streakCount={streak(r, data.logs, data.today, data.anchor)}
+            tickedBy={tickedBy}
+            myLog={data.myLogToday(r)}
+            color={bucketColor(r.bucket)}
+            onTick={(value) => data.tick(r, value)}
+            onUntick={() => data.untick(r)}
+            onEdit={() => onEdit(r)}
+          />
+        )
+      })}
+    </ul>
+  )
+}
+
+/** A titled card of routines with add/edit sheets. */
+export function RoutineList({
+  title,
+  color,
+  routines,
+  data,
+  defaults,
+  emptyHint,
+}: {
+  title: string
+  color: string
+  routines: Routine[]
+  data: RoutineData
+  defaults: Partial<Routine>
+  emptyHint?: string
+}) {
+  const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<Routine | null>(null)
+
+  return (
+    <section className="card">
+      <div className="card-head">
+        <div className="card-title">
+          <span className="accent-bar" style={{ background: color }} />
+          <h2>{title}</h2>
+        </div>
+        <button type="button" className="add-btn" aria-label={`Add to ${title}`} onClick={() => setAdding(true)}>+</button>
+      </div>
+
+      {routines.length === 0 ? (
+        <p className="muted small">{emptyHint ?? 'Nothing here yet — tap + to add something.'}</p>
+      ) : (
+        <RoutineRows routines={routines} data={data} onEdit={setEditing} />
+      )}
+
+      <Sheet open={adding} onClose={() => setAdding(false)} title={`Add to ${title}`}>
+        <RoutineForm
+          initial={defaults}
+          onSave={async (v) => {
+            await data.saveRoutine(v)
+            setAdding(false)
+          }}
+        />
+      </Sheet>
+
+      <Sheet open={editing !== null} onClose={() => setEditing(null)} title="Edit routine">
+        {editing && (
+          <RoutineForm
+            key={editing.id}
+            initial={editing}
+            onSave={async (v) => {
+              await data.saveRoutine(v, editing.id)
+              setEditing(null)
+            }}
+            onDelete={async () => {
+              await data.deleteRoutine(editing.id)
+              setEditing(null)
+            }}
+          />
+        )}
+      </Sheet>
+    </section>
+  )
+}

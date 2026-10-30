@@ -77,3 +77,40 @@ export interface NightVote {
   option_id: string
   member_id: string
 }
+
+export interface Turn {
+  id: string
+  name: string
+  current_member_id: string | null
+}
+
+export interface Milestone {
+  id: string
+  week_start: string
+  member_id: string
+  text: string
+  done: boolean
+}
+
+export interface TriviaTopic {
+  id: string
+  topic: string
+  claimed_by: string
+  author_id: string
+}
+
+export interface TriviaQuestion {
+  id: string
+  topic_id: string
+  prompt: string
+  options: string[]
+  correct_index: number
+}
+
+export interface TriviaAttempt {
+  id: string
+  question_id: string
+  member_id: string
+  chosen_index: number
+  correct: boolean
+}
