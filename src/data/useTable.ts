@@ -56,7 +56,7 @@ export function useTable<T extends { id: string }>(table: string) {
     async (id: string, patch: Partial<T>) => {
       setError(null)
       setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
-      const { error: err } = await supabase.from(table).update(patch).eq('id', id)
+      const { error: err } = await supabase.from(table).update(patch as Record<string, unknown>).eq('id', id)
       if (err) {
         setError(err.message)
         await refetch()
