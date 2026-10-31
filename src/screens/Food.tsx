@@ -14,6 +14,7 @@ export default function Food() {
         routines={food}
         data={data}
         defaults={{ bucket: 'food', cadence: 'biweekly' }}
+        showDue
         emptyHint="Add your grocery run, meat purchase and farmers market days."
       />
       <section className="card">

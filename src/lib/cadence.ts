@@ -93,3 +93,43 @@ export function meetsTimeRule(rule: string | null, hhmm: string): boolean {
 export function scopedLogs(routine: Routine, logs: RoutineLog[], meId: string): RoutineLog[] {
   return routine.shared ? logs : logs.filter((l) => l.member_id === meId)
 }
+
+const dayOfWeek = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay()
+
+/** The next date on or after `date` that falls on `weekday` (0 = Sunday). */
+function nextOccurrence(date: string, weekday: number): string {
+  return addDays(date, (weekday - dayOfWeek(date) + 7) % 7)
+}
+
+function quarterStart(date: string): string {
+  const [y, m] = date.split('-').map(Number)
+  return `${y}-${String(Math.floor((m - 1) / 3) * 3 + 1).padStart(2, '0')}-01`
+}
+
+function nextPeriodStart(cadence: Cadence, date: string, anchor: string): string {
+  switch (cadence) {
+    case 'daily':
+      return addDays(date, 1)
+    case 'weekly':
+      return addDays(weekStart(date), 7)
+    case 'biweekly':
+      return addDays(anchor, 14 * (Math.floor(daysBetween(anchor, date) / 14) + 1))
+    case 'monthly':
+      return shiftMonths(date, 1)
+    case 'quarterly':
+      return shiftMonths(quarterStart(date), 3)
+  }
+}
+
+/**
+ * When a routine is next due: today (or its weekday) if this period's work isn't done,
+ * otherwise the start of the next period (on its weekday, for weekly routines with one).
+ */
+export function nextDue(routine: Routine, logs: RoutineLog[], today: string, anchor: string): string {
+  const weekly = routine.cadence === 'weekly' && routine.weekday != null
+  if (!periodProgress(routine, logs, today, anchor).done) {
+    return weekly ? nextOccurrence(today, routine.weekday as number) : today
+  }
+  const start = nextPeriodStart(routine.cadence, today, anchor)
+  return weekly ? addDays(start, ((routine.weekday as number) + 6) % 7) : start
+}

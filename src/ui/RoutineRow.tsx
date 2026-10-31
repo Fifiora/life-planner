@@ -30,6 +30,7 @@ export function RoutineRow({
   onTick,
   onUntick,
   onEdit,
+  dueText,
 }: {
   routine: Routine
   done: boolean
@@ -40,6 +41,7 @@ export function RoutineRow({
   onTick: (value?: string) => void
   onUntick: () => void
   onEdit: () => void
+  dueText?: string
 }) {
   const [time, setTime] = useState(myLog?.value ?? '')
   const needsTime = Boolean(routine.time_rule) && !done
@@ -76,6 +78,7 @@ export function RoutineRow({
           <strong>{routine.name}</strong>
         </button>
         <span className="muted small block-text">{describeRoutine(routine)}</span>
+        {dueText && <span className="muted small block-text">{dueText}</span>}
         {missed && <span className="miss">Missed ({myLog?.value}) — try again tomorrow</span>}
         {tickedBy.length > 0 && (routine.shared ? done : true) && (
           <span className="muted small block-text">

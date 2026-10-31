@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useHousehold } from '../data/household'
 import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
 import { monthKeyCT } from '../lib/dates'
@@ -15,6 +16,7 @@ export default function Finance() {
   const bills = useTable<Bill>('bills')
   const income = useTable<Income>('income')
   const settings = useSettings()
+  const { readOnly } = useHousehold()
 
   const [month, setMonth] = useState(monthKeyCT())
   const [adding, setAdding] = useState(false)
@@ -62,7 +64,7 @@ export default function Finance() {
 
         <div className="stat-grid mt">
           <button type="button" className="stat" onClick={() => { setIncomeDraft(String(totalIncome)); setIncomeOpen(true) }} aria-label="Edit monthly income">
-            <span className="cap">Income (tap to edit)</span>
+            <span className="cap">{readOnly ? 'Income' : 'Income (tap to edit)'}</span>
             <span className="num">{money(totalIncome)}</span>
           </button>
           <div className="stat"><span className="cap">Monthly bills</span><span className="num">{money(v.recurring)}</span></div>
@@ -94,6 +96,7 @@ export default function Finance() {
                   <span className="muted small block-text">Due {b.due_month ? monthLabel(b.due_month) : '—'}</span>
                 </span>
                 <span style={{ fontWeight: 700, textDecoration: b.paid ? 'line-through' : undefined }}>{money(b.amount)}</span>
+                {readOnly && b.paid && <span className="pill">Paid ✓</span>}
                 <button type="button" className={`btn btn-small${b.paid ? '' : ' btn-primary'}`} onClick={() => markPaid(b)}>
                   {b.paid ? 'Paid ✓' : 'Mark paid'}
                 </button>

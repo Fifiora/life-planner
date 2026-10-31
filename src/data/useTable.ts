@@ -4,7 +4,7 @@ import { getState, insertIfEmpty, insertRow, refresh, removeRow, subscribe, upda
 
 /**
  * Rows of one list stored in the data repo, shared by every screen that uses it.
- * Writes show instantly and roll back (with a toast) if GitHub rejects them.
+ * Writes show instantly; if the phone can't save one, nothing changes and a toast says why.
  */
 export function useTable<T extends { id: string }>(table: string) {
   const toast = useToast()

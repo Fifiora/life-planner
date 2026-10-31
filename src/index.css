@@ -165,8 +165,6 @@ code { background: var(--line); padding: 0.1rem 0.35rem; border-radius: 0.4rem; 
 .confetti span { position: absolute; top: -10px; width: 8px; height: 14px; border-radius: 2px; animation: fall 1.8s ease-in forwards; }
 
 /* ---------- Login ---------- */
-.login { padding-top: 12vh; text-align: center; }
-.login .card { text-align: left; margin-top: 1.4rem; }
 .login-hero { font-size: 3rem; }
 
 /* ---------- Animations ---------- */

@@ -6,8 +6,11 @@ import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
 import { periodProgress, scopedLogs } from '../lib/cadence'
 import { monthKeyCT, weekStart } from '../lib/dates'
+import { Confetti } from '../ui/Confetti'
+import { useIncrease } from '../data/useIncrease'
 import { needsBackup } from '../lib/backup'
 import { monthView } from '../lib/finance'
+import { weekRecap } from '../lib/recap'
 import type { Bill, Income, Milestone, Routine, TripPlan, Turn } from '../types'
 import { EmptyState } from '../ui/EmptyState'
 import { PageHead } from '../ui/PageHead'
@@ -55,6 +58,11 @@ export default function Today() {
     { label: 'Finance', color: 'var(--finance)', value: ratio(fin.savings, target) },
   ]
 
+  const complete = rings.filter((r) => r.value >= 1).length
+  const celebrate = useIncrease(complete)
+  const recap = weekRecap(data.logs, data.today)
+  const milestonesDone = weekMs.filter((m) => m.done).length
+
   const hostTurn = turns.rows.find((t) => t.name === 'Nights host')
   const host = members.find((m) => m.id === hostTurn?.current_member_id)
 
@@ -64,6 +72,7 @@ export default function Today() {
 
   return (
     <div className="stack">
+      <Confetti fire={celebrate} />
       <PageHead
         title={`${greeting()}, ${me.display_name}`}
         sub={new Date(`${data.today}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })}
@@ -76,6 +85,17 @@ export default function Today() {
         {host && <p className="muted small mt">🎲 Next night in is hosted by <strong>{host.display_name}</strong></p>}
       </section>
 
+      {(recap.total > 0 || milestonesDone > 0) && (
+        <section className="card" aria-label="This week's wins">
+          <h2>This week's wins 🎉</h2>
+          <p>
+            {`${recap.total} thing${recap.total === 1 ? '' : 's'} ticked off`}
+            {members.length > 1 && ` (${members.map((m) => `${m.display_name} ${recap.byMember[m.id] ?? 0}`).join(' · ')})`}
+            {milestonesDone > 0 && ` · ${milestonesDone} study milestone${milestonesDone === 1 ? '' : 's'} done`}
+          </p>
+        </section>
+      )}
+
       {backupDue && (
         <section className="card">
           <p>💾 Your planner is saved only on this phone. <Link to="/settings">Download a backup</Link> so it can't be lost.</p>
@@ -86,7 +106,7 @@ export default function Today() {
         <section className="card">
           <EmptyState
             title="Nothing to track yet"
-            description="Add your first routine, or load your starter plan in the database."
+            description="Add your first routine, or load your starter plan from Settings."
             actionLabel="Add a routine"
             onAction={() => setCreating(true)}
           />
@@ -100,7 +120,7 @@ export default function Today() {
           {laterItems.length > 0 && (
             <section className="card">
               <div className="card-head"><h2>Still to do this period</h2></div>
-              <RoutineRows routines={laterItems} data={data} onEdit={setEditing} />
+              <RoutineRows routines={laterItems} data={data} onEdit={setEditing} showDue />
             </section>
           )}
         </>

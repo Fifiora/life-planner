@@ -1,4 +1,4 @@
-import { shiftMonths } from './dates'
+import { addDays, shiftMonths } from './dates'
 
 export function money(n: number): string {
   const sign = n < 0 ? '-' : ''
@@ -16,3 +16,10 @@ export function shiftMonthKey(month: string, n: number): string {
 }
 
 export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+/** "Today", "Tomorrow", or e.g. "Tue, Nov 10". */
+export function dueLabel(next: string, today: string): string {
+  if (next === today) return 'Today'
+  if (next === addDays(today, 1)) return 'Tomorrow'
+  return new Date(`${next}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+}

@@ -1,5 +1,6 @@
 import { useRoutineData } from '../data/useRoutineData'
 import { NightsPlanner } from '../ui/NightsPlanner'
+import { TurnCard } from '../ui/TurnCard'
 import { PageHead } from '../ui/PageHead'
 import { RoutineList } from '../ui/RoutineList'
 
@@ -20,6 +21,7 @@ export default function Health() {
       {SECTIONS.map((s) => (
         <div key={s.key} className="stack">
           {s.key === 'mental' && <NightsPlanner />}
+          {s.key === 'spiritual' && <TurnCard name="Bible study lead" title="Sunday Bible study" />}
           <RoutineList
             title={s.title}
             color="var(--health)"
@@ -27,6 +29,7 @@ export default function Health() {
             data={data}
             defaults={{ bucket: 'health', sub_bucket: s.key }}
             emptyHint={s.hint + ' Tap + to add one.'}
+            showDue
           />
         </div>
       ))}

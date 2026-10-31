@@ -1,4 +1,4 @@
-/** Every list the app stores; each is one JSON file at data/<name>.json in the data repo. */
+/** Every list the app stores; each is saved on the phone under lp.data.<name>. */
 export const TABLES = [
   'members',
   'routines',

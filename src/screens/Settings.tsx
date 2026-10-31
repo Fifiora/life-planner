@@ -5,6 +5,7 @@ import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
 import { DEFAULT_ANCHOR, todayCT } from '../lib/dates'
 import { buildExport, parseImport } from '../lib/export'
+import { shareOrCopy } from '../lib/share'
 import { buildViewLink, encodeSnapshot, makeSnapshot, trimForSharing } from '../lib/snapshot'
 import type { Member, Row } from '../types'
 import { PageHead } from '../ui/PageHead'
@@ -44,20 +45,11 @@ export default function Settings() {
   async function shareLink() {
     const url = buildViewLink(window.location.href, await encodeSnapshot(snapshot()))
     setLink(url)
-    if (typeof navigator.share === 'function') {
-      try {
-        await navigator.share({ title: 'Our Life Planner', url })
-        return
-      } catch {
-        /* cancelled or unsupported: fall back to copying */
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url)
-      toast('Link copied')
-    } catch {
-      /* the link is shown below to copy by hand */
-    }
+    const result = await shareOrCopy(url, {
+      share: typeof navigator.share === 'function' ? (data) => navigator.share(data) : undefined,
+      clipboard: navigator.clipboard,
+    })
+    if (result === 'copied') toast('Link copied')
   }
 
   async function chooseFile(file: File | undefined) {

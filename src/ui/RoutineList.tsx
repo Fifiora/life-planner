@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { Bucket, Routine } from '../types'
 import type { RoutineData } from '../data/useRoutineData'
-import { periodProgress, scopedLogs, streak } from '../lib/cadence'
+import { nextDue, periodProgress, scopedLogs, streak } from '../lib/cadence'
+import { dueLabel } from '../lib/format'
 import { RoutineForm } from './RoutineForm'
 import { RoutineRow } from './RoutineRow'
 import { Sheet } from './Sheet'
@@ -9,7 +10,17 @@ import { Sheet } from './Sheet'
 export const bucketColor = (b: Bucket | string) => `var(--${b})`
 
 /** The rows only (no card), reused by Today and the bucket screens. */
-export function RoutineRows({ routines, data, onEdit }: { routines: Routine[]; data: RoutineData; onEdit: (r: Routine) => void }) {
+export function RoutineRows({
+  routines,
+  data,
+  onEdit,
+  showDue = false,
+}: {
+  routines: Routine[]
+  data: RoutineData
+  onEdit: (r: Routine) => void
+  showDue?: boolean
+}) {
   return (
     <ul className="list">
       {routines.map((r) => {
@@ -33,6 +44,7 @@ export function RoutineRows({ routines, data, onEdit }: { routines: Routine[]; d
             onTick={(value) => data.tick(r, value)}
             onUntick={() => data.untick(r)}
             onEdit={() => onEdit(r)}
+            dueText={showDue && r.cadence !== 'daily' ? `${progress.done ? 'Next' : 'Due'}: ${dueLabel(nextDue(r, mine, data.today, data.anchor), data.today)}` : undefined}
           />
         )
       })}
@@ -48,6 +60,7 @@ export function RoutineList({
   data,
   defaults,
   emptyHint,
+  showDue = false,
 }: {
   title: string
   color: string
@@ -55,6 +68,7 @@ export function RoutineList({
   data: RoutineData
   defaults: Partial<Routine>
   emptyHint?: string
+  showDue?: boolean
 }) {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Routine | null>(null)
@@ -72,7 +86,7 @@ export function RoutineList({
       {routines.length === 0 ? (
         <p className="muted small">{emptyHint ?? 'Nothing here yet — tap + to add something.'}</p>
       ) : (
-        <RoutineRows routines={routines} data={data} onEdit={setEditing} />
+        <RoutineRows routines={routines} data={data} onEdit={setEditing} showDue={showDue} />
       )}
 
       <Sheet open={adding} onClose={() => setAdding(false)} title={`Add to ${title}`}>
