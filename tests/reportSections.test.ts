@@ -3,15 +3,15 @@ import { calendarSection, financeSection, foodSection, healthSection, monthRange
 import type { CalEvent } from '../src/types'
 import { reportInput, routine, tick } from './reportFixture'
 
-const OCT = monthRange('2026-10', '2026-11-03')
+const OCT = monthRange('2026-10', '2026-11-03', '2000-01-01')
 const exp = (id: string, date: string, amount: number, category: string, extra: Record<string, unknown> = {}) => ({ id, date, amount, category, note: '', member_id: 'a', ...extra })
 
 describe('monthRange', () => {
   it('is the whole month once it is over', () => {
-    expect(OCT).toEqual({ month: '2026-10', first: '2026-10-01', last: '2026-10-31', days: 31, partial: false })
+    expect(OCT).toEqual({ month: '2026-10', first: '2026-10-01', start: '2026-10-01', last: '2026-10-31', days: 31, partial: false })
   })
   it('stops at today for the current month', () => {
-    expect(monthRange('2026-11', '2026-11-03')).toEqual({ month: '2026-11', first: '2026-11-01', last: '2026-11-03', days: 3, partial: true })
+    expect(monthRange('2026-11', '2026-11-03')).toEqual({ month: '2026-11', first: '2026-11-01', start: '2026-11-01', last: '2026-11-03', days: 3, partial: true })
   })
 })
 
@@ -24,6 +24,12 @@ describe('scorecardSection', () => {
     const s = scorecardSection(OCT, input)
     expect(s.ticksByMember).toEqual({ a: 2, b: 0 })
     expect(s.prevTicksByMember).toEqual({ a: 1, b: 0 })
+  })
+  it('never lets completion pass 100% when a routine is ticked more often than expected', () => {
+    const weekly = routine('w', { name: 'Weekly', cadence: 'weekly', applies_to: 'a' })
+    const logs = Array.from({ length: 20 }, (_, i) => tick(`t${i}`, 'w', 'a', `2026-10-${String(i + 1).padStart(2, '0')}`))
+    const s = scorecardSection(OCT, reportInput({ routines: [weekly], logs }))
+    expect([s.doneTotal, s.expectedTotal, s.completionPct]).toEqual([5, 5, 100])
   })
   it('completion is ticks against what was expected, or null with nothing expected', () => {
     const input = reportInput({ routines: [routine('r1')], logs: [tick('1', 'r1', 'a', '2026-10-01'), tick('2', 'r1', 'a', '2026-10-02')] })
@@ -172,5 +178,38 @@ describe('calendarSection', () => {
     const r = monthRange('2026-11', '2026-11-03')
     const events = [ev({ id: 'a', date: '2026-11-02' }), ev({ id: 'b', date: '2026-11-03' })]
     expect(calendarSection(r, reportInput({ events }))).toEqual({ done: 0, missed: 1, upcoming: 1 })
+  })
+})
+
+describe('a month that began before the plan did (the plan starts 2026-10-26)', () => {
+  const PLAN = '2026-10-26'
+  const R = monthRange('2026-10', '2026-11-03')
+  const plan = (over = {}) => reportInput({ planStart: PLAN, savingsStart: '2026-11', ...over })
+  it('counts from the plan start', () => {
+    expect(R).toEqual({ month: '2026-10', first: '2026-10-01', start: '2026-10-26', last: '2026-10-31', days: 6, partial: false })
+  })
+  it('expects routines only from the start, and ignores ticks before it', () => {
+    const walk = routine('r1', { name: 'Walk', applies_to: 'a' })
+    const logs = [...['26', '27', '28', '29', '30', '31'].map((d) => tick(`t${d}`, 'r1', 'a', `2026-10-${d}`)), tick('early', 'r1', 'a', '2026-10-10')]
+    const rows = routinesSection(R, plan({ routines: [walk], logs }))
+    expect(rows).toEqual([{ id: 'r1', name: 'Walk', bucket: 'health', memberId: 'a', count: 6, expected: 6, pct: 100 }])
+    const s = scorecardSection(R, plan({ routines: [walk], logs }))
+    expect([s.ticksByMember.a, s.completionPct, s.prevAvailable]).toEqual([6, 100, false])
+  })
+  it('expects nothing from a weekly routine whose days all fell before the start', () => {
+    const mass = routine('r3', { name: 'Sunday mass', cadence: 'weekly', weekday: 0, shared: true })
+    expect(routinesSection(R, plan({ routines: [mass] }))[0]).toMatchObject({ expected: 0, pct: null })
+  })
+  it('only looks at weeks and events from the start', () => {
+    const h = healthSection(R, plan({ activities: [{ id: '1', date: '2026-10-27', member_id: 'a', type: 'run', minutes: 10 }] }))
+    expect(h.weeksWithoutWorkout).toEqual([])
+    const weekly = { id: 'e', title: 'Thing', date: '2026-10-05', time: null, member: 'both', category: 'other', repeat: 'weekly', repeat_until: null, notes: '', done_on: [] } as CalEvent
+    expect(calendarSection(R, plan({ events: [weekly] }))).toEqual({ done: 0, missed: 1, upcoming: 0 })
+  })
+  it('has no last-month comparison or savings tracking before they exist', () => {
+    const f = financeSection(R, plan({ expenses: [exp('e1', '2026-10-28', 80, 'dining')] }))
+    expect(f.changes).toEqual([])
+    expect(f.savingsTracked).toBe(false)
+    expect(financeSection(monthRange('2026-11', '2026-12-03'), plan()).savingsTracked).toBe(true)
   })
 })

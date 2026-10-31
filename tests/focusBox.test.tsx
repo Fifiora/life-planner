@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { loadSnapshot } from '../src/data/tableStore'
+import { loadSnapshot, refresh } from '../src/data/tableStore'
 import Report from '../src/screens/Report'
 import { parseFocus } from '../src/lib/focus'
 import { renderScreen, saved, seedPlanner } from './seed'
@@ -33,7 +33,24 @@ describe("Next month's focus", () => {
     page('2026-10')
     await userEvent.type(await screen.findByLabelText('Goal 2'), '   ')
     await userEvent.tab()
-    expect(parseFocus(stored('focus:2026-11'))).toEqual([])
+    expect(stored('focus:2026-11')).toBeUndefined()
+  })
+})
+
+describe('two phones', () => {
+  it('does not overwrite a goal your partner added meanwhile', async () => {
+    page('2026-10')
+    await userEvent.type(await screen.findByLabelText('Goal 1'), 'Walk daily')
+    await userEvent.tab()
+    const rows = saved('settings').map((r) => (r.key === 'focus:2026-11' ? { ...r, value: JSON.stringify([{ text: 'Walk daily', done: false }, { text: 'Cook at home', done: false }]) } : r))
+    localStorage.setItem('lp.data.settings', JSON.stringify(rows))
+    await act(async () => {
+      await refresh('settings')
+    })
+    expect(await screen.findByDisplayValue('Cook at home')).toBeInTheDocument()
+    await userEvent.click(screen.getByLabelText('Goal 1'))
+    await userEvent.tab()
+    expect(parseFocus(stored('focus:2026-11')).map((g) => g.text)).toEqual(['Walk daily', 'Cook at home'])
   })
 })
 

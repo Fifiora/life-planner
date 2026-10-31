@@ -3,7 +3,7 @@ import { insightsFor } from '../src/lib/reportInsights'
 import type { MonthRange } from '../src/lib/reportTypes'
 import { members } from './reportFixture'
 
-const range = (partial = false): MonthRange => ({ month: '2026-10', first: '2026-10-01', last: partial ? '2026-10-20' : '2026-10-31', days: partial ? 20 : 31, partial })
+const range = (partial = false): MonthRange => ({ month: '2026-10', first: '2026-10-01', start: '2026-10-01', last: partial ? '2026-10-20' : '2026-10-31', days: partial ? 20 : 31, partial })
 const zeroMember = () => ({ a: 0, b: 0 })
 function base(over: Record<string, unknown> = {}): Parameters<typeof insightsFor>[0] {
   return {
@@ -14,7 +14,7 @@ function base(over: Record<string, unknown> = {}): Parameters<typeof insightsFor
     health: { byMember: { a: { workouts: 0, minutes: 0, byType: {} }, b: { workouts: 0, minutes: 0, byType: {} } }, timed: [], weeksWithoutWorkout: [] },
     study: { milestones: { a: { done: 0, total: 0 }, b: { done: 0, total: 0 } }, triviaAllTime: { a: { attempts: 0, correct: 0 }, b: { attempts: 0, correct: 0 } } },
     travel: { planned: 0, done: 0, trips: [] },
-    finance: { incomeConfigured: 0, incomeLogged: 0, spent: 0, savedThisMonth: 0, savingsTarget: 10000, billsPaid: 0, billsDue: 0, unpaid: [], payoffsCleared: [], categories: [], changes: [] },
+    finance: { incomeConfigured: 0, incomeLogged: 0, spent: 0, savedThisMonth: 0, savingsTarget: 10000, savingsTracked: true, billsPaid: 0, billsDue: 0, unpaid: [], payoffsCleared: [], categories: [], changes: [] },
     ...over,
   } as Parameters<typeof insightsFor>[0]
 }
@@ -67,6 +67,14 @@ describe('improve: money', () => {
     expect(texts(insightsFor(base({ finance: f })).improve)).toContain('Savings reached $9,000 against the $10,000 target.')
     expect(texts(insightsFor(base({ range: range(true), finance: f })).improve)).toEqual([])
     expect(insightsFor(base({ finance: fin({ savedThisMonth: 0 }) })).improve).toEqual([])
+  })
+})
+
+describe('savings before tracking started', () => {
+  it('neither praises nor blames', () => {
+    const f = fin({ spent: 500, savedThisMonth: 0, savingsTracked: false })
+    expect(insightsFor(base({ finance: f })).improve).toEqual([])
+    expect(insightsFor(base({ finance: { ...f, savedThisMonth: 10000 } })).wins).toEqual([])
   })
 })
 

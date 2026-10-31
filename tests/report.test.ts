@@ -30,6 +30,16 @@ describe('buildReport', () => {
     expect(r.focus).toEqual([{ text: 'Walk daily', done: false }])
     expect(r.insights.wins.map((w) => w.text)).toContain('Boss beaten 2 times.')
   })
+  it('says there is no data when nothing was logged, even with routines and bills set up', () => {
+    const input = reportInput({
+      routines: [routine('r1', { name: 'Walk' })],
+      bills: [{ id: 'b1', name: 'Rent', amount: 1700, category: 'housing', kind: 'recurring', due_month: null, paid: false }],
+    })
+    const r = buildReport('2026-10', input)
+    expect(r.hasData).toBe(false)
+    expect(r.insights).toEqual({ wins: [], improve: [] })
+    expect(buildReport('2026-10', reportInput({ routines: [routine('r1')], logs: [tick('1', 'r1', 'a', '2026-10-02')] })).hasData).toBe(true)
+  })
   it('marks the current month as partial', () => {
     expect(buildReport('2026-11', reportInput()).range.partial).toBe(true)
   })

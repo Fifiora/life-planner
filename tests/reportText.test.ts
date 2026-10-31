@@ -18,6 +18,12 @@ describe('reportToMarkdown', () => {
     expect(text).toContain('- Ada: 31 ticks (24 last month)')
     expect(text).toContain('- Ben: 0 ticks (0 last month)')
   })
+  it('says Nothing logged everywhere, scorecard and routines included, when the month has no data', () => {
+    const text = md(buildReport('2026-10', reportInput({ routines: [walk], bills: [{ id: 'b1', name: 'Rent', amount: 1700, category: 'housing', kind: 'recurring', due_month: null, paid: false }] })))
+    expect(text).not.toContain('Walk (Ada)')
+    expect(text).not.toContain('Bills paid')
+    expect(text.match(/- Nothing logged/g)!.length).toBe(8)
+  })
   it('says (so far) for the current month', () => {
     expect(md(buildReport('2026-11', full()), 'November 2026').split('\n')[0]).toBe('# Life Planner report: November 2026 (so far)')
   })
@@ -29,7 +35,7 @@ describe('reportToMarkdown', () => {
   it('labels trivia as all time and prints a dash for an unknown percent', () => {
     const sat = routine('r2', { name: 'Sat walk', applies_to: 'a', cadence: 'weekly', weekday: 6 })
     const attempts = [{ id: 't1', question_id: 'q1', member_id: 'a', chosen_index: 0, correct: true }]
-    const text = md(buildReport('2026-11', reportInput({ routines: [sat], attempts })), 'November 2026')
+    const text = md(buildReport('2026-11', reportInput({ routines: [sat, walk], logs: [tick('w1', 'r1', 'a', '2026-11-01')], attempts })), 'November 2026')
     expect(text).toContain('Trivia (all time)')
     expect(text).toMatch(/Sat walk \(Ada\): 0 of 0 \(—\)/)
   })

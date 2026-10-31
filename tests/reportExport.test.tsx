@@ -42,6 +42,9 @@ describe('export buttons', () => {
     page()
     await userEvent.click(await screen.findByRole('button', { name: 'Copy as text' }))
     expect(await screen.findByText('Could not copy. Select the text and copy it yourself.')).toBeInTheDocument()
+    const box = screen.getByLabelText('Report text') as HTMLTextAreaElement
+    expect(box.value.startsWith('# Life Planner report: October 2026')).toBe(true)
+    expect(box).toHaveAttribute('readonly')
     Reflect.deleteProperty(document, 'execCommand')
   })
   it('downloads a Markdown file named for the month', async () => {

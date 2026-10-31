@@ -26,6 +26,8 @@ export function reportInput(over: Partial<ReportInput> = {}): ReportInput {
     savings: [],
     incomeConfigured: 0,
     savingsTarget: 10000,
+    savingsStart: '2000-01',
+    planStart: '2000-01-01',
     today: '2026-11-03',
     ...over,
   }

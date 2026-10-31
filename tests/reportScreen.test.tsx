@@ -74,10 +74,14 @@ describe('Report screen', () => {
     renderScreen(<Report today="2027-03-03" />, '/report?month=2027-02')
     const health = await card('Health')
     expect(within(health).getByText('Nothing logged')).toBeInTheDocument()
+    for (const title of ['Scorecard', 'Routines', 'Finance']) expect(within(await card(title)).getByText('Nothing logged')).toBeInTheDocument()
+    expect(within(await card('Wins')).getByText('None this month.')).toBeInTheDocument()
+    expect(within(await card('Improve next month')).getByText('None this month.')).toBeInTheDocument()
     expect(document.body.textContent).not.toMatch(/NaN|Infinity/)
   })
   it('shows a dash for a percentage that cannot be worked out', async () => {
-    set('routines', [routine('r9', 'Sat walk', { applies_to: 'a', cadence: 'weekly', weekday: 6 })])
+    set('routines', [routine('r9', 'Sat walk', { applies_to: 'a', cadence: 'weekly', weekday: 6 }), routine('r1', 'Walk', { applies_to: 'a' })])
+    set('routine_logs', [tick('1', 'r1', '2026-11-01')])
     page('/report?month=2026-11')
     expect(await screen.findByText('Sat walk (Ada): 0 of 0 (—)')).toBeInTheDocument()
   })
@@ -91,6 +95,13 @@ describe('Report screen', () => {
     await screen.findByRole('heading', { name: 'Scorecard' })
     expect(screen.queryByText(/^Arc \d/)).toBeNull()
     expect(screen.queryByText(/Level now/)).toBeNull()
+  })
+})
+
+describe('Report accessibility', () => {
+  it('gives every section card a name a screen reader can use', async () => {
+    page()
+    for (const name of ['Scorecard', 'Improve next month', 'Next month\'s focus']) expect(await screen.findByRole('region', { name })).toBeInTheDocument()
   })
 })
 
