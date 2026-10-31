@@ -611,7 +611,8 @@ html[data-style="anime"] .btn-primary { box-shadow: 3px 3px 0 color-mix(in srgb,
 .bucket-lv-bar { width: 3rem; height: 0.4rem; border-radius: 1rem; background: color-mix(in srgb, var(--ink) 14%, transparent); overflow: hidden; }
 .bucket-lv-bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--brand), var(--brand-2)); }
 .trophies { list-style: none; margin: 0.6rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: 0.5rem; }
-.trophy { display: grid; grid-template-columns: auto 1fr; gap: 0.1rem 0.5rem; align-items: center; padding: 0.5rem 0.65rem; border-radius: 0.9rem; border: 1px solid var(--line); opacity: 0.62; }
+.trophy { display: grid; grid-template-columns: auto 1fr; gap: 0.1rem 0.5rem; align-items: center; padding: 0.5rem 0.65rem; border-radius: 0.9rem; border: 1px solid var(--line); }
+.trophy:not(.got) > span:not(.trophy-hint) { opacity: 0.7; } /* dim the name, never the hint: it must stay readable */
 .trophy.got { opacity: 1; border: 2px solid var(--edge); background: color-mix(in srgb, var(--brand) 10%, var(--card-solid)); }
 .trophy-name { font-weight: 750; font-size: 0.85rem; }
 .trophy-hint { grid-column: 2; font-size: 0.72rem; color: var(--muted); }
