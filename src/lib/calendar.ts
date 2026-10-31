@@ -74,9 +74,8 @@ export function routinesOn(date: string, routines: Routine[], anchor: string): R
   return routines.filter((r) => {
     if (r.cadence === 'daily') return true
     if (r.weekday == null || r.weekday !== dow(date)) return false
-    if (r.cadence === 'weekly') return true
     if (r.cadence === 'biweekly') return evenWeek
-    return false
+    return true // weekly, or "a <weekday> in the month / quarter": shown on each such weekday
   })
 }
 

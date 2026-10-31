@@ -3,6 +3,7 @@ import { useHousehold } from '../data/household'
 import { fetchPreload } from '../data/startup'
 import { mergeMissing } from '../data/tableStore'
 import { decryptPreload, type PreloadFile } from '../lib/preload'
+import { adjustPlan } from '../lib/migrate'
 import { parseSnapshotJson } from '../lib/snapshot'
 
 const LABELS: Record<string, [string, string]> = {
@@ -62,7 +63,7 @@ export function StarterPlanLoader({
     setError(null)
     try {
       const snap = parseSnapshotJson(await decrypt(file, passphrase))
-      const added = await mergeMissing(snap.tables)
+      const added = await mergeMissing(adjustPlan(snap.tables))
       setMessage(Object.keys(added).length === 0 ? 'Everything from the starter plan is already here.' : `Added ${describe(added)}.`)
       setFile(null)
       setPassphrase('')

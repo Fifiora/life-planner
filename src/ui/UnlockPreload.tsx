@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { mergeMissing } from '../data/tableStore'
+import { adjustPlan } from '../lib/migrate'
 import { decryptPreload, type PreloadFile } from '../lib/preload'
 import { encodeSnapshot, parseSnapshotJson, type Snapshot } from '../lib/snapshot'
 
@@ -29,7 +30,8 @@ export function UnlockPreload({
     setBusy(true)
     setError(null)
     try {
-      setSnapshot(parseSnapshotJson(await decrypt(preload, passphrase)))
+      const parsed = parseSnapshotJson(await decrypt(preload, passphrase))
+      setSnapshot({ ...parsed, tables: adjustPlan(parsed.tables) })
     } catch (err) {
       setError(messageOf(err))
     } finally {

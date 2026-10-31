@@ -12,7 +12,9 @@ const CADENCE_LABEL: Record<Routine['cadence'], string> = {
 
 export function describeRoutine(r: Routine): string {
   const parts: string[] = []
-  if (r.weekday != null) parts.push(`${WEEKDAYS[r.weekday]}s`)
+  if (r.weekday != null && r.cadence === 'monthly') parts.push(`A ${WEEKDAYS[r.weekday]} each month`)
+  else if (r.weekday != null && r.cadence === 'quarterly') parts.push(`A ${WEEKDAYS[r.weekday]} every 3 months`)
+  else if (r.weekday != null) parts.push(`${WEEKDAYS[r.weekday]}s`)
   else parts.push(CADENCE_LABEL[r.cadence])
   if (r.times_per_period > 1) parts.push(`${r.times_per_period}×`)
   if (r.place) parts.push(r.place)
