@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { PinRequiredError, joinWithCode } from '../data/syncRuntime'
+import { joinWithCode } from '../data/syncRuntime'
 import { reloadApp } from '../lib/session'
 import { isValidCode } from '../lib/syncCrypto'
 
@@ -24,7 +24,7 @@ export function JoinForm({ onJoined = reloadApp, onCancel, warning = REPLACE_WAR
       localStorage.removeItem('lp.pin') // the shared planner's PIN (if any) now applies; this phone's own is forgotten
       onJoined()
     } catch (err) {
-      if (err instanceof PinRequiredError) setNeedPin(true)
+      if (err instanceof Error && err.name === 'PinRequiredError') setNeedPin(true)
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
