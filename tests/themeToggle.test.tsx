@@ -49,11 +49,11 @@ describe('theme switch in the sidebar', () => {
   })
 
   it('keeps the header button and the sidebar switch in step', async () => {
-    render(
-      <MemoryRouter>
+    renderScreen(
+      <>
         <PageHead title="Today" />
         <TabBar />
-      </MemoryRouter>,
+      </>,
     )
     await userEvent.click(within(screen.getByRole('group', { name: 'Appearance' })).getByRole('button', { name: 'Light' }))
     expect(screen.getByRole('button', { name: /^Appearance:/ })).toHaveAccessibleName('Appearance: Light. Tap for Dark.')
