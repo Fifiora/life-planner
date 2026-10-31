@@ -9,7 +9,13 @@ import { FakeBackend, MemoryKV, MemoryLocal, offline } from './syncHelpers'
 const row = (id: string, extra: Record<string, unknown> = {}): Row => ({ id, name: `Item ${id}`, ...extra })
 // Web Crypto runs on real time, not fake time: after moving the clock, give it real turns to finish.
 const realSetTimeout = globalThis.setTimeout // captured before fake timers replace it
-const settle = () => new Promise<void>((resolve) => realSetTimeout(resolve, 4))
+const realSleep = (ms: number) => new Promise<void>((resolve) => realSetTimeout(resolve, ms))
+/** Let real work finish: at least a moment, and as long as a sync is still running. */
+const settle = async () => {
+  await realSleep(2)
+  for (let i = 0; i < 200 && getSyncStatus()?.state === 'syncing'; i++) await realSleep(2)
+  await realSleep(1)
+}
 async function flush(ms = 0) {
   let left = ms
   await vi.advanceTimersByTimeAsync(0)
