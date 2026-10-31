@@ -18,6 +18,27 @@ const entries = new Map<string, Entry>()
 let snapshot: Record<string, Row[]> | null = null // set when showing someone's view-only copy
 let listening = false
 
+type ChangeListener = (table: string, prev: Row[], next: Row[]) => void
+const changeListeners = new Set<ChangeListener>()
+
+/** Hear about every change made on this phone (not ones applied from elsewhere). Used by live sync. */
+export function onLocalChange(listener: ChangeListener): () => void {
+  changeListeners.add(listener)
+  return () => {
+    changeListeners.delete(listener)
+  }
+}
+
+function emitChange(table: string, prev: Row[], next: Row[]) {
+  for (const l of [...changeListeners]) {
+    try {
+      l(table, prev, next)
+    } catch {
+      /* a listener must never stop a save */
+    }
+  }
+}
+
 function readSaved(table: string): Row[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(PREFIX + table) ?? '[]')
@@ -87,7 +108,10 @@ function commit(table: string, next: Row[]) {
   } catch {
     throw new Error(SAVE_ERROR)
   }
-  setState(entry(table), next)
+  const e = entry(table)
+  const prev = e.state.rows
+  setState(e, next)
+  emitChange(table, prev, next)
 }
 
 export async function insertRow(table: string, row: Record<string, unknown>): Promise<void> {
@@ -110,10 +134,23 @@ export async function replaceRows(table: string, rows: Row[]): Promise<void> {
 
 /** Replace several tables together: either all of them are saved, or none (used by "Import data"). */
 export async function replaceMany(tables: Record<string, Row[]>): Promise<void> {
+  const before = writeMany(tables)
+  for (const [table, rows] of Object.entries(tables)) {
+    const e = entry(table)
+    const prev = before.get(table) ?? e.state.rows
+    setState(e, rows)
+    emitChange(table, prev, rows)
+  }
+}
+
+/** Saves several tables, or none: a failure puts every table back as it was. Returns each table's rows from before. */
+function writeMany(tables: Record<string, Row[]>): Map<string, Row[]> {
   if (snapshot) throw new Error(VIEW_ONLY_ERROR)
   const previous = new Map<string, string | null>()
+  const before = new Map<string, Row[]>()
   try {
     for (const [table, rows] of Object.entries(tables)) {
+      before.set(table, entry(table).state.rows)
       previous.set(table, localStorage.getItem(PREFIX + table))
       localStorage.setItem(PREFIX + table, JSON.stringify(rows))
     }
@@ -128,6 +165,12 @@ export async function replaceMany(tables: Record<string, Row[]>): Promise<void> 
     }
     throw new Error(SAVE_ERROR)
   }
+  return before
+}
+
+/** Rows that arrived from the other phone: saved and shown like any change, but not reported as a local change (so they are never sent back). */
+export function applyRemote(tables: Record<string, Row[]>): void {
+  writeMany(tables)
   for (const [table, rows] of Object.entries(tables)) setState(entry(table), rows)
 }
 
