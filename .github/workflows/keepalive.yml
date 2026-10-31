@@ -1,0 +1,22 @@
+name: Keep sync project awake
+
+# The free Supabase plan pauses a project after about a week without activity. This pings it every Monday.
+# The URL and key below are the public "publishable" ones (they are also in the app's code); no secret is used.
+on:
+  schedule:
+    - cron: '0 14 * * 1'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call sync_ping
+        run: |
+          code=$(curl -sS -o /tmp/out.txt -w '%{http_code}' -X POST \
+            'https://ifnlknnyemllrcwkzmsa.supabase.co/rest/v1/rpc/sync_ping' \
+            -H 'apikey: sb_publishable_BI2eDyplltda-cEWtBKj8A_kEJ-MirM' \
+            -H 'Content-Type: application/json' -d '{}')
+          echo "status $code: $(cat /tmp/out.txt)"
+          test "$code" = "200"
