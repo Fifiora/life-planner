@@ -18,6 +18,13 @@ describe("Next month's focus", () => {
     await userEvent.tab()
     expect(parseFocus(stored('focus:2026-11'))).toEqual([{ text: 'Walk daily', done: false }])
   })
+  it('saves after a short pause in typing, without leaving the box', async () => {
+    page('2026-10')
+    await userEvent.type(await screen.findByLabelText('Goal 1'), 'Walk daily')
+    expect(stored('focus:2026-11')).toBeUndefined()
+    await new Promise((r) => setTimeout(r, 1300))
+    expect(parseFocus(stored('focus:2026-11'))).toEqual([{ text: 'Walk daily', done: false }])
+  })
   it('has room for three goals, no more', async () => {
     page('2026-10')
     await screen.findByLabelText('Goal 1')

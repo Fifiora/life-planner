@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cap, dueLabel, to12h } from '../src/lib/format'
+import { cap, dueLabel, shortDate, to12h } from '../src/lib/format'
 
 describe('dueLabel', () => {
   it('says Today and Tomorrow in words', () => {
@@ -27,5 +27,12 @@ describe('cap', () => {
   it('capitalises the first letter', () => {
     expect(cap('housing')).toBe('Housing')
     expect(cap('')).toBe('')
+  })
+})
+
+describe('shortDate', () => {
+  it('writes a date as month and day', () => {
+    expect(shortDate('2026-10-12')).toBe('Oct 12')
+    expect(shortDate('2026-11-01')).toBe('Nov 1')
   })
 })

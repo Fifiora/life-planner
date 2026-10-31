@@ -110,7 +110,7 @@ describe('Report sections', () => {
   it('Health: workouts and on-time rate', async () => {
     page()
     const c = await card('Health')
-    expect(within(c).getByText('Ada: 1 workout, 30 minutes')).toBeInTheDocument()
+    expect(within(c).getByText('Ada: 1 workout (run 1), 30 minutes')).toBeInTheDocument()
     expect(within(c).getByText('Lights out (Ada): on time 50% (1 of 2 logged days)')).toBeInTheDocument()
   })
   it('Study: milestones and all-time trivia', async () => {
@@ -138,7 +138,7 @@ describe('Report sections', () => {
     expect(within(c).getByText('Spent: $4,170')).toBeInTheDocument()
     expect(within(c).getByText('Saved: $500 against the $10,000 target')).toBeInTheDocument()
     expect(within(c).getByText('Bills paid: 1 of 3')).toBeInTheDocument()
-    expect(within(c).getByText('dining: $150 against $100')).toBeInTheDocument()
+    expect(within(c).getByText('Dining: $150 against $100')).toBeInTheDocument()
   })
   it('Calendar: done and missed', async () => {
     page()
@@ -153,7 +153,7 @@ describe('Report sections', () => {
   it('Anime shows level and bosses; Classic shows neither', async () => {
     page()
     const c = await card('Scorecard')
-    expect(within(c).getByText(/^Level now: \d+$/)).toBeInTheDocument()
+    expect(within(c).getByText(/^Level now: Ada \d+, Ben \d+$/)).toBeInTheDocument()
     expect(within(c).getByText('Bosses beaten: 0')).toBeInTheDocument()
   })
 })

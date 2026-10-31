@@ -18,7 +18,7 @@ function base(over: Record<string, unknown> = {}): Parameters<typeof insightsFor
     ...over,
   } as Parameters<typeof insightsFor>[0]
 }
-const row = (over: Record<string, unknown>) => ({ id: 'r1', name: 'Lights out', bucket: 'health', memberId: 'a', count: 0, expected: 0, pct: null, ...over })
+const row = (over: Record<string, unknown>) => ({ id: 'r1', name: 'Lights out', bucket: 'health', cadence: 'daily', memberId: 'a', count: 0, expected: 0, pct: null, ...over })
 const fin = (over: Record<string, unknown>) => ({ ...base().finance, ...over })
 const texts = (list: { text: string }[]) => list.map((i) => i.text)
 
@@ -78,6 +78,19 @@ describe('savings before tracking started', () => {
   })
 })
 
+describe('a month still going', () => {
+  it('does not judge monthly or weekly routines early, but still judges daily ones', () => {
+    const rows = [row({ id: 'm', name: 'Salon', cadence: 'monthly', count: 0, expected: 1, pct: 0 }), row({ id: 'd', name: 'Walk', cadence: 'daily', count: 1, expected: 10, pct: 10 })]
+    expect(texts(insightsFor(base({ range: range(true), routines: rows })).improve)).toEqual(['Walk (Ada) was done 10% of the time (1 of 10).'])
+    expect(texts(insightsFor(base({ routines: rows })).improve)).toHaveLength(2)
+  })
+  it('does not judge study milestones until the month is over', () => {
+    const study = { ...base().study, milestones: { a: { done: 0, total: 2 }, b: { done: 0, total: 0 } } }
+    expect(insightsFor(base({ range: range(true), study })).improve).toEqual([])
+    expect(texts(insightsFor(base({ study })).improve)).toEqual(['Study milestones: 0 of 2 done.'])
+  })
+})
+
 describe('improve: the rest', () => {
   it('flags a timed routine under 70% on time', () => {
     const at = (onTime: number) => insightsFor(base({ health: { ...base().health, timed: [{ routineId: 'r2', name: 'Lights out', memberId: 'b', logged: 100, onTime, pct: onTime }] } })).improve
@@ -87,7 +100,7 @@ describe('improve: the rest', () => {
   it('flags weeks without a workout, but only when some workout was logged', () => {
     const weeks = ['2026-10-12', '2026-10-19']
     const withRun = { byMember: { a: { workouts: 3, minutes: 60, byType: {} }, b: { workouts: 0, minutes: 0, byType: {} } }, timed: [], weeksWithoutWorkout: weeks }
-    expect(texts(insightsFor(base({ health: withRun })).improve)).toEqual(['No workout was logged in 2 weeks, starting with the week of 2026-10-12.'])
+    expect(texts(insightsFor(base({ health: withRun })).improve)).toEqual(['No workout was logged in 2 weeks, starting with the week of Oct 12.'])
     expect(insightsFor(base({ health: { ...base().health, weeksWithoutWorkout: weeks } })).improve).toEqual([])
   })
   it('flags study milestones under half done', () => {

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import Report from '../src/screens/Report'
 import { renderScreen, seedPlanner } from './seed'
 
+const original = { create: URL.createObjectURL, revoke: URL.revokeObjectURL }
 let css = ''
 beforeAll(async () => {
   const fs = await import(/* @vite-ignore */ ['node', 'fs'].join(':'))
@@ -13,6 +14,8 @@ beforeAll(async () => {
 const page = () => renderScreen(<Report today="2026-11-03" />, '/report?month=2026-10')
 beforeEach(() => seedPlanner())
 afterEach(() => {
+  URL.createObjectURL = original.create
+  URL.revokeObjectURL = original.revoke
   Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true })
   vi.restoreAllMocks()
 })
@@ -77,5 +80,7 @@ describe('print styles', () => {
     expect(block).toContain('.tabbar')
     expect(block).toContain('.report-actions')
     expect(block).toContain('break-inside: avoid')
+    expect(block).toContain('.report-focus')
+    expect(block).toContain('animation: none')
   })
 })

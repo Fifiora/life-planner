@@ -51,13 +51,38 @@ describe('reportToMarkdown', () => {
   })
   it('shows the game lines only when the report has them', () => {
     expect(md()).not.toContain('Level now')
-    const text = md(buildReport('2026-10', full(), { game: { level: 4, bossesBeaten: 1 } }))
-    expect(text).toContain('- Level now: 4')
+    const text = md(buildReport('2026-10', full(), { game: { levels: { a: 4, b: 3 }, bossesBeaten: 1 } }))
+    expect(text).toContain('- Level now: Ada 4, Ben 3')
     expect(text).toContain('- Bosses beaten: 1')
   })
   it('never prints NaN, undefined or Infinity', () => {
     expect(md(buildReport('2026-10', reportInput()))).not.toMatch(/NaN|undefined|Infinity/)
     expect(md()).not.toMatch(/NaN|undefined|Infinity/)
+  })
+  it('shows the workout types, friendly dates and capitalised categories', () => {
+    const act = (id: string, type: string) => ({ id, date: '2026-10-07', member_id: 'a', type, minutes: 20 })
+    const input = reportInput({
+      routines: [walk],
+      logs: [tick('1', 'r1', 'a', '2026-10-01')],
+      activities: [act('x1', 'run'), act('x2', 'run'), act('x3', 'swim')],
+      expenses: [{ id: 'e1', date: '2026-10-05', amount: 30, category: 'dining', note: '', member_id: 'a' }],
+    })
+    const text = md(buildReport('2026-10', input))
+    expect(text).toContain('- Ada: 3 workouts (run 2, swim 1), 60 minutes')
+    expect(text).toContain('- Dining: $30 against no budget')
+    expect(text).toContain('starting with the week of Oct 12')
+  })
+  it('counts the focus goals in the scorecard and opens with them', () => {
+    const text = md(buildReport('2026-10', full(), { focus: [{ text: 'Walk daily', done: true }, { text: 'Pay bills early', done: false }] }))
+    expect(text).toContain('- Focus goals: 1 of 2 done')
+    const lines = text.split('\n')
+    expect(lines.indexOf('## Focus for October')).toBeLessThan(lines.indexOf('## Scorecard'))
+  })
+  it('calls out the three strongest routines', () => {
+    const rts = ['A', 'B', 'C', 'D'].map((n, i) => routine(`r${i}`, { name: n, applies_to: 'a' }))
+    const logs = [...run('2026-10-01', 31).map((d, i) => tick(`a${i}`, 'r0', 'a', d)), ...run('2026-10-01', 20).map((d, i) => tick(`b${i}`, 'r1', 'a', d)), ...run('2026-10-01', 10).map((d, i) => tick(`c${i}`, 'r2', 'a', d)), ...run('2026-10-01', 5).map((d, i) => tick(`d${i}`, 'r3', 'a', d))]
+    const text = md(buildReport('2026-10', reportInput({ routines: rts, logs })))
+    expect(text).toContain('- Strongest: A (Ada) 100%, B (Ada) 65%, C (Ada) 32%')
   })
   it('names the file by month', () => {
     expect(reportFileName('2026-10')).toBe('life-planner-report-2026-10.md')

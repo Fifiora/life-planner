@@ -58,7 +58,7 @@ describe('routinesSection', () => {
   it('counts either partner for a shared routine, on one row', () => {
     const r3 = routine('r3', { name: 'Sunday mass', cadence: 'weekly', weekday: 0, shared: true })
     const rows = routinesSection(OCT, reportInput({ routines: [r3], logs: [tick('1', 'r3', 'a', '2026-10-04'), tick('2', 'r3', 'b', '2026-10-11')] }))
-    expect(rows).toEqual([{ id: 'r3', name: 'Sunday mass', bucket: 'health', memberId: 'shared', count: 2, expected: 4, pct: 50 }])
+    expect(rows).toEqual([{ id: 'r3', name: 'Sunday mass', bucket: 'health', cadence: 'weekly', memberId: 'shared', count: 2, expected: 4, pct: 50 }])
   })
   it('keeps a one-person routine to that person and skips inactive routines', () => {
     const rows = routinesSection(OCT, reportInput({ routines: [routine('r1', { applies_to: 'b' }), routine('r2', { active: false })] }))
@@ -89,6 +89,11 @@ describe('healthSection', () => {
       { routineId: 'r2', name: 'Lights out', memberId: 'a', logged: 2, onTime: 1, pct: 50 },
       { routineId: 'r2', name: 'Lights out', memberId: 'b', logged: 0, onTime: 0, pct: null },
     ])
+  })
+  it('does not judge a week that is still in progress', () => {
+    const NOV = monthRange('2026-11', '2026-12-01', '2000-01-01')
+    const h = healthSection(NOV, reportInput({ today: '2026-12-01', activities: [{ id: '1', date: '2026-11-03', member_id: 'a', type: 'run', minutes: 10 }] }))
+    expect(h.weeksWithoutWorkout).toEqual(['2026-11-09', '2026-11-16', '2026-11-23'])
   })
   it('lists weeks starting in the month with no workout from anyone', () => {
     const h = healthSection(OCT, reportInput({ activities: [{ id: '1', date: '2026-10-07', member_id: 'a', type: 'run', minutes: 10 }] }))
@@ -128,6 +133,13 @@ describe('foodSection', () => {
       logs: [tick('1', 'r5', 'a', '2026-10-03'), tick('2', 'r5', 'b', '2026-10-17')],
     }))
     expect(f).toEqual({ grocerySpent: 120, groceryBudget: 500, nightsByType: { game: 2, movie: 1 }, groceryRoutinePct: 67 })
+  })
+  it('uses a saved food budget over the food bills', () => {
+    const f = foodSection(OCT, reportInput({
+      bills: [{ id: 'b1', name: 'Groceries', amount: 500, category: 'food', kind: 'recurring', due_month: null, paid: false }],
+      budgets: [{ id: 'bu', category: 'food', amount: 650 }],
+    }))
+    expect(f.groceryBudget).toBe(650)
   })
   it('has no grocery routine percentage when there is no such routine', () => {
     expect(foodSection(OCT, reportInput()).groceryRoutinePct).toBeNull()
@@ -192,7 +204,7 @@ describe('a month that began before the plan did (the plan starts 2026-10-26)', 
     const walk = routine('r1', { name: 'Walk', applies_to: 'a' })
     const logs = [...['26', '27', '28', '29', '30', '31'].map((d) => tick(`t${d}`, 'r1', 'a', `2026-10-${d}`)), tick('early', 'r1', 'a', '2026-10-10')]
     const rows = routinesSection(R, plan({ routines: [walk], logs }))
-    expect(rows).toEqual([{ id: 'r1', name: 'Walk', bucket: 'health', memberId: 'a', count: 6, expected: 6, pct: 100 }])
+    expect(rows).toEqual([{ id: 'r1', name: 'Walk', bucket: 'health', cadence: 'daily', memberId: 'a', count: 6, expected: 6, pct: 100 }])
     const s = scorecardSection(R, plan({ routines: [walk], logs }))
     expect([s.ticksByMember.a, s.completionPct, s.prevAvailable]).toEqual([6, 100, false])
   })
