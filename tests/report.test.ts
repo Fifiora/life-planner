@@ -25,7 +25,7 @@ describe('buildReport', () => {
     expect(r.insights.improve[0].text).toBe('Walk (Ada) was done 3% of the time (1 of 31).')
   })
   it('passes the game lines and the focus goals through', () => {
-    const r = buildReport('2026-10', reportInput(), { game: { level: 4, bossesBeaten: 2 }, focus: [{ text: 'Walk daily', done: false }] })
+    const r = buildReport('2026-10', reportInput({ routines: [routine('r1')], logs: [tick('1', 'r1', 'a', '2026-10-02')] }), { game: { level: 4, bossesBeaten: 2 }, focus: [{ text: 'Walk daily', done: false }] })
     expect(r.game).toEqual({ level: 4, bossesBeaten: 2 })
     expect(r.focus).toEqual([{ text: 'Walk daily', done: false }])
     expect(r.insights.wins.map((w) => w.text)).toContain('Boss beaten 2 times.')
