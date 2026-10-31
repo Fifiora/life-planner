@@ -32,6 +32,9 @@ beforeEach(() => {
   sessionStorage.clear()
   resetStore()
   vi.restoreAllMocks()
+  // Two people already entered, nothing else: the situation where the starter plan used to be missed.
+  localStorage.setItem('lp.data.members', JSON.stringify([{ id: 'a', display_name: 'Ada', color: '#16a34a' }, { id: 'b', display_name: 'Ben', color: '#6366f1' }]))
+  localStorage.setItem('lp.me', 'a')
 })
 
 describe('mergeMissing', () => {

@@ -84,8 +84,8 @@ describe('startup', () => {
       expect(String(fetchMock.mock.calls[0][0])).toContain('preload.enc.json')
     })
 
-    it('does not look for it when this phone already has its own planner', async () => {
-      localStorage.setItem('lp.data.members', JSON.stringify([{ id: 'me' }]))
+    it('does not look for it when this phone already has its own plan', async () => {
+      localStorage.setItem('lp.data.routines', JSON.stringify([{ id: 'r1', name: 'Walk' }]))
       fetchMock.mockResolvedValue(respond(PRELOAD))
       expect((await startup('')).mode).toBe('own')
       expect(fetchMock).not.toHaveBeenCalled()
