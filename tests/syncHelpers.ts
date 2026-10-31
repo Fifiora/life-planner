@@ -4,11 +4,13 @@ import { TransportError, type KV, type LocalStore, type SyncRow, type Transport 
 export class MemoryKV implements KV {
   m = new Map<string, string>()
   failSet = false
+  sets = 0
   get(key: string) {
     return this.m.get(key) ?? null
   }
   set(key: string, value: string) {
     if (this.failSet) throw new Error('quota exceeded')
+    this.sets++
     this.m.set(key, value)
   }
   remove(key: string) {

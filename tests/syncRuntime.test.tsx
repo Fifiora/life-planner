@@ -148,6 +148,38 @@ describe('staying in step', () => {
     expect(backend.pushes[0]).toHaveLength(2)
   })
 
+  it('sends an edit made during a running sync without waiting for the next check', async () => {
+    await sharing()
+    let release!: () => void
+    const gate = new Promise<void>((r) => (release = r))
+    const realPull = backend.pull.bind(backend)
+    let first = true
+    backend.pull = async (h: string, after: number) => {
+      if (first) {
+        first = false
+        await gate
+      }
+      return realPull(h, after)
+    }
+    backend.emitChanged() // starts a sync that waits inside the pull
+    await flush(0)
+    local.put('bills', row('late'))
+    await flush(1000) // the one-second wait ends while that sync is still running
+    release()
+    await flush(0)
+    expect(backend.pushes.flat().map((r) => r.id)).toContain('late')
+    expect(getSyncStatus()?.pending).toBe(0)
+  })
+
+  it('sends waiting edits as soon as the app is hidden', async () => {
+    await sharing()
+    local.put('bills', row('x'))
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+    await flush(0)
+    expect(backend.pushes).toHaveLength(1)
+  })
+
   it('tells the other phones after it sent something', async () => {
     await sharing()
     const before = backend.notified
@@ -215,6 +247,24 @@ describe('when the connection fails', () => {
     const again = backend.attempts.slice(1).map((t, i) => t - backend.attempts[i])
     expect(again.slice(0, 2)).toEqual([10_000, 20_000])
   }, 90_000)
+})
+
+describe('stopping while starting', () => {
+  it('does not show a code for sharing that was stopped', async () => {
+    local.tables = { bills: [row('b1')] }
+    const started = startSharing()
+    stopSyncing()
+    await expect(started).rejects.toThrow(/Superseded/)
+    expect(getCode()).toBeNull()
+    expect(getSyncStatus()).toBeNull()
+  })
+})
+
+describe('a damaged saved code', () => {
+  it('is treated as no code', () => {
+    kv.set('lp.sync.code', 'junk')
+    expect(getCode()).toBeNull()
+  })
 })
 
 describe('resuming, stopping and testing', () => {

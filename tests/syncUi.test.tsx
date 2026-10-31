@@ -194,6 +194,14 @@ describe('Sync status chip', () => {
     text(status)
     expect(screen.getByRole('status', { name: 'Sync status' })).toHaveTextContent(expected)
   })
+  it('only speaks up to screen readers about trouble, not routine syncs', () => {
+    text(idle())
+    expect(screen.getByRole('status', { name: 'Sync status' })).toHaveAttribute('aria-live', 'off')
+  })
+  it('announces being offline', () => {
+    text(idle({ state: 'offline' }))
+    expect(screen.getByRole('status', { name: 'Sync status' })).toHaveAttribute('aria-live', 'polite')
+  })
   it('is in the page header, and not in a view-only copy', () => {
     rt.status = idle()
     const { unmount } = renderScreen(<PageHead title="Today" />)

@@ -473,3 +473,85 @@ describe('SyncEngine: its own notes cannot be saved', () => {
     expect(engine.status.message).toMatch(/storage/i)
   })
 })
+
+describe('SyncEngine: joining with a planner that cannot be read', () => {
+  async function badRow(backend: FakeBackend, id = 'bad') {
+    const wrong = await deriveKey(generateCode())
+    backend.rows.set(`${HOUSEHOLD}|bills|${id}`, { tbl: 'bills', id, payload: await encryptRow(wrong, 'bills', row(id), { updated_at: 10, deleted: false }), deleted: false, updated_at: 10, seq: ++backend.seq })
+  }
+
+  it('refuses when no row can be read with this code, and changes nothing', async () => {
+    const { backend, b } = await pair()
+    await badRow(backend)
+    b.local.put('routines', row('own'))
+    await expect(b.engine.replaceFromRemote()).rejects.toThrow(/could not be read/)
+    expect(b.local.rows('routines')).toHaveLength(1)
+    expect(b.local.applied).toEqual([])
+  })
+
+  it('refuses when only some rows cannot be read', async () => {
+    const { backend, a, b } = await pair()
+    a.local.put('bills', row('good'))
+    await a.engine.syncNow()
+    await badRow(backend)
+    b.local.put('routines', row('own'))
+    await expect(b.engine.replaceFromRemote()).rejects.toThrow(/could not be read/)
+    expect(b.local.rows('routines')).toHaveLength(1)
+  })
+})
+
+describe('SyncEngine: unreadable rows are reported', () => {
+  it('says how many changes from the other phone could not be read', async () => {
+    const { backend, a, b } = await pair()
+    a.local.put('bills', row('good'))
+    await a.engine.syncNow()
+    const wrong = await deriveKey(generateCode())
+    backend.rows.set(`${HOUSEHOLD}|bills|bad`, { tbl: 'bills', id: 'bad', payload: await encryptRow(wrong, 'bills', row('bad'), { updated_at: 10, deleted: false }), deleted: false, updated_at: 10, seq: ++backend.seq })
+    await b.engine.syncNow()
+    expect(b.engine.status.state).toBe('idle')
+    expect(b.engine.status.message).toMatch(/1 change from the other phone could not be read/)
+    expect(b.local.rows('bills').map((r) => r.id)).toEqual(['good'])
+  })
+})
+
+describe('SyncEngine: two local rows with the same id', () => {
+  it('settles on the last one and stops re-sending it', async () => {
+    const { backend, a, b } = await pair()
+    a.local.tables = { bills: [{ id: 'd', name: 'first' }, { id: 'd', name: 'second' }] }
+    a.engine.markAllDirty()
+    expect((await a.engine.syncNow()).pushed).toBe(1)
+    await b.engine.syncNow()
+    expect(b.local.rows('bills')).toEqual([{ id: 'd', name: 'second' }])
+    const pushes = backend.pushes.length
+    for (let i = 0; i < 3; i++) {
+      expect((await a.engine.syncNow()).pushed).toBe(0)
+      expect((await b.engine.syncNow()).pushed).toBe(0)
+    }
+    expect(backend.pushes.length).toBe(pushes)
+  })
+})
+
+describe('SyncEngine: quiet syncs', () => {
+  it('writes no notes when nothing changed', async () => {
+    const { a, b } = await pair()
+    a.local.put('bills', row('x'))
+    await a.engine.syncNow()
+    await b.engine.syncNow()
+    const before = a.kv.sets + b.kv.sets
+    await a.engine.syncNow()
+    await b.engine.syncNow()
+    expect(a.kv.sets + b.kv.sets).toBe(before)
+  })
+})
+
+describe('SyncEngine: big pushes', () => {
+  it('keeps each push well under the server limit', async () => {
+    const { backend, a } = await pair()
+    a.local.tables = { routine_logs: Array.from({ length: 60 }, (_, i) => row(`big${i}`, { blob: 'q'.repeat(20_000) })) }
+    a.engine.markAllDirty()
+    await a.engine.syncNow()
+    expect(backend.rows.size).toBe(60)
+    expect(backend.pushes.length).toBeGreaterThan(1)
+    for (const p of backend.pushes) expect(p.reduce((n, r) => n + (r.payload?.length ?? 0), 0)).toBeLessThanOrEqual(950_000)
+  })
+})
