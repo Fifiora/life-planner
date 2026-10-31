@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { HouseholdProvider } from '../src/data/household'
+import { addDays, weekStart } from '../src/lib/dates'
 import { resetStore } from '../src/data/tableStore'
 import { ToastProvider } from '../src/ui/Toast'
 
@@ -47,7 +48,12 @@ export function seedPlanner() {
     { id: 'p1', name: 'Austin', drive_hours: 3, rank: 1, visited: false },
     { id: 'p2', name: 'New Orleans', drive_hours: 8, rank: 2, visited: false, notes: 'Food trip', est_cost: 900 },
   ])
-  save('milestones', [{ id: 'm1', week_start: today, member_id: 'a', text: 'Read chapter 3', done: false }])
+  // Present in both this week and next, so the screen shows it whichever week it opens on (Sundays open on next week).
+  const thisWeek = weekStart(today)
+  save('milestones', [
+    { id: 'm1', week_start: thisWeek, member_id: 'a', text: 'Read chapter 3', done: false },
+    { id: 'm2', week_start: addDays(thisWeek, 7), member_id: 'a', text: 'Read chapter 3', done: false },
+  ])
   save('trivia_topics', [{ id: 't1', topic: 'Cardio', claimed_by: 'a', author_id: 'b' }])
   save('trivia_questions', [{ id: 'q1', topic_id: 't1', prompt: 'Resting HR?', options: ['a', 'b', 'c', 'd'], correct_index: 0 }])
   save('trivia_attempts', [{ id: 'at1', question_id: 'q1', member_id: 'a', chosen_index: 0, correct: true }])
