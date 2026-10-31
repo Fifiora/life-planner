@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { PLAN_START } from '../src/lib/dates'
-import { dayCompletion, dayMarkers, eventOccurrences, monthGrid, routinesOn, validateEvent } from '../src/lib/calendar'
+import { cleanEvent, dayCompletion, dayMarkers, eventOccurrences, monthGrid, routinesOn, validateEvent } from '../src/lib/calendar'
 import type { CalEvent, Routine, RoutineLog } from '../src/types'
 
 const ev = (over: Partial<CalEvent> = {}): CalEvent => ({
@@ -114,4 +114,30 @@ describe('validateEvent', () => {
   it('rejects an empty title', () => expect(validateEvent({ ...ok, title: '  ' })).toBe('Give the event a title.'))
   it('rejects an impossible date', () => expect(validateEvent({ ...ok, date: '2026-13-40' })).toBe('Pick a valid date.'))
   it('rejects repeat_until before the date', () => expect(validateEvent({ ...ok, repeat: 'weekly', repeat_until: '2026-11-01' })).toBe('"Repeat until" must be on or after the date.'))
+})
+
+describe('routinesOn with a damaged cycle start', () => {
+  it('falls back to the default start instead of throwing', () => {
+    const bi = routine({ id: 'b', cadence: 'biweekly', weekday: 1 })
+    expect(() => routinesOn('2026-11-02', [bi], '')).not.toThrow()
+    expect(routinesOn('2026-11-02', [bi], '')).toHaveLength(1)
+    expect(routinesOn('2026-11-09', [bi], 'garbage')).toHaveLength(0)
+  })
+})
+
+describe('cleanEvent', () => {
+  it('keeps a good row as it is', () => {
+    expect(cleanEvent(ev())).toEqual(ev())
+  })
+  it('drops rows that cannot be shown', () => {
+    expect(cleanEvent({ id: 'x' })).toBeNull()
+    expect(cleanEvent(ev({ date: '' }))).toBeNull()
+    expect(cleanEvent({ ...ev(), title: {} })).toBeNull()
+    expect(cleanEvent({ ...ev(), id: 5 })).toBeNull()
+    expect(cleanEvent(null)).toBeNull()
+  })
+  it('repairs odd optional fields', () => {
+    const c = cleanEvent({ ...ev(), time: 930, repeat: 'sometimes', category: 'zzz', member: 7, done_on: 'x', notes: 4, repeat_until: 'nope' })!
+    expect(c).toMatchObject({ time: null, repeat: 'none', category: 'other', member: 'both', done_on: [], notes: '', repeat_until: null })
+  })
 })

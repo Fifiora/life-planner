@@ -18,7 +18,10 @@ describe('Today week strip', () => {
     const links = within(strip).getAllByRole('link')
     expect(links).toHaveLength(7)
     expect(links.filter((l) => l.getAttribute('aria-current') === 'date')).toHaveLength(1)
-    links.forEach((l) => expect(l).toHaveAttribute('href', '/calendar'))
+    const hrefs = links.map((l) => l.getAttribute('href'))
+    expect(new Set(hrefs).size).toBe(7)
+    hrefs.forEach((h) => expect(h).toMatch(/^\/calendar\?date=\d{4}-\d{2}-\d{2}$/))
+    expect(links.find((l) => l.getAttribute('aria-current') === 'date')).toHaveAttribute('href', `/calendar?date=${todayCT()}`)
   })
 })
 
@@ -37,6 +40,19 @@ describe('Today up next', () => {
     renderScreen(<Today />)
     await screen.findByRole('navigation', { name: 'This week' })
     expect(screen.queryByRole('heading', { name: 'Up next' })).toBeNull()
+  })
+})
+
+describe('Today with damaged event rows', () => {
+  it('still opens', async () => {
+    localStorage.setItem('lp.data.events', JSON.stringify([
+      evRow({ id: 'd1', title: 'Odd time', time: 930 }),
+      { ...evRow({ id: 'd2' }), title: {} },
+      evRow({ id: 'd3', title: 'Fine one', date: addDays(todayCT(), 1) }),
+    ]))
+    renderScreen(<Today />)
+    expect(await screen.findByRole('heading', { name: 'Up next' })).toBeInTheDocument()
+    expect(screen.getByText('Fine one')).toBeInTheDocument()
   })
 })
 

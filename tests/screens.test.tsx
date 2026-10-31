@@ -305,3 +305,14 @@ describe('Settings appearance', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
   })
 })
+
+describe('Settings cycle start', () => {
+  it('does not save an empty date', async () => {
+    renderScreen(<Settings />)
+    const input = await screen.findByLabelText(/Start of the 2-week cycle/)
+    await userEvent.clear(input)
+    await userEvent.click(screen.getAllByRole('button', { name: /^save/i })[0])
+    const stored = saved('settings').find((r) => r.key === 'biweekly_anchor')
+    expect(stored?.value ?? '2026-11-02').toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+})

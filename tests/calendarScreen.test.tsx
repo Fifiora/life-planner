@@ -55,6 +55,36 @@ describe('Calendar month view', () => {
   })
 })
 
+describe('Calendar styling hooks', () => {
+  it('does not reuse the Finance budget table cell class', () => {
+    const { container } = renderScreen(<Calendar initialDate="2026-10-15" />)
+    expect(container.querySelector('.mcell')).toBeNull()
+    expect(container.querySelector('.cal-cell')).not.toBeNull()
+  })
+})
+
+describe('Calendar opened on a date', () => {
+  it('shows that month with the day open', async () => {
+    renderScreen(<Calendar />, '/calendar?date=2031-03-09')
+    expect(screen.getByRole('heading', { name: 'March 2031' })).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'Day details' })).toBeInTheDocument()
+    expect(screen.getByText(/March 9, 2031/)).toBeInTheDocument()
+  })
+  it('ignores a bad date in the link', () => {
+    renderScreen(<Calendar initialDate="2026-10-15" />, '/calendar?date=nonsense')
+    expect(screen.getByRole('heading', { name: 'October 2026' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+})
+
+describe('Calendar with a damaged cycle start', () => {
+  it('still opens', () => {
+    localStorage.setItem('lp.data.settings', JSON.stringify([{ id: 's', key: 'biweekly_anchor', value: '' }]))
+    renderScreen(<Calendar initialDate="2026-10-15" />)
+    expect(screen.getByRole('heading', { name: 'October 2026' })).toBeInTheDocument()
+  })
+})
+
 describe('Calendar day sheet', () => {
   it('lists the routines due that weekday', async () => {
     const { container } = renderScreen(<Calendar initialDate="2026-10-15" />)
@@ -94,6 +124,13 @@ describe('Calendar day sheet', () => {
     await userEvent.click(cell(container, addDays(today, 1)))
     expect(screen.queryByRole('checkbox', { name: 'Daily activity' })).toBeNull()
     expect(screen.getByText('Daily activity')).toBeInTheDocument()
+  })
+
+  it('opens a day that has a row with odd fields', async () => {
+    localStorage.setItem('lp.data.events', JSON.stringify([evRow({ id: 'q', title: 'Odd', date: '2026-10-28', time: 930 }), { ...evRow({ id: 'r', date: '2026-10-28' }), title: {} }]))
+    const { container } = renderScreen(<Calendar initialDate="2026-10-15" />)
+    await userEvent.click(cell(container, '2026-10-28'))
+    expect(await screen.findByText('Odd')).toBeInTheDocument()
   })
 
   it('survives a corrupt event row', () => {
