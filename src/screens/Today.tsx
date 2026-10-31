@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useHousehold } from '../data/household'
+import { useFinance } from '../data/useFinance'
 import { useRoutineData } from '../data/useRoutineData'
 import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
@@ -10,7 +11,10 @@ import { Confetti } from '../ui/Confetti'
 import { useIncrease } from '../data/useIncrease'
 import { needsBackup } from '../lib/backup'
 import { monthView } from '../lib/finance'
+import { billsPaidSummary } from '../lib/finance2'
+import { money } from '../lib/format'
 import { weekRecap } from '../lib/recap'
+import { SavingsBar } from '../ui/SavingsBar'
 import type { Bill, Income, Milestone, Routine, TripPlan, Turn } from '../types'
 import { EmptyState } from '../ui/EmptyState'
 import { PageHead } from '../ui/PageHead'
@@ -24,6 +28,23 @@ const ratio = (done: number, total: number) => (total === 0 ? 0 : done / total)
 function greeting(): string {
   const h = new Date().getHours()
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
+}
+
+function MoneyCard() {
+  const month = monthKeyCT()
+  const f = useFinance(month)
+  if (f.bills.rows.length === 0) return null
+  const unpaid = billsPaidSummary(f.bills.rows, f.payments.rows, month).unpaid.length
+  return (
+    <section className="card">
+      <div className="card-head">
+        <div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Money this month</h2></div>
+        <Link to="/finance">Open</Link>
+      </div>
+      <SavingsBar savings={f.projected} target={f.target} />
+      <p className="muted small">{unpaid} monthly bill{unpaid === 1 ? '' : 's'} not ticked off yet · {money(f.flex.left)} left for extras</p>
+    </section>
+  )
 }
 
 export default function Today() {
@@ -84,6 +105,8 @@ export default function Today() {
         </div>
         {host && <p className="muted small mt">🎲 Next night in is hosted by <strong>{host.display_name}</strong></p>}
       </section>
+
+      <MoneyCard />
 
       {(recap.total > 0 || milestonesDone > 0) && (
         <section className="card" aria-label="This week's wins">

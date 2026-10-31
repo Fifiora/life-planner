@@ -1,5 +1,8 @@
 import { useRoutineData } from '../data/useRoutineData'
+import { ActivityCard } from '../ui/ActivityCard'
 import { NightsPlanner } from '../ui/NightsPlanner'
+import { Scorecard } from '../ui/Scorecard'
+import { SleepRhythm } from '../ui/SleepRhythm'
 import { TurnCard } from '../ui/TurnCard'
 import { PageHead } from '../ui/PageHead'
 import { RoutineList } from '../ui/RoutineList'
@@ -18,8 +21,15 @@ export default function Health() {
   return (
     <div className="stack">
       <PageHead title="Health" sub="Body, mind and spirit — together." />
+      <Scorecard data={data} bucket="health" />
       {SECTIONS.map((s) => (
         <div key={s.key} className="stack">
+          {s.key === 'physical' && (
+            <>
+              <ActivityCard />
+              <SleepRhythm data={data} />
+            </>
+          )}
           {s.key === 'mental' && <NightsPlanner />}
           {s.key === 'spiritual' && <TurnCard name="Bible study lead" title="Sunday Bible study" />}
           <RoutineList

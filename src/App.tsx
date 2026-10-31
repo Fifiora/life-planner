@@ -10,6 +10,7 @@ import Study from './screens/Study'
 import Today from './screens/Today'
 import Travel from './screens/Travel'
 import { ErrorBoundary } from './ui/ErrorBoundary'
+import { PinGate } from './ui/PinGate'
 import { TabBar } from './ui/TabBar'
 import { UnlockPreload } from './ui/UnlockPreload'
 import { ToastProvider } from './ui/Toast'
@@ -71,9 +72,17 @@ export default function App({ boot }: { boot: BootResult }) {
     <ToastProvider>
       <div className={boot.mode === 'view' ? 'view-only' : undefined}>
         <ErrorBoundary>
-          <HouseholdProvider>
-            <Shell boot={boot} />
-          </HouseholdProvider>
+          {boot.mode === 'own' ? (
+            <PinGate>
+              <HouseholdProvider>
+                <Shell boot={boot} />
+              </HouseholdProvider>
+            </PinGate>
+          ) : (
+            <HouseholdProvider>
+              <Shell boot={boot} />
+            </HouseholdProvider>
+          )}
         </ErrorBoundary>
       </div>
     </ToastProvider>

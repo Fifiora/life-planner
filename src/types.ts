@@ -55,6 +55,8 @@ export interface Place {
   drive_hours: number
   rank: number
   visited: boolean
+  notes?: string | null
+  est_cost?: number | null
 }
 
 export interface TripPlan {
@@ -119,3 +121,52 @@ export interface TriviaAttempt {
 
 /** A stored row: always has an id, plus whatever fields its table uses. */
 export type Row = { id: string } & Record<string, unknown>
+
+export interface BillPayment {
+  id: string
+  bill_id: string
+  month: string // YYYY-MM
+  paid_on: string // YYYY-MM-DD
+}
+
+export interface SavingsEntry {
+  id: string
+  month: string // YYYY-MM
+  amount: number
+  member_id?: string
+  note?: string | null
+}
+
+export interface Expense {
+  id: string
+  date: string
+  amount: number
+  category: string
+  note: string
+  member_id: string
+}
+
+export interface Activity {
+  id: string
+  date: string
+  member_id: string
+  type: string
+  minutes: number | null
+}
+
+export interface NightLog {
+  id: string
+  date: string
+  type: string
+  activity: string
+  snack: string
+  host_id: string
+}
+
+export interface ShoppingItem {
+  id: string
+  name: string
+  store: string
+  done: boolean
+  added_by: string
+}

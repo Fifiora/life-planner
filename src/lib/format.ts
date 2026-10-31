@@ -23,3 +23,11 @@ export function dueLabel(next: string, today: string): string {
   if (next === addDays(today, 1)) return 'Tomorrow'
   return new Date(`${next}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
+
+export const cap = (text: string) => (text ? text[0].toUpperCase() + text.slice(1) : text)
+
+/** "22:54" -> "10:54 pm" */
+export function to12h(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number)
+  return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'pm' : 'am'}`
+}

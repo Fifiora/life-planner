@@ -4,6 +4,8 @@ import { getAllRows, replaceMany } from '../data/tableStore'
 import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
 import { DEFAULT_ANCHOR, todayCT } from '../lib/dates'
+import { createPinRecord, isValidPin } from '../lib/pin'
+import { eraseThisPhone, logOut, reloadApp } from '../lib/session'
 import { buildExport, parseImport } from '../lib/export'
 import { shareOrCopy } from '../lib/share'
 import { buildViewLink, encodeSnapshot, makeSnapshot, trimForSharing } from '../lib/snapshot'
@@ -33,6 +35,24 @@ export default function Settings() {
   const [pending, setPending] = useState<Record<string, Row[]> | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
+  const [flex, setFlex] = useState<string | null>(null)
+  const [confirmErase, setConfirmErase] = useState(false)
+  const [pinOn, setPinOn] = useState(() => localStorage.getItem('lp.pin') !== null)
+  const [pin1, setPin1] = useState('')
+  const [pin2, setPin2] = useState('')
+  const [pinError, setPinError] = useState<string | null>(null)
+
+  async function setPin() {
+    if (!isValidPin(pin1)) return setPinError('Use 4 to 8 digits.')
+    if (pin1 !== pin2) return setPinError("The two PINs don't match.")
+    localStorage.setItem('lp.pin', JSON.stringify(await createPinRecord(pin1)))
+    sessionStorage.setItem('lp.unlocked', '1') // you just set it, so don't lock yourself out now
+    setPinError(null)
+    setPin1('')
+    setPin2('')
+    setPinOn(true)
+    toast('PIN set')
+  }
 
   function exportAll() {
     download('life-planner-backup.json', buildExport(getAllRows()))
@@ -106,6 +126,8 @@ export default function Settings() {
         <h2>Targets</h2>
         <label className="label" htmlFor="target">Monthly savings target ($)</label>
         <input id="target" className="input" inputMode="decimal" value={target ?? settings.get('savings_target') ?? '10000'} onChange={(e) => setTarget(e.target.value)} />
+        <label className="label" htmlFor="flex">Extra-spending budget ($ a month)</label>
+        <input id="flex" className="input" inputMode="decimal" value={flex ?? settings.get('flex_budget') ?? '1000'} onChange={(e) => setFlex(e.target.value)} />
         <label className="label" htmlFor="anchor">Start of the 2-week cycle (a Monday)</label>
         <input id="anchor" className="input" type="date" value={anchor ?? settings.get('biweekly_anchor') ?? DEFAULT_ANCHOR} onChange={(e) => setAnchor(e.target.value)} />
         <div className="actions">
@@ -114,6 +136,7 @@ export default function Settings() {
             className="btn btn-primary"
             onClick={async () => {
               if (target !== null && Number.isFinite(Number(target)) && Number(target) >= 0) await settings.set('savings_target', String(Number(target)))
+              if (flex !== null && Number.isFinite(Number(flex)) && Number(flex) >= 0) await settings.set('flex_budget', String(Number(flex)))
               await settings.set('biweekly_anchor', anchor ?? settings.get('biweekly_anchor') ?? DEFAULT_ANCHOR)
               toast('Saved')
             }}
@@ -157,6 +180,50 @@ export default function Settings() {
             <div className="actions">
               <button type="button" className="btn btn-primary" onClick={confirmImport}>Replace my data</button>
               <button type="button" className="btn" onClick={() => setPending(null)}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>App PIN</h2>
+        <p className="muted small">An optional lock that asks for a PIN each time the app is opened. It keeps casual eyes out; it doesn't encrypt the data stored on this phone.</p>
+        {pinOn ? (
+          <div className="actions">
+            <button type="button" className="btn" onClick={() => { sessionStorage.removeItem('lp.unlocked'); reloadApp() }}>Lock now</button>
+            <button type="button" className="btn btn-danger" onClick={() => { localStorage.removeItem('lp.pin'); setPinOn(false) }}>Remove PIN</button>
+          </div>
+        ) : (
+          <>
+            <div className="row2">
+              <div>
+                <label className="label" htmlFor="pin1">New PIN</label>
+                <input id="pin1" className="input" type="password" inputMode="numeric" autoComplete="off" value={pin1} onChange={(e) => setPin1(e.target.value)} />
+              </div>
+              <div>
+                <label className="label" htmlFor="pin2">Repeat PIN</label>
+                <input id="pin2" className="input" type="password" inputMode="numeric" autoComplete="off" value={pin2} onChange={(e) => setPin2(e.target.value)} />
+              </div>
+            </div>
+            {pinError && <p role="alert" className="error">{pinError}</p>}
+            <div className="actions"><button type="button" className="btn btn-primary" onClick={() => void setPin()}>Set PIN</button></div>
+          </>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>This phone</h2>
+        <p className="muted small">Log out to forget who is using this phone; your data stays and you can pick a person again. Erasing removes the planner from this phone for good.</p>
+        <div className="actions">
+          <button type="button" className="btn" onClick={() => { logOut(); reloadApp() }}>Log out</button>
+          {!confirmErase && <button type="button" className="btn btn-danger" onClick={() => setConfirmErase(true)}>Erase this phone</button>}
+        </div>
+        {confirmErase && (
+          <div className="callout bad">
+            <p>This deletes everything saved on this phone: routines, bills, ticks, your PIN and any shared copy. Download a backup first if you might need it.</p>
+            <div className="actions">
+              <button type="button" className="btn btn-danger" onClick={() => { eraseThisPhone(); reloadApp() }}>Yes, erase everything</button>
+              <button type="button" className="btn" onClick={() => setConfirmErase(false)}>Cancel</button>
             </div>
           </div>
         )}

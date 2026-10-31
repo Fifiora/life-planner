@@ -17,6 +17,8 @@ export function PlaceForm({
   const [name, setName] = useState(initial?.name ?? '')
   const [hours, setHours] = useState(initial?.drive_hours != null ? String(initial.drive_hours) : '')
   const [rank, setRank] = useState(initial?.rank != null ? String(initial.rank) : '')
+  const [cost, setCost] = useState(initial?.est_cost != null ? String(initial.est_cost) : '')
+  const [notes, setNotes] = useState(initial?.notes ?? '')
   const [error, setError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
 
@@ -30,8 +32,10 @@ export function PlaceForm({
     if (!validHours) return setError('Drive hours must be 0 or more')
     const r = rank.trim() === '' ? 99 : Number(rank)
     if (!Number.isFinite(r)) return setError('Rank must be a number')
+    const c = cost.trim() === '' ? null : Number(cost)
+    if (c !== null && !(Number.isFinite(c) && c >= 0)) return setError('Estimated cost must be 0 or more')
     setError(null)
-    onSave({ name: name.trim(), drive_hours: parsed, rank: r, visited: initial?.visited ?? false })
+    onSave({ name: name.trim(), drive_hours: parsed, rank: r, visited: initial?.visited ?? false, est_cost: c, notes: notes.trim() || null })
   }
 
   return (
@@ -47,6 +51,17 @@ export function PlaceForm({
         <div>
           <label className="label" htmlFor={`${uid}-rank`}>Rank (1 = first)</label>
           <input id={`${uid}-rank`} className="input" inputMode="numeric" value={rank} onChange={(e) => setRank(e.target.value)} />
+        </div>
+      </div>
+
+      <div className="row2">
+        <div>
+          <label className="label" htmlFor={`${uid}-cost`}>Estimated cost ($)</label>
+          <input id={`${uid}-cost`} className="input" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} />
+        </div>
+        <div>
+          <label className="label" htmlFor={`${uid}-notes`}>Notes</label>
+          <input id={`${uid}-notes`} className="input" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
       </div>
 

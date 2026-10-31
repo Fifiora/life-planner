@@ -3,6 +3,7 @@ import { useHousehold } from '../data/household'
 import { useTable } from '../data/useTable'
 import { addDays, todayCT, weekStart } from '../lib/dates'
 import { scoreSummary } from '../lib/trivia'
+import { carryOver, milestoneStats, triviaStats } from '../lib/study'
 import type { Milestone, TriviaAttempt, TriviaQuestion, TriviaTopic } from '../types'
 import { PageHead } from '../ui/PageHead'
 import { Quiz } from '../ui/Quiz'
@@ -58,6 +59,14 @@ export default function Study() {
 
   const other = members.find((m) => m.id !== me.id) ?? me
   const weekMilestones = milestones.rows.filter((m) => m.week_start === week)
+  const stats = milestoneStats(milestones.rows, thisWeek, 4)
+  const triviaScores = triviaStats(topics.rows, questions.rows, attempts.rows, members)
+  const carry = carryOver(milestones.rows, addDays(week, -7), week, me.id)
+
+  async function deleteTopic(t: TriviaTopic) {
+    for (const q of questions.rows.filter((x) => x.topic_id === t.id)) await questions.remove(q.id)
+    await topics.remove(t.id)
+  }
 
   async function addMilestone(e: FormEvent) {
     e.preventDefault()
@@ -86,6 +95,11 @@ export default function Study() {
           <button type="button" className={`btn${week !== thisWeek ? ' btn-primary' : ''}`} onClick={() => setWeek(addDays(thisWeek, 7))}>Next week</button>
         </div>
         {isSunday && <p className="callout">It's Sunday — set next week's milestones.</p>}
+        {carry.length > 0 && (
+          <button type="button" className="btn block mt edit-only" onClick={() => void Promise.all(carry.map((m) => milestones.insert(m)))}>
+            Carry over {carry.length} unfinished from last week
+          </button>
+        )}
         {members.map((m) => {
           const mine = weekMilestones.filter((x) => x.member_id === m.id)
           return (
@@ -119,6 +133,23 @@ export default function Study() {
       </section>
 
       <section className="card">
+        <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--study)' }} /><h2>Last 4 weeks</h2></div></div>
+        <ul className="list">
+          {stats.map((w) => (
+            <li key={w.weekStart} className="cat-row">
+              <div className="cat-head">
+                <span>Week of {new Date(`${w.weekStart}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}</span>
+                <span className="muted small">{w.total === 0 ? 'no milestones' : `${w.done} of ${w.total} done`}</span>
+              </div>
+              <div className="bar" role="progressbar" aria-label={`Milestones done, week of ${w.weekStart}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={w.pct}>
+                <div className="bar-fill" style={{ width: `${w.pct}%`, background: 'var(--study)' }} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="card">
         <div className="card-head">
           <div className="card-title"><span className="accent-bar" style={{ background: 'var(--study)' }} /><h2>Trivia nights</h2></div>
         </div>
@@ -146,10 +177,41 @@ export default function Study() {
                   </span>
                   {t.author_id === me.id && <button type="button" className="btn btn-small" onClick={() => setWritingFor(t)}>Add question</button>}
                   {t.claimed_by === me.id && <button type="button" className="btn btn-small btn-primary" onClick={() => setPlaying(t)}>Play</button>}
+                  {(t.claimed_by === me.id || t.author_id === me.id) && (
+                    <button type="button" className="icon-btn" aria-label={`Delete topic ${t.topic}`} onClick={() => void deleteTopic(t)}>✕</button>
+                  )}
                 </li>
               )
             })}
           </ul>
+        )}
+      </section>
+
+      <section className="card">
+        <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--study)' }} /><h2>Trivia scores</h2></div></div>
+        {triviaScores.byMember.every((m) => m.attempts === 0) ? (
+          <p className="muted small">No quiz answers yet. Play a topic to see scores here.</p>
+        ) : (
+          <>
+            <ul className="list">
+              {triviaScores.byMember.map((m) => (
+                <li key={m.memberId} className="list-row">
+                  <span className="grow">{members.find((x) => x.id === m.memberId)?.display_name}</span>
+                  <span>{m.correct} of {m.attempts} right</span>
+                  <strong>{m.pct}%</strong>
+                </li>
+              ))}
+            </ul>
+            <h3 className="mt">By topic</h3>
+            <ul className="list">
+              {triviaScores.byTopic.filter((t) => t.attempts > 0).map((t) => (
+                <li key={t.topicId} className="list-row">
+                  <span className="grow">{t.topic}<span className="muted small block-text">{t.questions} question{t.questions === 1 ? '' : 's'}</span></span>
+                  <strong>{t.pct}%</strong>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
 

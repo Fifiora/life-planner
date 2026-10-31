@@ -15,4 +15,10 @@ export const TABLES = [
   'income',
   'bills',
   'settings',
+  'bill_payments',
+  'savings',
+  'expenses',
+  'activities',
+  'night_log',
+  'shopping',
 ] as const

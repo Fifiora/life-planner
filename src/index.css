@@ -200,3 +200,29 @@ code { background: var(--line); padding: 0.1rem 0.35rem; border-radius: 0.4rem; 
 .view-only .check,
 .view-only .plain-btn:not(.view-banner .plain-btn),
 .view-only .stat { pointer-events: none; }
+
+/* ---------- Finance and detail screens ---------- */
+.tabs { display: flex; gap: 0.25rem; padding: 0.25rem; border-radius: 1rem; background: var(--line); overflow-x: auto; }
+.seg { flex: 1; min-height: 40px; padding: 0 0.7rem; border: 0; border-radius: 0.8rem; background: transparent; color: var(--muted); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.seg.active { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
+.month-nav { padding: 0.4rem 0.6rem; }
+.cat-row { padding: 0.55rem 0; border-top: 1px solid var(--line); display: grid; gap: 0.3rem; }
+.cat-row:first-child { border-top: 0; }
+.cat-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.insights { margin: 0.5rem 0 0; padding-left: 1.1rem; display: grid; gap: 0.4rem; }
+.badge.ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+.badge.bad { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
+.table-wrap { overflow-x: auto; margin-top: 0.8rem; }
+.ftable { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.ftable th { text-align: left; color: var(--muted); font-weight: 600; padding: 0.35rem 0.4rem; white-space: nowrap; }
+.ftable td { padding: 0.5rem 0.4rem; border-top: 1px solid var(--line); white-space: nowrap; }
+.fbars { display: flex; align-items: flex-end; gap: 0.35rem; height: 9rem; margin-top: 0.5rem; }
+.fbar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; height: 100%; }
+.fbar-track { position: relative; flex: 1; width: 100%; display: flex; align-items: flex-end; }
+.fbar { width: 100%; border-radius: 0.4rem 0.4rem 0 0; background: var(--ok); min-height: 2px; transition: height 0.5s ease; }
+.fbar.short { background: var(--food); }
+.fbar-target { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--muted); opacity: 0.6; }
+.fbar-label { font-size: 0.68rem; color: var(--muted); font-weight: 600; }
+.tick { width: 1.4rem; height: 1.4rem; accent-color: var(--brand); flex: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.view-only input[type='checkbox'] { pointer-events: none; }

@@ -3,7 +3,10 @@ import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
 import { addDays, DEFAULT_ANCHOR, daysBetween, todayCT } from '../lib/dates'
 import { nextTurn } from '../lib/turns'
-import type { NightOption, NightVote, Turn } from '../types'
+import { cap } from '../lib/format'
+import { pickWinner } from '../lib/nights'
+import { countByType } from '../lib/shopping'
+import type { NightLog, NightOption, NightVote, Turn } from '../types'
 import { NightsView, type NewIdea } from './NightsView'
 
 const TURN_NAME = 'Nights host'
@@ -14,6 +17,7 @@ export function NightsPlanner() {
   const options = useTable<NightOption>('night_options')
   const votes = useTable<NightVote>('night_votes')
   const turns = useTable<Turn>('turns')
+  const nightLog = useTable<NightLog>('night_log')
   const settings = useSettings()
 
   const anchor = settings.get('biweekly_anchor') ?? DEFAULT_ANCHOR
@@ -38,6 +42,9 @@ export function NightsPlanner() {
 
   async function onDone() {
     if (finished) return // already passed on for this slot
+    const winnerId = pickWinner(slotOptions, slotVotes)
+    const winner = slotOptions.find((o) => o.id === winnerId)
+    await nightLog.insert({ date: todayCT(), type: winner?.type ?? 'other', activity: winner?.activity ?? 'Night in', snack: winner?.snack ?? '', host_id: hostId })
     const next = nextTurn(members.map((m) => m.id), hostId)
     if (turnRow) await turns.update(turnRow.id, { current_member_id: next, last_rotated_slot: slot })
     else await turns.insert({ name: TURN_NAME, current_member_id: next, last_rotated_slot: slot })
@@ -62,6 +69,22 @@ export function NightsPlanner() {
         onAdd={onAdd}
         onDone={onDone}
       />
+      {nightLog.rows.length > 0 && (
+        <>
+          <h3 className="mt">Past nights</h3>
+          <p className="muted small">
+            This month: {(['game', 'painting', 'date', 'movie'] as const).map((t) => `${cap(t)} ${countByType(nightLog.rows, todayCT().slice(0, 7), t)}`).join(' · ')}
+          </p>
+          <ul className="list">
+            {[...nightLog.rows].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map((n) => (
+              <li key={n.id} className="list-row">
+                <span className="grow"><strong>{n.activity}</strong><span className="muted small block-text">{cap(n.type)} · {n.date}{n.snack ? ` · ${n.snack}` : ''}</span></span>
+                <span className="muted small">{members.find((m) => m.id === n.host_id)?.display_name}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   )
 }

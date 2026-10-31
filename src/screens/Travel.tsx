@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useTable } from '../data/useTable'
-import { monthKeyCT } from '../lib/dates'
+import { monthKeyCT, todayCT } from '../lib/dates'
+import { money, monthLabel } from '../lib/format'
+import { tripRhythm } from '../lib/trips'
 import { sortPlaces, tierFor } from '../lib/travel'
 import type { Place, TripPlan } from '../types'
 import { EmptyState } from '../ui/EmptyState'
@@ -18,6 +20,7 @@ export default function Travel() {
   const [month, setMonth] = useState(monthKeyCT())
 
   const sorted = sortPlaces(places.rows)
+  const rhythm = tripRhythm(trips.rows, places.rows, todayCT())
   const monthly = sorted.filter((p) => tierFor(p.drive_hours) === 'monthly')
   const quarterly = sorted.filter((p) => tierFor(p.drive_hours) === 'quarterly')
   const thisMonth = trips.rows.filter((t) => t.planned_month === monthKeyCT() && t.status === 'planned')
@@ -35,7 +38,8 @@ export default function Travel() {
         <button type="button" className="plain-btn" onClick={() => setEditing(p)}>
           <strong style={{ textDecoration: p.visited ? 'line-through' : undefined }}>{p.name}</strong>
         </button>
-        <span className="muted small block-text">{p.drive_hours} h drive{p.visited ? ' · visited' : ''}</span>
+        <span className="muted small block-text">{p.drive_hours} h drive{p.est_cost ? ` · ~${money(p.est_cost)}` : ''}{p.visited ? ' · visited' : ''}</span>
+        {p.notes && <span className="muted small block-text">{p.notes}</span>}
       </span>
       <button type="button" className="btn btn-small" onClick={() => { setPlanning(p); setMonth(monthKeyCT()) }}>Plan</button>
     </li>
@@ -44,6 +48,25 @@ export default function Travel() {
   return (
     <div className="stack">
       <PageHead title="Travel" sub="A trip within 6 hours each month, a bigger one every 3." />
+
+      <section className="card">
+        <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--travel)' }} /><h2>Trip rhythm</h2></div></div>
+        {([['Monthly trip (up to 6 h)', rhythm.monthly], ['Big trip (every 3 months)', rhythm.quarterly]] as const).map(([label, r]) => {
+          const suggested = places.rows.find((p) => p.id === r.suggestion)
+          return (
+            <div key={label} className="list-row">
+              <span className="grow">
+                <strong>{label}</strong>
+                <span className="muted small block-text">
+                  {r.lastDone ? `Last: ${monthLabel(r.lastDone)}` : 'No trip yet'} · next due {monthLabel(r.dueMonth)}
+                </span>
+                {suggested && <span className="small block-text">Suggested: {suggested.name}</span>}
+              </span>
+              <span className={`badge ${r.status === 'upcoming' ? 'ok' : 'bad'}`}>{r.status === 'upcoming' ? 'On track' : r.status === 'due' ? 'Due now' : 'Overdue'}</span>
+            </div>
+          )
+        })}
+      </section>
 
       <section className="card">
         <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--travel)' }} /><h2>This month</h2></div></div>

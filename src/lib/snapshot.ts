@@ -20,7 +20,8 @@ export function makeSnapshot(tables: Record<string, Row[]>, now: Date = new Date
 /** Drops tick history older than 45 days so links stay short. Returns a copy. */
 export function trimForSharing<T extends Record<string, Row[]>>(tables: T, today: string): T {
   const cutoff = addDays(today, -KEEP_LOG_DAYS)
-  return { ...tables, routine_logs: (tables.routine_logs ?? []).filter((l) => String(l.date) >= cutoff) }
+  const recent = (rows: Row[] = []) => rows.filter((r) => String(r.date) >= cutoff)
+  return { ...tables, routine_logs: recent(tables.routine_logs), activities: recent(tables.activities) }
 }
 
 export function buildViewLink(base: string, encoded: string): string {
