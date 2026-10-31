@@ -79,10 +79,12 @@ export function SyncCard({ onJoined = reloadApp }: { onJoined?: () => void }) {
             <div className="actions">
               <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void start()}>Start sharing</button>
               <button type="button" className="btn" onClick={() => { setJoining(true); setError(null) }}>Join with a code</button>
+              <button type="button" className="btn" onClick={() => void test()}>Test connection</button>
             </div>
           ) : (
             <JoinForm onJoined={onJoined} onCancel={() => { setJoining(false); setError(null) }} />
           )}
+          {connection !== null && <p role="status" aria-label="Connection test" className={connection.startsWith('Connected') ? 'callout ok' : 'error'}>{connection}</p>}
         </>
       )}
 
