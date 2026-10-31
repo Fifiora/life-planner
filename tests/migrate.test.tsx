@@ -6,7 +6,9 @@ import { describeRoutine } from '../src/ui/RoutineRow'
 import { StarterPlanLoader } from '../src/ui/StarterPlanLoader'
 import { resetStore } from '../src/data/tableStore'
 import type { PreloadFile } from '../src/lib/preload'
-import type { Routine } from '../src/types'
+import type { Routine, Row } from '../src/types'
+
+type Tables = Record<string, Row[]>
 import { renderScreen, saved } from './seed'
 
 const r = (over: Partial<Routine> & { id: string; name: string }): Routine => ({
@@ -21,18 +23,18 @@ beforeEach(() => {
 describe('adjustPlan', () => {
   it('turns a weekly farmers market into a monthly one and leaves the rest alone', () => {
     const input = { routines: [r({ id: '1', name: 'Farmers market (Tuesdays)' }), r({ id: '2', name: 'Sunday mass', bucket: 'health', weekday: 0 })], bills: [{ id: 'b' }] }
-    const out = adjustPlan(input as never)
+    const out = adjustPlan(input as unknown as Tables)
     expect(out.routines.map((x) => x.cadence)).toEqual(['monthly', 'weekly'])
     expect(out.routines[0].weekday).toBe(2)
     expect(input.routines[0].cadence).toBe('weekly')
     expect(out.bills).toEqual([{ id: 'b' }])
   })
   it('leaves a farmers market that is already monthly or biweekly', () => {
-    const out = adjustPlan({ routines: [r({ id: '1', name: 'Farmers market', cadence: 'biweekly' })] } as never)
+    const out = adjustPlan({ routines: [r({ id: '1', name: 'Farmers market', cadence: 'biweekly' })] } as unknown as Tables)
     expect(out.routines[0].cadence).toBe('biweekly')
   })
   it('passes through plans with no routines', () => {
-    expect(adjustPlan({ bills: [] } as never)).toEqual({ bills: [] })
+    expect(adjustPlan({ bills: [] } as Tables)).toEqual({ bills: [] })
   })
 })
 
