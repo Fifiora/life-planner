@@ -12,20 +12,33 @@ beforeEach(() => seedPlanner())
 const act1 = (date: string, i: number) => ({ id: `w${i}`, date, member_id: 'a', type: 'run', minutes: 20 })
 const setActivities = (dates: string[]) => localStorage.setItem('lp.data.activities', JSON.stringify(dates.map(act1)))
 
-/** Saves enough progress this week to defeat whichever boss is on, in one go per kind of row. */
-async function defeatThisWeeksBoss() {
+const read = (t: string): any[] => JSON.parse(localStorage.getItem(`lp.data.${t}`) ?? '[]')
+const write = (t: string, rows: unknown[]) => localStorage.setItem(`lp.data.${t}`, JSON.stringify(rows))
+const routineRow = (id: string) => ({ id, name: id, bucket: 'health', cadence: 'daily', times_per_period: 1, applies_to: 'both', place: null, time_rule: null, weekday: null, active: true })
+const tickRow = (routine_id: string, member_id: string, date: string) => ({ routine_id, member_id, date, done: true, value: null })
+
+/** Everything but the last blow against this week's boss is already saved when the app opens. */
+function allButTheLastBlow(boss: ReturnType<typeof bossForWeek>) {
   const week = weekStart(todayCT())
-  const boss = bossForWeek(week)
+  write('routine_logs', [])
+  if (boss.id === 'giant') write('activities', Array.from({ length: 7 }, (_, i) => ({ id: `g${i}`, date: week, member_id: 'a', type: 'run', minutes: 20 })))
+  if (boss.id === 'sphinx') write('milestones', Array.from({ length: 5 }, (_, i) => ({ id: `s${i}`, week_start: week, member_id: 'a', text: `m${i}`, done: true })))
+  if (boss.id === 'wraith') {
+    write('routines', [...read('routines'), ...Array.from({ length: 9 }, (_, r) => routineRow(`br${r}`))])
+    write('routine_logs', Array.from({ length: 59 }, (_, i) => ({ id: `w${i}`, ...tickRow(`br${Math.floor(i / 7)}`, 'a', addDays(week, i % 7)) })))
+  }
+  if (boss.id === 'twins') write('routine_logs', Array.from({ length: 8 }, (_, i) => ({ id: `t${i}`, ...tickRow('r1', i % 2 ? 'b' : 'a', addDays(week, Math.floor(i / 2))) })))
+}
+
+/** The last blow, saved the way a tap in the app saves it. */
+async function lastBlow(boss: ReturnType<typeof bossForWeek>) {
+  const week = weekStart(todayCT())
   await act(async () => {
-    if (boss.id === 'giant') for (let i = 0; i < 8; i++) await insertRow('activities', { date: week, member_id: 'a', type: 'run', minutes: 20 })
-    if (boss.id === 'sphinx') for (let i = 0; i < 6; i++) await insertRow('milestones', { week_start: week, member_id: 'a', text: `m${i}`, done: true })
-    if (boss.id === 'wraith') for (let r = 0; r < 9; r++) {
-      await insertRow('routines', { id: `br${r}`, name: `br${r}`, bucket: 'health', cadence: 'daily', times_per_period: 1, applies_to: 'both', place: null, time_rule: null, weekday: null, active: true })
-      for (let d = 0; d < 7; d++) await insertRow('routine_logs', { routine_id: `br${r}`, member_id: 'a', date: addDays(week, d), done: true, value: null })
-    }
-    if (boss.id === 'twins') for (let d = 0; d < 5; d++) for (const m of ['a', 'b']) await insertRow('routine_logs', { routine_id: 'r1', member_id: m, date: addDays(week, d), done: true, value: null })
+    if (boss.id === 'giant') await insertRow('activities', { date: week, member_id: 'a', type: 'run', minutes: 20 })
+    if (boss.id === 'sphinx') await insertRow('milestones', { week_start: week, member_id: 'a', text: 'last', done: true })
+    if (boss.id === 'wraith') await insertRow('routine_logs', tickRow('br8', 'a', addDays(week, 3)))
+    if (boss.id === 'twins') for (const m of ['a', 'b']) await insertRow('routine_logs', tickRow('r1', m, addDays(week, 4)))
   })
-  return boss
 }
 
 describe('BossCard', () => {
@@ -60,10 +73,13 @@ describe('BossCard', () => {
 })
 
 describe('boss celebration', () => {
-  it('celebrates a defeated boss once, and the badges for it', async () => {
+  it('celebrates a defeated boss once', async () => {
+    const boss = bossForWeek(weekStart(todayCT()))
+    allButTheLastBlow(boss)
     const { unmount } = renderScreen(<Celebrations />)
     await waitFor(() => expect(localStorage.getItem('lp.seen')).not.toBeNull())
-    const boss = await defeatThisWeeksBoss()
+    expect(screen.queryByText(/Boss defeated/)).toBeNull()
+    await lastBlow(boss)
     expect(await screen.findByText(new RegExp(`Boss defeated: ${boss.name}!`))).toBeInTheDocument()
     unmount()
     renderScreen(<Celebrations />)
