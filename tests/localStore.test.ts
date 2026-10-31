@@ -8,6 +8,7 @@ import {
   isReadOnly,
   loadSnapshot,
   removeRow,
+  replaceMany,
   replaceRows,
   resetStore,
   subscribe,
@@ -88,6 +89,26 @@ describe('local table store', () => {
     expect(getState('bills').rows).toEqual([{ id: '1', name: 'Rent' }])
   })
 
+  it('replaces several tables at once', async () => {
+    await replaceMany({ bills: [{ id: 'b' }], places: [{ id: 'p' }] })
+    expect(saved('bills')).toEqual([{ id: 'b' }])
+    expect(saved('places')).toEqual([{ id: 'p' }])
+    expect(getState('places').rows).toEqual([{ id: 'p' }])
+  })
+
+  it('puts everything back if the phone runs out of room part-way through an import', async () => {
+    await insertRow('bills', { id: 'old' })
+    const real = Storage.prototype.setItem
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === 'lp.data.places') throw new Error('quota')
+      return real.call(this, key, value)
+    })
+    await expect(replaceMany({ bills: [{ id: 'new' }], places: [{ id: 'p' }] })).rejects.toThrow(/storage may be full/i)
+    expect(saved('bills')).toEqual([{ id: 'old' }])
+    expect(getState('bills').rows).toEqual([{ id: 'old' }])
+    expect(saved('places')).toEqual([])
+  })
+
   it('ignores saved data that is damaged', () => {
     localStorage.setItem('lp.data.bills', '{oops')
     expect(getState('bills').rows).toEqual([])
@@ -129,6 +150,7 @@ describe('view-only copy', () => {
     await expect(updateRow('bills', '1', { name: 'X' })).rejects.toThrow(/view-only/i)
     await expect(removeRow('bills', '1')).rejects.toThrow(/view-only/i)
     await expect(replaceRows('bills', [])).rejects.toThrow(/view-only/i)
+    await expect(replaceMany({ bills: [] })).rejects.toThrow(/view-only/i)
     expect(localStorage.length).toBe(0)
   })
 })

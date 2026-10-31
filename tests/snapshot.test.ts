@@ -45,6 +45,17 @@ describe('snapshot link', () => {
     await expect(decodeSnapshot('g.AAAA')).rejects.toThrow(/view-only/i)
   })
 
+  it('refuses a link that is absurdly long', async () => {
+    await expect(decodeSnapshot(`g.${'A'.repeat(500_000)}`)).rejects.toThrow(/view-only/i)
+  })
+
+  it('refuses a small link that unpacks to something enormous', async () => {
+    const bomb = makeSnapshot({ bills: [{ id: '1', padding: 'x'.repeat(6_000_000) }] }, NOW)
+    const enc = await encodeSnapshot(bomb)
+    expect(enc.length).toBeLessThan(100_000)
+    await expect(decodeSnapshot(enc)).rejects.toThrow(/view-only/i)
+  })
+
   it('rejects a link whose content was cut off', async () => {
     const enc = await encodeSnapshot(makeSnapshot({ bills: Array.from({ length: 50 }, (_, i) => ({ id: String(i), name: `Bill ${i}` })) }, NOW))
     await expect(decodeSnapshot(enc.slice(0, Math.floor(enc.length / 2)))).rejects.toThrow(/view-only/i)

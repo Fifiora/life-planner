@@ -52,12 +52,20 @@ describe('startup', () => {
     expect(localStorage.getItem('lp.snapshot')).toBe(enc)
   })
 
-  it('explains a damaged link and keeps what was remembered', async () => {
+  it('explains a damaged link but still shows the copy remembered earlier', async () => {
     const enc = await sample()
     localStorage.setItem('lp.snapshot', enc)
     const result = await startup('#v=garbage')
+    expect(result).toMatchObject({ mode: 'view', fromLink: false })
+    expect(result.error).toMatch(/damaged|cut off/i)
+    expect(getState('bills').rows).toEqual([{ id: '1', name: 'Rent' }])
+    expect(localStorage.getItem('lp.snapshot')).toBe(enc)
+  })
+
+  it('explains a damaged link and starts normally when nothing was remembered', async () => {
+    const result = await startup('#v=garbage')
     expect(result.mode).toBe('own')
     expect(result.error).toMatch(/damaged|cut off/i)
-    expect(localStorage.getItem('lp.snapshot')).toBe(enc)
+    expect(localStorage.getItem('lp.snapshot')).toBeNull()
   })
 })

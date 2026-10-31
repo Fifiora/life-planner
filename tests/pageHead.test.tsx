@@ -30,10 +30,11 @@ describe('PageHead', () => {
     expect(switchTo).toHaveBeenCalledWith('b')
   })
 
-  it('shows a view-only badge and no switch or settings on a shared copy', () => {
-    renderHead({ readOnly: true })
+  it('on a shared copy shows a view-only badge and lets her look as either person, with no settings', async () => {
+    const switchTo = renderHead({ readOnly: true })
     expect(screen.getByText(/view-only/i)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /switch person/i })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /switch person/i }))
+    expect(switchTo).toHaveBeenCalledWith('b')
     expect(screen.queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument()
   })
 })

@@ -90,9 +90,27 @@ describe('HouseholdProvider', () => {
     expect(screen.queryByRole('button', { name: /I'm/ })).not.toBeInTheDocument()
   })
 
-  it('says so if a view-only copy has no people in it', async () => {
+  it('says so if a view-only copy has no people in it, and lets her remove it', async () => {
     loadSnapshot({})
     renderIt()
     expect(await screen.findByText(/empty/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /remove this copy/i })).toBeInTheDocument()
+  })
+
+  it('lets a viewer look at the planner as either person, without touching the owner\'s choice', async () => {
+    loadSnapshot({ members: two })
+    localStorage.setItem('lp.me', 'm1')
+    renderIt()
+    await userEvent.click(await screen.findByRole('button', { name: 'switch' }))
+    expect(await screen.findByText('Hello Ben of 2 (view-only)')).toBeInTheDocument()
+    expect(localStorage.getItem('lp.viewas')).toBe('m2')
+    expect(localStorage.getItem('lp.me')).toBe('m1')
+  })
+
+  it('remembers which person a viewer looks at', async () => {
+    loadSnapshot({ members: two })
+    localStorage.setItem('lp.viewas', 'm2')
+    renderIt()
+    expect(await screen.findByText('Hello Ben of 2 (view-only)')).toBeInTheDocument()
   })
 })
