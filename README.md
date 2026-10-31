@@ -67,7 +67,7 @@ Everything in the game layer is worked out from data that already syncs, so the 
 | Tick a routine | 10 (plus a streak bonus up to 20 a day) |
 | Log a health activity | 15, plus 1 per 10 minutes (up to 15 more) |
 | Finish a study milestone | 15 |
-| Answer a trivia question (first try per question) | 3, or 8 if correct |
+| Answer a trivia question (pays once per question) | 3, or 8 if any attempt was right |
 | Tick a bill as paid (from this update on) | 20 |
 
 Level n needs `50 * n * (n - 1)` XP. Each area (Health, Study, Travel, Food, Finance) has its own level; you and the party have levels too. One empty day a week is forgiven in your streak. There are badges (Trophies card), a shared weekly boss, a monthly recap ("episode") and a daily cheer button. Cheers are the only new stored data (`cheers`), synced like everything else. Which celebrations you have already seen is kept on each phone only (`lp.seen`).

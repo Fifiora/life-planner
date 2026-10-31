@@ -40,11 +40,11 @@ All of this is **derived** from data that already syncs (`routine_logs`, `activi
   | Ticked routine (any bucket; uses the routine's `bucket`) | the routine's | 10 per person per day |
   | Logged health activity (`activities`: run, walk, calisthenics, swim, weights, other) | Health | 15, plus 1 per 10 minutes logged, capped at +15 |
   | Study milestone marked done (`milestones`) | Study | 15 |
-  | Trivia answer (`trivia_attempts`) | Study | 3 for an attempt, 8 if correct |
+  | Trivia answer (`trivia_attempts`) | Study | 3 for a question tried, 8 if any attempt was right (once per question) |
   | Bill payment recorded (`bill_payments`) | Finance | 20 |
 
   Plus a same-day streak bonus: +2 XP per streak day on that day's ticks, capped at +20.
-  Anti-gaming: trivia answers carry no date, so each question pays XP once per person (their first attempt); later attempts on the same question earn nothing. A row only counts once (by its id). A tick and an activity for the same thing both count, which is fine for two people who trust each other.
+  Anti-gaming: trivia answers carry no date, so each question pays XP once per person: 8 if any attempt was right, otherwise 3. This does not depend on the order rows were saved, so both phones always agree. A row only counts once (by its id). A tick and an activity for the same thing both count, which is fine for two people who trust each other.
 - **Bucket levels**: every bucket has its own small level from its own XP, using the same formula as below (Health, Study, Travel, Food, Finance). They show on each bucket's screen header as a compact "Lv N" chip with a thin XP bar. The person level and the Party level use all XP together.
 - **Level**: `xpForLevel(n) = 50 * n * (n - 1)` (level 1 at 0 XP, level 2 at 100, level 3 at 300, level 4 at 600). A person's level is the highest n with `xpForLevel(n) <= xp`. Each person has a level; the **Party level** is computed from the sum of both people's XP.
 - **Streak**: a day counts if the person ticked at least one routine. **Rest token**: one empty day per calendar week is forgiven automatically (derived, nothing to spend or store). The Today hero shows the streak and, when a token saved it, a small "rest day used" note.
@@ -128,3 +128,8 @@ Sound, avatar customisation, a shop or currency, losing XP or HP for missed days
 - **Payoffs** are marked on the bill itself (`paid`), not as a payment row, so the Payoff Hero badge is a household badge (any paid one-time bill).
 - **Quiet celebrations.** Nothing is celebrated on a phone's first load, and when more than three new things arrive at once (an import or a first sync) they are marked as seen without a fanfare.
 - **Streak in the hero.** Under Anime the hero streak is the day streak with the rest day; under Classic it stays the best per-routine streak as before.
+- **Celebrations are never silent.** Nothing is announced on a phone's first load. After that, only the highest new level is announced, up to three lines are shown, and anything beyond that is summed up as "and N more!" (this replaces the earlier "more than three is silent" rule, which could swallow real celebrations).
+- **Game layer hidden in view-only copies** as well as in Classic.
+- **Streak bonus area.** The day's streak bonus goes to the area of the routine with the smallest id, so two phones always agree.
+- **Brand pink** in light anime is `#c2255c` (AA as text on the page background).
+- **Gaps against the first draft, kept for later:** the episode title is chosen by month only (not "by the top stat"); the recap shows spending without "versus budget"; a cheer has no `routine_id`; the voice dictionary covers the hero lines, with the newer lines (level-up, badge, boss, cheer) written straight into `voice.ts` as anime-only functions.
