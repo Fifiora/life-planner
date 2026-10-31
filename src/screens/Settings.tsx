@@ -4,7 +4,7 @@ import { getAllRows, replaceMany } from '../data/tableStore'
 import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
 import { DEFAULT_ANCHOR, todayCT } from '../lib/dates'
-import { createPinRecord, isValidPin } from '../lib/pin'
+import { createPinRecord, isPinRecord, isValidPin } from '../lib/pin'
 import { eraseThisPhone, logOut, reloadApp } from '../lib/session'
 import { buildExport, parseImport } from '../lib/export'
 import { shareOrCopy } from '../lib/share'
@@ -37,7 +37,13 @@ export default function Settings() {
   const [link, setLink] = useState<string | null>(null)
   const [flex, setFlex] = useState<string | null>(null)
   const [confirmErase, setConfirmErase] = useState(false)
-  const [pinOn, setPinOn] = useState(() => localStorage.getItem('lp.pin') !== null)
+  const [pinOn, setPinOn] = useState(() => {
+    try {
+      return isPinRecord(JSON.parse(localStorage.getItem('lp.pin') ?? 'null'))
+    } catch {
+      return false
+    }
+  })
   const [pin1, setPin1] = useState('')
   const [pin2, setPin2] = useState('')
   const [pinError, setPinError] = useState<string | null>(null)

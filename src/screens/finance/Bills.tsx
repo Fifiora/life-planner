@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { FinanceData } from '../../data/useFinance'
 import { useHousehold } from '../../data/household'
 import { todayCT } from '../../lib/dates'
-import { billsPaidSummary, categoryTotals } from '../../lib/finance2'
+import { billsPaidSummary, categoryTotals, normCategory } from '../../lib/finance2'
 import { cap, money, monthLabel } from '../../lib/format'
 import type { Bill } from '../../types'
 import { BillForm } from '../../ui/BillForm'
@@ -20,7 +20,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
   const recurring = f.bills.rows.filter((b) => b.kind === 'recurring')
   const groups = categoryTotals(f.bills.rows, f.totalIncome).map((c) => ({
     ...c,
-    bills: recurring.filter((b) => b.category === c.category).sort((a, b) => b.amount - a.amount),
+    bills: recurring.filter((b) => normCategory(b.category) === c.category).sort((a, b) => b.amount - a.amount),
   }))
   const oneTime = f.bills.rows.filter((b) => b.kind === 'one_time').sort((a, b) => (a.due_month ?? '').localeCompare(b.due_month ?? ''))
   const pct = summary.totalCount ? Math.round((summary.paidCount / summary.totalCount) * 100) : 0

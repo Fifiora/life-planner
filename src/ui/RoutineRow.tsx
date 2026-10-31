@@ -31,6 +31,7 @@ export function RoutineRow({
   onUntick,
   onEdit,
   dueText,
+  readOnly = false,
 }: {
   routine: Routine
   done: boolean
@@ -42,9 +43,10 @@ export function RoutineRow({
   onUntick: () => void
   onEdit: () => void
   dueText?: string
+  readOnly?: boolean
 }) {
   const [time, setTime] = useState(myLog?.value ?? '')
-  const needsTime = Boolean(routine.time_rule) && !done
+  const needsTime = Boolean(routine.time_rule) && !done && !readOnly
   const missed = myLog && !myLog.done
 
   return (
@@ -68,13 +70,14 @@ export function RoutineRow({
           className={`check${done ? ' on' : ''}`}
           aria-label={done ? `Undo ${routine.name}` : `Mark ${routine.name} done`}
           aria-pressed={done}
+          disabled={readOnly}
           onClick={() => (done ? onUntick() : onTick())}
         >
           {done ? '✓' : ''}
         </button>
       )}
       <span className="grow">
-        <button type="button" className="plain-btn" onClick={onEdit}>
+        <button type="button" className="plain-btn" disabled={readOnly} onClick={onEdit}>
           <strong>{routine.name}</strong>
         </button>
         <span className="muted small block-text">{describeRoutine(routine)}</span>

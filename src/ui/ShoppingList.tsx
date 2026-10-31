@@ -8,7 +8,7 @@ const STORES = ['Groceries', 'African store', 'Farmers market', 'Other']
 
 /** A shared list of things to buy, grouped by store. */
 export function ShoppingList() {
-  const { me } = useHousehold()
+  const { me, readOnly } = useHousehold()
   const items = useTable<ShoppingItem>('shopping')
   const [name, setName] = useState('')
   const [store, setStore] = useState(STORES[0])
@@ -52,7 +52,7 @@ export function ShoppingList() {
           <ul className="list">
             {g.items.map((i) => (
               <li key={i.id} className="list-row">
-                <input type="checkbox" className="tick" checked={i.done} aria-label={i.name} onChange={() => items.update(i.id, { done: !i.done })} />
+                <input type="checkbox" className="tick" checked={i.done} disabled={readOnly} aria-label={i.name} onChange={() => items.update(i.id, { done: !i.done })} />
                 <span className="grow" style={{ textDecoration: i.done ? 'line-through' : undefined, opacity: i.done ? 0.55 : 1 }}>{i.name}</span>
               </li>
             ))}

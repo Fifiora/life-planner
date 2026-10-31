@@ -3,6 +3,9 @@ import { daysBetween } from './dates'
 import { monthView, type MonthView } from './finance'
 import { cap, money, monthLabel, shiftMonthKey } from './format'
 
+/** Categories are typed by hand, so compare them tidied up: "Food", "food " and "food" are one. */
+export const normCategory = (category: string | undefined) => (category ?? '').trim().toLowerCase() || 'other'
+
 export interface CategoryTotal {
   category: string
   total: number
@@ -15,8 +18,9 @@ export function categoryTotals(bills: Bill[], income: number): CategoryTotal[] {
   const map = new Map<string, { total: number; count: number }>()
   for (const b of bills) {
     if (b.kind !== 'recurring') continue
-    const cur = map.get(b.category) ?? { total: 0, count: 0 }
-    map.set(b.category, { total: cur.total + b.amount, count: cur.count + 1 })
+    const key = normCategory(b.category)
+    const cur = map.get(key) ?? { total: 0, count: 0 }
+    map.set(key, { total: cur.total + b.amount, count: cur.count + 1 })
   }
   return [...map.entries()]
     .map(([category, v]) => ({
@@ -116,6 +120,13 @@ export function flexView(budget: number, expenses: Expense[], month: string) {
 export const projectedSavings = (available: number, flexSpent: number, target: number) =>
   Math.max(0, Math.min(available - flexSpent, target))
 
+/** Savings are tracked from the configured month, or earlier if something was put aside before it. */
+export const trackingStart = (entries: SavingsEntry[], configured: string) =>
+  [configured, ...entries.map((e) => e.month)].sort()[0]
+
+/** New expenses default to today, or to the 1st of the month being looked at. */
+export const defaultExpenseDate = (month: string, today: string) => (today.startsWith(month) ? today : `${month}-01`)
+
 /** Money put aside so far against the target for every month since `startMonth`. */
 export function savingsProgress(entries: SavingsEntry[], target: number, startMonth: string, month: string) {
   const index = (m: string) => Number(m.slice(0, 4)) * 12 + Number(m.slice(5, 7))
@@ -149,7 +160,10 @@ export function buildInsights(input: { rows: ForecastRow[]; categories: Category
   if (categories[0]) {
     lines.push(`${cap(categories[0].category)} is your biggest expense: ${money(categories[0].total)} (${categories[0].pctOfIncome}% of income).`)
   }
-  if (payoff.remaining > 0) lines.push(`${money(payoff.remaining)} of payoffs still to pay, ${payoff.daysLeft} days to go.`)
+  if (payoff.remaining > 0) {
+    const when = payoff.daysLeft >= 0 ? `${payoff.daysLeft} days to go` : `${-payoff.daysLeft} days past the deadline`
+    lines.push(`${money(payoff.remaining)} of payoffs still to pay, ${when}.`)
+  }
   else if (payoff.total > 0) lines.push('All payoffs cleared 🎉')
   return lines
 }

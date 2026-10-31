@@ -44,6 +44,7 @@ export function RoutineRows({
             onTick={(value) => data.tick(r, value)}
             onUntick={() => data.untick(r)}
             onEdit={() => onEdit(r)}
+            readOnly={data.readOnly}
             dueText={showDue && r.cadence !== 'daily' ? `${progress.done ? 'Next' : 'Due'}: ${dueLabel(nextDue(r, mine, data.today, data.anchor), data.today)}` : undefined}
           />
         )

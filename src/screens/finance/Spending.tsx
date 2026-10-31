@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import type { FinanceData } from '../../data/useFinance'
 import { useHousehold } from '../../data/household'
 import { todayCT } from '../../lib/dates'
+import { defaultExpenseDate } from '../../lib/finance2'
 import { cap, money } from '../../lib/format'
 
 export const EXPENSE_CATEGORIES: [string, string][] = [
@@ -21,7 +22,8 @@ export function Spending({ f, month }: { f: FinanceData; month: string }) {
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState('dining')
   const [note, setNote] = useState('')
-  const [date, setDate] = useState(todayCT())
+  const [date, setDate] = useState(() => defaultExpenseDate(month, todayCT()))
+  useEffect(() => setDate(defaultExpenseDate(month, todayCT())), [month])
   const [error, setError] = useState<string | null>(null)
   const [budget, setBudget] = useState<string | null>(null)
 

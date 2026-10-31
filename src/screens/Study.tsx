@@ -42,7 +42,7 @@ function QuestionForm({ onSave }: { onSave: (q: { prompt: string; options: strin
 }
 
 export default function Study() {
-  const { me, members } = useHousehold()
+  const { me, members, readOnly } = useHousehold()
   const milestones = useTable<Milestone>('milestones')
   const topics = useTable<TriviaTopic>('trivia_topics')
   const questions = useTable<TriviaQuestion>('trivia_questions')
@@ -114,7 +114,7 @@ export default function Study() {
                         className={`check${x.done ? ' on' : ''}`}
                         aria-label={`${x.done ? 'Undo' : 'Complete'} ${x.text}`}
                         aria-pressed={x.done}
-                        disabled={m.id !== me.id}
+                        disabled={readOnly || m.id !== me.id}
                         onClick={() => milestones.update(x.id, { done: !x.done })}
                       >{x.done ? '✓' : ''}</button>
                       <span className="grow" style={{ textDecoration: x.done ? 'line-through' : undefined }}>{x.text}</span>

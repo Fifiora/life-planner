@@ -34,10 +34,14 @@ export function Overview({ f }: { f: FinanceData }) {
     <>
       <section className="card">
         <div className="stat-grid">
-          <button type="button" className="stat" onClick={() => { setIncomeDraft(String(totalIncome)); setIncomeOpen(true) }} aria-label={readOnly ? 'Income' : 'Edit monthly income'}>
-            <span className="cap">{readOnly ? 'Income' : 'Income (tap to edit)'}</span>
-            <span className="num">{money(totalIncome)}</span>
-          </button>
+          {readOnly ? (
+            <div className="stat"><span className="cap">Income</span><span className="num">{money(totalIncome)}</span></div>
+          ) : (
+            <button type="button" className="stat" onClick={() => { setIncomeDraft(String(totalIncome)); setIncomeOpen(true) }}>
+              <span className="cap">Income (tap to edit)</span>
+              <span className="num">{money(totalIncome)}</span>
+            </button>
+          )}
           <div className="stat"><span className="cap">Monthly bills</span><span className="num">{money(view.recurring)}</span></div>
           <div className="stat"><span className="cap">One-time this month</span><span className="num">{money(view.oneTime)}</span></div>
           <div className="stat">
@@ -47,7 +51,9 @@ export function Overview({ f }: { f: FinanceData }) {
         </div>
         <div className="mt"><SavingsBar savings={projected} target={target} /></div>
         {flex.spent > 0 && <p className="muted small">Includes {money(flex.spent)} of extra spending logged this month.</p>}
-        {view.deficit > 0 ? (
+        {totalIncome === 0 ? (
+          <p className="callout">Add your monthly income (tap the Income box) to see what's left each month.</p>
+        ) : view.deficit > 0 ? (
           <p className="callout bad">Over by {money(view.deficit)} — move a one-time payment to another month.</p>
         ) : projected < target ? (
           <p className="callout">{money(target - projected)} below the savings target — move a payoff or trim spending.</p>

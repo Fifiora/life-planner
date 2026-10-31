@@ -1,6 +1,6 @@
 import { useTable } from '../data/useTable'
 import { monthKeyCT } from '../lib/dates'
-import { flexView } from '../lib/finance2'
+import { flexView, normCategory } from '../lib/finance2'
 import { money } from '../lib/format'
 import type { Bill, Expense } from '../types'
 
@@ -8,7 +8,7 @@ import type { Bill, Expense } from '../types'
 export function GroceryBudget() {
   const bills = useTable<Bill>('bills')
   const expenses = useTable<Expense>('expenses')
-  const budget = bills.rows.filter((b) => b.kind === 'recurring' && b.category === 'food').reduce((s, b) => s + b.amount, 0)
+  const budget = bills.rows.filter((b) => b.kind === 'recurring' && normCategory(b.category) === 'food').reduce((s, b) => s + b.amount, 0)
   const spent = flexView(0, expenses.rows, monthKeyCT()).groceries
   const pct = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : 0
   return (

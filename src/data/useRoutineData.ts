@@ -10,7 +10,7 @@ import { useToday } from './useToday'
 
 /** Routines, their logs and the actions screens need, loaded once per screen. */
 export function useRoutineData() {
-  const { me, members } = useHousehold()
+  const { me, members, readOnly } = useHousehold()
   const routineTable = useTable<Routine>('routines')
   const logTable = useTable<RoutineLog>('routine_logs')
   const settings = useSettings()
@@ -58,6 +58,7 @@ export function useRoutineData() {
   return {
     me,
     members,
+    readOnly,
     routines,
     logs,
     anchor,

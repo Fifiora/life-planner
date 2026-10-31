@@ -43,9 +43,10 @@ npm run build   # typecheck + production build
 
 ## Using it
 
-- **Today:** progress rings, today's checklist, and anything still due this week/month. Tap the circle to tick; routines with a time rule (bedtime, wake-up) ask for the time and mark a miss if it breaks the rule. Habits you each do are ticked separately; "Shared" items count when either of you ticks. The 👤 chip switches who you're ticking for.
-- **Health / Food:** tap a routine's name to edit or delete it; tap **+** to add one. *Our next night in* handles the every-2-weeks game / painting / date / movie night: add ideas, vote, and the host alternates.
-- **Study:** Sunday milestones for the coming week, and trivia: claim a topic, your partner writes questions, then play.
-- **Travel:** add places with drive hours (6 hours or less = monthly, farther = every 3 months), then plan them into months.
-- **Finance:** change month, edit income, bills and the one-time payoffs (set each one's due month; mark paid). The bar shows savings against the target and flags a shortfall.
-- **Settings:** names, colors, savings target, the 2-week cycle start date, sharing, backup and restore.
+- **Today:** progress rings, today's checklist, a money snapshot, anything still due this week/month, and a weekly wins recap. Tap the circle to tick; routines with a time rule (bedtime, wake-up) ask for the time and mark a miss if it breaks the rule. Habits you each do are ticked separately; "Shared" items count when either of you ticks. The 👤 chip switches who you're ticking for. Confetti when a bucket hits 100%.
+- **Health:** a monthly scorecard (ticks versus what was expected), an activity log (run, walk, calisthenics, swim, weights) with a week summary, sleep rhythm (on-time bedtimes and wake-ups, average times), the every-2-weeks night in (ideas, votes, rotating host, a log of past nights), and the spiritual routines with a rotating Bible-study lead. Monthly appointments show when they're next due.
+- **Food:** the shopping rhythm with next-due dates, a shared shopping list grouped by store, the groceries budget against receipts logged in Finance, and date nights this month.
+- **Study:** Sunday milestones for the coming week (with carry-over of unfinished ones), a four-week completion history, and trivia: claim a topic, your partner writes questions, then play; scores by person and topic.
+- **Travel:** places with drive hours (6 hours or less = monthly, farther = every 3 months), notes and estimated cost, a trip-rhythm card (last trip, next due, where to go next), and a month-by-month plan.
+- **Finance:** five sections. *Overview:* the month at a glance, where the money goes by category, debt payoff progress and the days to your deadline, subscription totals, and plain-language insights. *Bills:* tick off each monthly bill as paid, and manage the one-time payoffs. *Spending:* an extra-spending budget with a log of expenses (dates, salon, trips, car…). *Savings:* log what you put aside each month against the target. *Plan:* an eight-month forecast.
+- **Settings:** names, colors, targets (savings, extra-spending budget, 2-week cycle start), sharing, backup and restore, an optional **App PIN**, **Log out** (forget who is using the phone; data stays) and **Erase this phone**.

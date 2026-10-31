@@ -30,9 +30,8 @@ function greeting(): string {
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
 }
 
-function MoneyCard() {
+function MoneyCard({ f }: { f: ReturnType<typeof useFinance> }) {
   const month = monthKeyCT()
-  const f = useFinance(month)
   if (f.bills.rows.length === 0) return null
   const unpaid = billsPaidSummary(f.bills.rows, f.payments.rows, month).unpaid.length
   return (
@@ -42,7 +41,7 @@ function MoneyCard() {
         <Link to="/finance">Open</Link>
       </div>
       <SavingsBar savings={f.projected} target={f.target} />
-      <p className="muted small">{unpaid} monthly bill{unpaid === 1 ? '' : 's'} not ticked off yet · {money(f.flex.left)} left for extras</p>
+      <p className="muted small">{unpaid} monthly bill{unpaid === 1 ? '' : 's'} not ticked off yet · {f.flex.left >= 0 ? `${money(f.flex.left)} left for extras` : `${money(-f.flex.left)} over on extras`}</p>
     </section>
   )
 }
@@ -52,10 +51,8 @@ export default function Today() {
   const { me, members, readOnly } = useHousehold()
   const milestones = useTable<Milestone>('milestones')
   const trips = useTable<TripPlan>('trip_plans')
-  const bills = useTable<Bill>('bills')
-  const income = useTable<Income>('income')
+  const money = useFinance(monthKeyCT())
   const turns = useTable<Turn>('turns')
-  const settings = useSettings()
   const [editing, setEditing] = useState<Routine | null>(null)
   const [creating, setCreating] = useState(false)
 
@@ -68,15 +65,13 @@ export default function Today() {
   const food = data.routines.filter((r) => r.bucket === 'food')
   const weekMs = milestones.rows.filter((m) => m.week_start === weekStart(data.today))
   const monthTrips = trips.rows.filter((t) => t.planned_month === monthKeyCT())
-  const target = Number(settings.get('savings_target') ?? 10000)
-  const fin = monthView(income.rows.reduce((s, i) => s + i.monthly_amount, 0), bills.rows, target, monthKeyCT())
 
   const rings = [
     { label: 'Health', color: 'var(--health)', value: ratio(healthToday.filter(isDone).length, healthToday.length) },
     { label: 'Study', color: 'var(--study)', value: ratio(weekMs.filter((m) => m.done).length, weekMs.length) },
     { label: 'Travel', color: 'var(--travel)', value: ratio(monthTrips.filter((t) => t.status === 'done').length, monthTrips.length) },
     { label: 'Food', color: 'var(--food)', value: ratio(food.filter(isDone).length, food.length) },
-    { label: 'Finance', color: 'var(--finance)', value: ratio(fin.savings, target) },
+    { label: 'Finance', color: 'var(--finance)', value: ratio(money.projected, money.target) },
   ]
 
   const complete = rings.filter((r) => r.value >= 1).length
@@ -106,7 +101,7 @@ export default function Today() {
         {host && <p className="muted small mt">🎲 Next night in is hosted by <strong>{host.display_name}</strong></p>}
       </section>
 
-      <MoneyCard />
+      <MoneyCard f={money} />
 
       {(recap.total > 0 || milestonesDone > 0) && (
         <section className="card" aria-label="This week's wins">

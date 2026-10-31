@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import type { FinanceData } from '../../data/useFinance'
 import { useHousehold } from '../../data/household'
 import { savingsProgress } from '../../lib/finance2'
@@ -8,6 +8,7 @@ export function Savings({ f, month }: { f: FinanceData; month: string }) {
   const { me } = useHousehold()
   const [amount, setAmount] = useState('')
   const [when, setWhen] = useState(month)
+  useEffect(() => setWhen(month), [month])
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
 

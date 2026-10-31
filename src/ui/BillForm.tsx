@@ -28,7 +28,7 @@ export function BillForm({
       name: name.trim(),
       amount: amount.trim() === '' ? NaN : Number(amount),
       kind,
-      category: category.trim() || 'misc',
+      category: category.trim().toLowerCase() || 'misc',
       due_month: kind === 'one_time' ? dueMonth || null : null,
       paid: initial?.paid ?? false,
     }

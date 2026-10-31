@@ -11,7 +11,7 @@ export function Plan({ f }: { f: FinanceData }) {
     <>
       <section className="card">
         <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Next 8 months</h2></div></div>
-        <p className="muted small">What you can put aside each month after bills and scheduled payoffs, against your savings target. Change a payoff's due month under Bills to see it move.</p>
+        <p className="muted small">What you can put aside each month after bills and scheduled payoffs, against your savings target. Figures are before any extra spending you log. Change a payoff's due month under Bills to see it move.</p>
         <ForecastTable rows={rows} target={f.target} />
       </section>
       {insights.length > 0 && (
