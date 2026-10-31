@@ -43,8 +43,8 @@ describe('Report screen', () => {
     expect(await screen.findByRole('heading', { name: 'Month-end report' })).toBeInTheDocument()
     const select = screen.getByRole('combobox', { name: 'Month' })
     expect(select).toHaveValue('2026-11')
-    expect(within(select).getByRole('option', { name: 'November 2026 (so far)' })).toBeInTheDocument()
-    expect(screen.getByText('October 2026', { selector: 'p' })).toBeInTheDocument()
+    expect(within(select).getByRole('option', { name: 'December 2026 (so far)' })).toBeInTheDocument()
+    expect(screen.getByText('November 2026', { selector: 'p' })).toBeInTheDocument()
   })
   it('changes month with the picker', async () => {
     page()
