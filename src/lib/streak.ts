@@ -5,6 +5,8 @@ interface Step {
   len: number
   /** Monday-based weeks whose one empty day has been forgiven inside this run. */
   rested: Set<string>
+  /** The empty days that were forgiven inside this run. */
+  bridged: string[]
 }
 
 /** Walk the ticked days (oldest first); one empty day per week is bridged without adding to the count. */
@@ -14,13 +16,13 @@ function walk(dates: string[]): Step[] {
   let prev: Step | null = null
   for (const date of sorted) {
     let step: Step
-    if (!prev) step = { date, len: 1, rested: new Set() }
+    if (!prev) step = { date, len: 1, rested: new Set(), bridged: [] }
     else {
       const gap = daysBetween(prev.date, date)
       const missed = weekStart(addDays(prev.date, 1))
-      if (gap === 1) step = { date, len: prev.len + 1, rested: prev.rested }
-      else if (gap === 2 && !prev.rested.has(missed)) step = { date, len: prev.len + 1, rested: new Set([...prev.rested, missed]) }
-      else step = { date, len: 1, rested: new Set() }
+      if (gap === 1) step = { date, len: prev.len + 1, rested: prev.rested, bridged: prev.bridged }
+      else if (gap === 2 && !prev.rested.has(missed)) step = { date, len: prev.len + 1, rested: new Set([...prev.rested, missed]), bridged: [...prev.bridged, addDays(prev.date, 1)] }
+      else step = { date, len: 1, rested: new Set(), bridged: [] }
     }
     steps.push(step)
     prev = step
@@ -40,5 +42,6 @@ export function dayStreak(dates: string[], today: string): { days: number; restU
   if (!last) return { days: 0, restUsed: false }
   const gap = daysBetween(last.date, today)
   const alive = gap <= 1 || (gap === 2 && !last.rested.has(weekStart(addDays(last.date, 1))))
-  return alive ? { days: last.len, restUsed: last.rested.size > 0 } : { days: 0, restUsed: false }
+  // Only a forgiven day from the last week is worth mentioning.
+  return alive ? { days: last.len, restUsed: last.bridged.some((d) => d >= addDays(today, -6)) } : { days: 0, restUsed: false }
 }

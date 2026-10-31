@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useGame } from '../data/useGame'
 import { useHousehold } from '../data/household'
 import { useIncrease } from '../data/useIncrease'
@@ -16,6 +16,7 @@ export function Celebrations() {
   const { readOnly } = useHousehold()
   const toast = useToast()
   const [count, setCount] = useState(0)
+  const context = useRef<string | null>(null)
   const sparkle = useIncrease(count)
   const { on, meId } = game
   const level = game.me.level
@@ -26,7 +27,12 @@ export function Celebrations() {
   const bossDown = game.boss.progress.defeated
 
   useEffect(() => {
-    if (!on || readOnly) return
+    if (readOnly) return
+    // Coming back from Classic, or switching person on this phone, starts quietly: old progress is not news.
+    const here = `${on}|${meId}`
+    const switched = context.current !== null && context.current !== here
+    context.current = here
+    if (!on) return
     const keys: string[] = []
     const lines: string[] = []
     const bossKey = `boss:${bossWeek}`
@@ -53,7 +59,7 @@ export function Celebrations() {
     }
     const first = isFirstRun()
     markSeen(...keys)
-    if (first || lines.length === 0) return
+    if (first || switched || lines.length === 0) return
     // Three lines fit in a toast; beyond that the rest are summed up, never dropped silently.
     toast((lines.length > 3 ? [...lines.slice(0, 2), `and ${lines.length - 2} more!`] : lines).join(' '))
     setCount((c) => c + 1)

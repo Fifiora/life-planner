@@ -38,7 +38,7 @@ export function bossProgress(
   else if (boss.id === 'sphinx') value = data.milestones.filter((m) => memberIds.includes(m.member_id) && m.week_start === week && m.done).length
   else {
     const days = memberIds.map((id) => new Set(ticksOf(id).filter((t) => inWeek(t.date)).map((t) => t.date)))
-    if (days.length > 0) value = [...days[0]].filter((d) => days.every((s) => s.has(d))).length
+    if (days.length >= 2) value = [...days[0]].filter((d) => days.every((s) => s.has(d))).length
   }
   return { value, target: boss.target, defeated: value >= boss.target }
 }

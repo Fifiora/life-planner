@@ -3,7 +3,9 @@ import { useHousehold } from '../data/household'
 import { useTable } from '../data/useTable'
 import { useToday } from '../data/useToday'
 import { cheerLine } from '../lib/voice'
-import type { Cheer, RoutineLog } from '../types'
+import { useGame } from '../data/useGame'
+import { memberTicks } from '../lib/xp'
+import type { Cheer } from '../types'
 import { useStyleChoice } from './StyleSwitch'
 
 /** Cheers between the two of you: see who cheered you today, and cheer your partner once they have ticked something. */
@@ -11,7 +13,7 @@ export function CheerCard() {
   const on = useStyleChoice() === 'anime'
   const { me, members, readOnly } = useHousehold()
   const cheers = useTable<Cheer>('cheers')
-  const logs = useTable<RoutineLog>('routine_logs')
+  const game = useGame()
   const today = useToday()
   const [busy, setBusy] = useState(false)
   const partner = members.find((m) => m.id !== me.id)
@@ -19,7 +21,7 @@ export function CheerCard() {
 
   const fromIds = [...new Set(cheers.rows.filter((c) => c.to_member === me.id && c.date === today).map((c) => c.from_member))]
   const sent = cheers.rows.some((c) => c.from_member === me.id && c.to_member === partner.id && c.date === today)
-  const partnerTicked = logs.rows.some((l) => l.done && l.member_id === partner.id && l.date === today)
+  const partnerTicked = memberTicks(game.data, partner.id).some((t) => t.date === today)
   const canSend = partnerTicked && !sent
   if (fromIds.length === 0 && !canSend && !sent) return null
 
