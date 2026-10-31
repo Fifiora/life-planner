@@ -158,7 +158,7 @@ export function budgetRows(input: { bills: Bill[]; budgets: Budget[]; months: st
   for (const b of bills) if (b.kind === 'recurring') names.add(normCategory(b.category))
   for (const b of budgets) names.add(normCategory(b.category))
   for (const a of actuals) for (const c of Object.keys(a.spentByCategory)) names.add(c)
-  const tracked = actuals.map((a) => a.spent > 0)
+  const tracked = actuals.map((a) => a.spent > 0 || Object.values(a.spentByCategory).some((v) => v > 0))
   return [...names]
     .map<BudgetRow>((category) => {
       const budget = budgetFor(category, bills, budgets)
