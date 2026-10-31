@@ -3,6 +3,7 @@ import { mergeMissing } from '../data/tableStore'
 import { adjustPlan } from '../lib/migrate'
 import { decryptPreload, type PreloadFile } from '../lib/preload'
 import { encodeSnapshot, parseSnapshotJson, type Snapshot } from '../lib/snapshot'
+import { JoinForm } from './JoinForm'
 
 const reload = () => window.location.reload()
 
@@ -22,6 +23,7 @@ export function UnlockPreload({
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [joining, setJoining] = useState(false)
 
   const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err))
 
@@ -102,6 +104,17 @@ export function UnlockPreload({
       <p className="mt">
         <button type="button" className="plain-btn muted" onClick={skip}>Start empty instead</button>
       </p>
+      {!snapshot && (
+        <div className="mt">
+          {!joining ? (
+            <button type="button" className="plain-btn muted" onClick={() => setJoining(true)}>Join a shared planner with a code</button>
+          ) : (
+            <div className="card">
+              <JoinForm warning="This phone will become a copy of the shared planner." onCancel={() => setJoining(false)} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,13 +1,12 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { useHousehold } from '../data/household'
-import { getCode, joinWithCode, startSharing, stopSyncing, testConnection, useSyncStatus } from '../data/syncRuntime'
-import { isValidCode } from '../lib/syncCrypto'
+import { getCode, startSharing, stopSyncing, testConnection, useSyncStatus } from '../data/syncRuntime'
+import { reloadApp } from '../lib/session'
+import { JoinForm } from './JoinForm'
 import { describeSync } from './SyncStatus'
 
-const BAD_CODE = "That doesn't look like a pairing code. Codes have 24 letters and numbers and never contain O, 0, I, 1 or L."
-
 /** Settings: share one planner between phones. Start on one phone, join on the other with the code. */
-export function SyncCard({ onJoined = () => window.location.reload() }: { onJoined?: () => void }) {
+export function SyncCard({ onJoined = reloadApp }: { onJoined?: () => void }) {
   const { readOnly } = useHousehold()
   const status = useSyncStatus()
   const code = getCode()
@@ -15,7 +14,6 @@ export function SyncCard({ onJoined = () => window.location.reload() }: { onJoin
   const [joining, setJoining] = useState(false)
   const [fresh, setFresh] = useState<string | null>(null)
   const [reveal, setReveal] = useState(false)
-  const [typed, setTyped] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [connection, setConnection] = useState<string | null>(null)
@@ -32,22 +30,6 @@ export function SyncCard({ onJoined = () => window.location.reload() }: { onJoin
     setStopped(false)
     try {
       setFresh(await startSharing())
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-    } finally {
-      setBusy(false)
-      bump((n) => n + 1)
-    }
-  }
-
-  async function join(e: FormEvent) {
-    e.preventDefault()
-    if (!isValidCode(typed)) return setError(BAD_CODE)
-    setBusy(true)
-    setError(null)
-    try {
-      await joinWithCode(typed)
-      onJoined()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -99,15 +81,7 @@ export function SyncCard({ onJoined = () => window.location.reload() }: { onJoin
               <button type="button" className="btn" onClick={() => { setJoining(true); setError(null) }}>Join with a code</button>
             </div>
           ) : (
-            <form onSubmit={join} noValidate>
-              <p className="callout">This replaces everything on this phone with the shared planner. A backup file is downloaded first. Use a phone you have not used yet.</p>
-              <label className="label" htmlFor="sync-code">Pairing code</label>
-              <input id="sync-code" className="input" autoCapitalize="characters" autoCorrect="off" autoComplete="off" value={typed} onChange={(e) => setTyped(e.target.value)} />
-              <div className="actions">
-                <button type="submit" className="btn btn-primary" disabled={busy}>Replace this phone and join</button>
-                <button type="button" className="btn" onClick={() => { setJoining(false); setError(null) }}>Cancel</button>
-              </div>
-            </form>
+            <JoinForm onJoined={onJoined} onCancel={() => { setJoining(false); setError(null) }} />
           )}
         </>
       )}

@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, useState, type FormEvent, type Reac
 import { readFileText } from '../lib/files'
 import { encodeSnapshot, parseSnapshotJson } from '../lib/snapshot'
 import type { Member } from '../types'
+import { JoinForm } from '../ui/JoinForm'
 import { removeSharedCopy } from './startup'
 import { isReadOnly } from './tableStore'
 import { useTable } from './useTable'
@@ -50,6 +51,20 @@ function OpenSharedFile() {
   )
 }
 
+/** On a phone that has not been set up: join a planner that already exists on another phone. */
+function JoinSharedPlanner() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="card mt">
+      {!open ? (
+        <button type="button" className="plain-btn" onClick={() => setOpen(true)}>Already set up on another phone? Join with a code</button>
+      ) : (
+        <JoinForm warning="This phone will become a copy of the shared planner, so you do not need to enter names here." onCancel={() => setOpen(false)} />
+      )}
+    </div>
+  )
+}
+
 function Onboarding({ onSave }: { onSave: (names: [string, string]) => void }) {
   const [first, setFirst] = useState('')
   const [second, setSecond] = useState('')
@@ -73,6 +88,7 @@ function Onboarding({ onSave }: { onSave: (names: [string, string]) => void }) {
         {error && <p role="alert" className="error">{error}</p>}
         <button type="submit" className="btn btn-primary block mt">Save names</button>
       </form>
+      <JoinSharedPlanner />
       <OpenSharedFile />
     </div>
   )

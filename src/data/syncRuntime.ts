@@ -27,7 +27,10 @@ function realDeps(): SyncDeps {
     kv: { get: (k) => localStorage.getItem(k), set: (k, v) => localStorage.setItem(k, v), remove: (k) => localStorage.removeItem(k) },
     local: { getAll: store.getAllRows, apply: store.applyRemote, onLocalChange: store.onLocalChange },
     now: () => Date.now(),
-    downloadBackup: () => downloadText('life-planner-backup-before-sync.json', buildExport(store.getAllRows())),
+    // A phone that holds nothing has nothing worth backing up.
+    downloadBackup: () => {
+      if (store.hasOwnData()) downloadText('life-planner-backup-before-sync.json', buildExport(store.getAllRows()))
+    },
     isReadOnly: store.isReadOnly,
   }
 }
