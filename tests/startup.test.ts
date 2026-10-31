@@ -48,6 +48,7 @@ describe('startup', () => {
   it('prefers this phone\'s own planner over a remembered copy', async () => {
     localStorage.setItem('lp.snapshot', await sample())
     localStorage.setItem('lp.data.members', JSON.stringify([{ id: 'me', display_name: 'Me' }]))
+    localStorage.setItem('lp.data.routines', JSON.stringify([{ id: 'r1', name: 'Walk' }]))
     expect(await startup('#/')).toEqual({ mode: 'own', fromLink: false })
     expect(isReadOnly()).toBe(false)
   })
