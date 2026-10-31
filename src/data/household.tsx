@@ -1,12 +1,17 @@
 import { createContext, useContext, useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import { clearConfig } from '../lib/githubStore'
+import { encodeSnapshot, parseSnapshotJson } from '../lib/snapshot'
 import type { Member } from '../types'
+import { isReadOnly } from './tableStore'
 import { useTable } from './useTable'
 
 export interface HouseholdValue {
   householdId: string
   members: Member[]
   me: Member
+  /** True when showing someone's shared copy: nothing can be changed. */
+  readOnly: boolean
+  /** Act as the other person on this phone. */
+  switchTo: (memberId: string) => void
 }
 
 export const HouseholdContext = createContext<HouseholdValue | null>(null)
@@ -19,6 +24,28 @@ export function useHousehold(): HouseholdValue {
 
 const ME_KEY = 'lp.me'
 const COLORS = ['#16a34a', '#6366f1']
+
+/** For a phone that was sent a view-only file instead of a link. */
+function OpenSharedFile() {
+  const [error, setError] = useState<string | null>(null)
+  async function open(file: File | undefined) {
+    if (!file) return
+    try {
+      const snap = parseSnapshotJson(await file.text())
+      localStorage.setItem('lp.snapshot', await encodeSnapshot(snap))
+      window.location.reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+  return (
+    <div className="card mt">
+      <label className="label" htmlFor="shared-file">Was a view-only file shared with you? Open it here</label>
+      <input id="shared-file" className="input" type="file" accept="application/json,.json" onChange={(e) => void open(e.target.files?.[0])} />
+      {error && <p role="alert" className="error">{error}</p>}
+    </div>
+  )
+}
 
 function Onboarding({ onSave }: { onSave: (names: [string, string]) => void }) {
   const [first, setFirst] = useState('')
@@ -43,6 +70,7 @@ function Onboarding({ onSave }: { onSave: (names: [string, string]) => void }) {
         {error && <p role="alert" className="error">{error}</p>}
         <button type="submit" className="btn btn-primary block mt">Save names</button>
       </form>
+      <OpenSharedFile />
     </div>
   )
 }
@@ -62,35 +90,32 @@ function WhoAreYou({ members, onPick }: { members: Member[]; onPick: (id: string
   )
 }
 
-/** Loads the two people, asks for their names the first time, and remembers which one this phone is. */
+/** Loads the two people, asks for their names the first time, and remembers who is using this phone. */
 export function HouseholdProvider({ children }: { children: ReactNode }) {
   const members = useTable<Member>('members')
+  const readOnly = isReadOnly()
   const [meId, setMeId] = useState(() => localStorage.getItem(ME_KEY))
-  const me = members.rows.find((m) => m.id === meId)
+  const me = readOnly ? members.rows[0] : members.rows.find((m) => m.id === meId)
 
   const value = useMemo<HouseholdValue | null>(
-    () => (me ? { householdId: 'home', members: members.rows, me } : null),
-    [members.rows, me],
+    () =>
+      me
+        ? {
+            householdId: 'home',
+            members: members.rows,
+            me,
+            readOnly,
+            switchTo: (id: string) => {
+              localStorage.setItem(ME_KEY, id)
+              setMeId(id)
+            },
+          }
+        : null,
+    [members.rows, me, readOnly],
   )
 
-  if (members.loading) return <div className="app center-note">Loading…</div>
-
-  if (members.rows.length === 0 && members.error) {
-    return (
-      <div className="app">
-        <div className="card">
-          <h2>Couldn't load your data</h2>
-          <p className="error">{members.error}</p>
-          <div className="actions">
-            <button type="button" className="btn" onClick={() => members.refetch()}>Try again</button>
-            <button type="button" className="btn btn-danger" onClick={() => { clearConfig(); localStorage.removeItem(ME_KEY); window.location.reload() }}>Reconnect</button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   if (members.rows.length === 0) {
+    if (readOnly) return <div className="app center-note">This view-only copy is empty.</div>
     return (
       <Onboarding
         onSave={(names) => {

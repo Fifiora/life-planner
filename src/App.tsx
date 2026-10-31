@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import AuthGate from './data/AuthGate'
+import { HouseholdProvider, useHousehold } from './data/household'
+import type { BootResult } from './data/startup'
 import Finance from './screens/Finance'
 import Food from './screens/Food'
 import Health from './screens/Health'
@@ -10,24 +12,71 @@ import Travel from './screens/Travel'
 import { TabBar } from './ui/TabBar'
 import { ToastProvider } from './ui/Toast'
 
-export default function App() {
+function ViewBanner({ createdAt }: { createdAt?: string }) {
+  const when = createdAt ? new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''
+  return (
+    <div className="view-banner" role="note">
+      <span>👁 View-only copy{when ? ` · shared ${when}` : ''}</span>
+      <button
+        type="button"
+        className="plain-btn"
+        onClick={() => {
+          localStorage.removeItem('lp.snapshot')
+          window.location.href = window.location.pathname + window.location.search
+        }}
+      >
+        Remove this copy
+      </button>
+    </div>
+  )
+}
+
+function Shell({ boot }: { boot: BootResult }) {
+  const { readOnly } = useHousehold()
+  return (
+    <>
+      <main className="app">
+        {readOnly && <ViewBanner createdAt={boot.createdAt} />}
+        <Routes>
+          <Route path="/" element={<Today />} />
+          <Route path="/health" element={<Health />} />
+          <Route path="/study" element={<Study />} />
+          <Route path="/travel" element={<Travel />} />
+          <Route path="/food" element={<Food />} />
+          <Route path="/finance" element={<Finance />} />
+          {!readOnly && <Route path="/settings" element={<Settings />} />}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+      <TabBar />
+    </>
+  )
+}
+
+export default function App({ boot }: { boot: BootResult }) {
+  const [acknowledged, setAcknowledged] = useState(false)
+
+  if (boot.error && !acknowledged) {
+    return (
+      <div className="app">
+        <div className="card">
+          <h2>Couldn't open that link</h2>
+          <p className="error">{boot.error}</p>
+          <div className="actions">
+            <button type="button" className="btn btn-primary" onClick={() => setAcknowledged(true)}>Continue</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <ToastProvider>
-      <AuthGate>
-        <main className="app">
-          <Routes>
-            <Route path="/" element={<Today />} />
-            <Route path="/health" element={<Health />} />
-            <Route path="/study" element={<Study />} />
-            <Route path="/travel" element={<Travel />} />
-            <Route path="/food" element={<Food />} />
-            <Route path="/finance" element={<Finance />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-        <TabBar />
-      </AuthGate>
+      <div className={boot.mode === 'view' ? 'view-only' : undefined}>
+        <HouseholdProvider>
+          <Shell boot={boot} />
+        </HouseholdProvider>
+      </div>
     </ToastProvider>
   )
 }

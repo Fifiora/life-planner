@@ -1,5 +1,5 @@
-import { loadConfig, mutate, readTable, type StoreConfig } from '../lib/githubStore'
 import { newId } from '../lib/ids'
+import { TABLES } from '../lib/tables'
 import type { Row } from '../types'
 
 export interface TableState {
@@ -10,188 +10,131 @@ export interface TableState {
 
 interface Entry {
   state: TableState
-  etag: string | null
-  version: number // bumped when a local change starts or finishes, so a slow older load can be discarded
-  pending: number // saves not finished yet
   listeners: Set<() => void>
-  timer: ReturnType<typeof setInterval> | null
-  onVisible: (() => void) | null
-  queue: Promise<unknown> // saves for one table run one at a time
 }
 
-const POLL_MS = 30_000
-const EMPTY: TableState = { rows: [], loaded: false, error: null }
+const PREFIX = 'lp.data.'
 const entries = new Map<string, Entry>()
+let snapshot: Record<string, Row[]> | null = null // set when showing someone's view-only copy
+let listening = false
+
+function readSaved(table: string): Row[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PREFIX + table) ?? '[]')
+    return Array.isArray(parsed) ? (parsed as Row[]) : []
+  } catch {
+    return []
+  }
+}
+
+function setState(e: Entry, rows: Row[]) {
+  e.state = { rows, loaded: true, error: null }
+  e.listeners.forEach((l) => l())
+}
+
+/** Another tab of this app saved something. */
+function onStorage(ev: StorageEvent) {
+  if (snapshot || !ev.key || !ev.key.startsWith(PREFIX)) return
+  const table = ev.key.slice(PREFIX.length)
+  const e = entries.get(table)
+  if (e) setState(e, readSaved(table))
+}
 
 function entry(table: string): Entry {
+  if (!listening && typeof window !== 'undefined') {
+    window.addEventListener('storage', onStorage)
+    listening = true
+  }
   let e = entries.get(table)
   if (!e) {
-    e = { state: EMPTY, etag: null, version: 0, pending: 0, listeners: new Set(), timer: null, onVisible: null, queue: Promise.resolve() }
+    e = {
+      state: { rows: snapshot ? (snapshot[table] ?? []) : readSaved(table), loaded: true, error: null },
+      listeners: new Set(),
+    }
     entries.set(table, e)
   }
   return e
 }
 
-function setState(e: Entry, patch: Partial<TableState>) {
-  e.state = { ...e.state, ...patch }
-  e.listeners.forEach((l) => l())
-}
-
-function config(): StoreConfig {
-  const c = loadConfig()
-  if (!c) throw new Error('Not connected to GitHub yet.')
-  return c
-}
-
-const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err))
-
 export function getState(table: string): TableState {
-  return entries.get(table)?.state ?? EMPTY
+  return entry(table).state
 }
 
-/** Fetch the latest rows. Quick no-op when nothing changed; ignored if a local change happened meanwhile. */
-export async function refresh(table: string): Promise<void> {
-  const e = entry(table)
-  const cfg = loadConfig()
-  if (!cfg) return
-  const startVersion = e.version
-  try {
-    const res = await readTable(cfg, table, e.etag)
-    if (res === 'unchanged') {
-      if (!e.state.loaded) setState(e, { loaded: true })
-      return
-    }
-    if (e.version !== startVersion || e.pending > 0) return // our own edits are newer than this answer
-    e.etag = res.etag
-    setState(e, { rows: res.rows, loaded: true, error: null })
-  } catch (err) {
-    setState(e, { loaded: true, error: messageOf(err) })
-  }
-}
-
-function stopPolling(e: Entry) {
-  if (e.timer) clearInterval(e.timer)
-  if (e.onVisible) document.removeEventListener('visibilitychange', e.onVisible)
-  e.timer = null
-  e.onVisible = null
-}
-
-/** Watch a table; the first watcher starts checking for the other phone's changes every 30 seconds. */
 export function subscribe(table: string, listener: () => void): () => void {
   const e = entry(table)
   e.listeners.add(listener)
-  if (e.listeners.size === 1) {
-    void refresh(table)
-    e.timer = setInterval(() => void refresh(table), POLL_MS)
-    e.onVisible = () => {
-      if (document.visibilityState === 'visible') void refresh(table)
-    }
-    document.addEventListener('visibilitychange', e.onVisible)
-  }
   return () => {
     e.listeners.delete(listener)
-    if (e.listeners.size === 0) stopPolling(e)
   }
 }
 
-function enqueue<T>(e: Entry, work: () => Promise<T>): Promise<T> {
-  const run = e.queue.then(work)
-  e.queue = run.catch(() => {})
-  return run
+/** Re-read from this phone's storage (no-op for a view-only copy). */
+export async function refresh(table: string): Promise<void> {
+  if (snapshot) return
+  const e = entry(table)
+  const rows = readSaved(table)
+  if (JSON.stringify(rows) !== JSON.stringify(e.state.rows)) setState(e, rows)
 }
 
-async function save(table: string, e: Entry, change: (rows: Row[]) => Row[]) {
-  e.pending++
+/** Saves first, then shows the result, so a failed save leaves the screen untouched. */
+function commit(table: string, next: Row[]) {
+  if (snapshot) throw new Error('This is a view-only copy — nothing can be changed here.')
   try {
-    await enqueue(e, async () => {
-      await mutate(config(), table, change)
-      e.etag = null // our own write changed the file; the next check must re-download it
-    })
-  } finally {
-    e.pending--
-    e.version++ // any load that started before this save finished may hold older rows
+    localStorage.setItem(PREFIX + table, JSON.stringify(next))
+  } catch {
+    throw new Error("Couldn't save on this phone — its storage may be full.")
   }
-}
-
-/** After a failed save: wait for other saves to finish, then show what GitHub really has. */
-async function resync(table: string, e: Entry) {
-  await e.queue
-  e.etag = null
-  e.version++
-  await refresh(table)
+  setState(entry(table), next)
 }
 
 export async function insertRow(table: string, row: Record<string, unknown>): Promise<void> {
-  const e = entry(table)
   const full = { ...row, id: typeof row.id === 'string' && row.id ? row.id : newId() } as Row
-  e.version++
-  setState(e, { rows: [...e.state.rows, full], loaded: true })
-  try {
-    await save(table, e, (rows) => [...rows, full])
-  } catch (err) {
-    e.version++
-    setState(e, { rows: e.state.rows.filter((r) => r.id !== full.id) })
-    throw err
-  }
-}
-
-/**
- * Adds `rows` only if the table is empty when the save happens (first-time setup when both
- * phones might do it at once), then shows whatever GitHub ended up with.
- */
-export async function insertIfEmpty(table: string, rows: Record<string, unknown>[]): Promise<void> {
-  const e = entry(table)
-  const full = rows.map((r) => ({ ...r, id: newId() }) as Row)
-  e.version++
-  if (e.state.rows.length === 0) setState(e, { rows: full, loaded: true })
-  try {
-    await save(table, e, (current) => (current.length > 0 ? current : full))
-  } catch (err) {
-    await resync(table, e)
-    throw err
-  }
-  await resync(table, e)
+  commit(table, [...entry(table).state.rows, full])
 }
 
 export async function updateRow(table: string, id: string, patch: Record<string, unknown>): Promise<void> {
-  const e = entry(table)
-  e.version++
-  setState(e, { rows: e.state.rows.map((r) => (r.id === id ? { ...r, ...patch } : r)) })
-  try {
-    await save(table, e, (rows) => rows.map((r) => (r.id === id ? { ...r, ...patch } : r)))
-  } catch (err) {
-    await resync(table, e)
-    throw err
-  }
+  commit(table, entry(table).state.rows.map((r) => (r.id === id ? { ...r, ...patch } : r)))
 }
 
 export async function removeRow(table: string, id: string): Promise<void> {
-  const e = entry(table)
-  e.version++
-  setState(e, { rows: e.state.rows.filter((r) => r.id !== id) })
-  try {
-    await save(table, e, (rows) => rows.filter((r) => r.id !== id))
-  } catch (err) {
-    await resync(table, e)
-    throw err
-  }
+  commit(table, entry(table).state.rows.filter((r) => r.id !== id))
 }
 
 /** Replace the whole table (used by "Import data"). */
 export async function replaceRows(table: string, rows: Row[]): Promise<void> {
-  const e = entry(table)
-  e.version++
-  setState(e, { rows, loaded: true })
-  try {
-    await save(table, e, () => rows)
-  } catch (err) {
-    await resync(table, e)
-    throw err
-  }
+  commit(table, rows)
 }
 
-/** Forget everything in memory (tests, and when disconnecting). */
-export function resetStore(): void {
-  entries.forEach(stopPolling)
+/** Adds `rows` only if the table is still empty (first-time setup). */
+export async function insertIfEmpty(table: string, rows: Record<string, unknown>[]): Promise<void> {
+  if (entry(table).state.rows.length > 0) return
+  commit(table, rows.map((r) => ({ ...r, id: newId() }) as Row))
+}
+
+/** Every table's rows, straight from storage (or the shared copy). */
+export function getAllRows(): Record<string, Row[]> {
+  const out: Record<string, Row[]> = {}
+  for (const t of TABLES) out[t] = snapshot ? (snapshot[t] ?? []) : readSaved(t)
+  return out
+}
+
+/** True when this phone already has its own planner data saved. */
+export function hasOwnData(): boolean {
+  return TABLES.some((t) => readSaved(t).length > 0)
+}
+
+/** Show someone's shared copy instead of this phone's own data. It cannot be changed. */
+export function loadSnapshot(tables: Record<string, Row[]>): void {
+  snapshot = tables
   entries.clear()
+}
+
+export function isReadOnly(): boolean {
+  return snapshot !== null
+}
+
+/** Forget everything in memory (like closing the app) and leave any shared-copy mode. */
+export function resetStore(): void {
+  entries.clear()
+  snapshot = null
 }

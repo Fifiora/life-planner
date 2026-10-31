@@ -88,7 +88,7 @@ export function NightsView({
       {winner && <p className="callout ok">Winner: {winner.activity}</p>}
       {tie && <p className="callout">Tie — flip a coin</p>}
       {options.length > 0 && !finished && (
-        <button type="button" className="btn block mt" onClick={onDone}>Mark night done · pass the host</button>
+        <button type="button" className="btn block mt edit-only" onClick={onDone}>Mark night done · pass the host</button>
       )}
       {finished && <p className="callout ok">Night done ✓ — {host?.display_name ?? 'your partner'} hosts next</p>}
 

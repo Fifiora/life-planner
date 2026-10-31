@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useHousehold } from '../data/household'
 import { useRoutineData } from '../data/useRoutineData'
 import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
 import { periodProgress, scopedLogs } from '../lib/cadence'
 import { monthKeyCT, weekStart } from '../lib/dates'
+import { needsBackup } from '../lib/backup'
 import { monthView } from '../lib/finance'
 import type { Bill, Income, Milestone, Routine, TripPlan, Turn } from '../types'
 import { EmptyState } from '../ui/EmptyState'
@@ -23,7 +25,7 @@ function greeting(): string {
 
 export default function Today() {
   const data = useRoutineData()
-  const { me, members } = useHousehold()
+  const { me, members, readOnly } = useHousehold()
   const milestones = useTable<Milestone>('milestones')
   const trips = useTable<TripPlan>('trip_plans')
   const bills = useTable<Bill>('bills')
@@ -57,6 +59,8 @@ export default function Today() {
   const host = members.find((m) => m.id === hostTurn?.current_member_id)
 
   const nothing = data.routines.length === 0
+  const lastBackup = Number(localStorage.getItem('lp.lastBackup')) || null
+  const backupDue = !readOnly && needsBackup(lastBackup, Date.now(), data.routines.length > 0)
 
   return (
     <div className="stack">
@@ -71,6 +75,12 @@ export default function Today() {
         </div>
         {host && <p className="muted small mt">🎲 Next night in is hosted by <strong>{host.display_name}</strong></p>}
       </section>
+
+      {backupDue && (
+        <section className="card">
+          <p>💾 Your planner is saved only on this phone. <Link to="/settings">Download a backup</Link> so it can't be lost.</p>
+        </section>
+      )}
 
       {nothing && !data.loading ? (
         <section className="card">

@@ -1,18 +1,28 @@
 import { useState } from 'react'
 import { useHousehold } from '../data/household'
-import { replaceRows } from '../data/tableStore'
+import { getAllRows, replaceRows } from '../data/tableStore'
 import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
-import { DEFAULT_ANCHOR } from '../lib/dates'
+import { DEFAULT_ANCHOR, todayCT } from '../lib/dates'
 import { buildExport, parseImport } from '../lib/export'
-import { clearConfig, loadConfig, readTable } from '../lib/githubStore'
-import { TABLES } from '../lib/tables'
+import { buildViewLink, encodeSnapshot, makeSnapshot, trimForSharing } from '../lib/snapshot'
 import type { Member, Row } from '../types'
 import { PageHead } from '../ui/PageHead'
 import { useToast } from '../ui/Toast'
 
+function download(name: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
+}
+
+const LONG_LINK = 8000
+
 export default function Settings() {
-  const { me } = useHousehold()
+  const { me, members: people, switchTo } = useHousehold()
   const members = useTable<Member>('members')
   const settings = useSettings()
   const toast = useToast()
@@ -20,21 +30,33 @@ export default function Settings() {
   const [anchor, setAnchor] = useState<string | null>(null)
   const [pending, setPending] = useState<Record<string, Row[]> | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
+  const [link, setLink] = useState<string | null>(null)
 
-  async function exportAll() {
-    const cfg = loadConfig()
-    if (!cfg) return
-    const out: Record<string, Record<string, unknown>[]> = {}
-    for (const t of TABLES) {
-      const res = await readTable(cfg, t)
-      out[t] = res === 'unchanged' ? [] : res.rows
+  function exportAll() {
+    download('life-planner-backup.json', buildExport(getAllRows()))
+    localStorage.setItem('lp.lastBackup', String(Date.now()))
+    toast('Backup downloaded')
+  }
+
+  const snapshot = () => makeSnapshot(trimForSharing(getAllRows(), todayCT()))
+
+  async function shareLink() {
+    const url = buildViewLink(window.location.href, await encodeSnapshot(snapshot()))
+    setLink(url)
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: 'Our Life Planner', url })
+        return
+      } catch {
+        /* cancelled or unsupported: fall back to copying */
+      }
     }
-    const url = URL.createObjectURL(new Blob([buildExport(out)], { type: 'application/json' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'life-planner-export.json'
-    a.click()
-    window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    try {
+      await navigator.clipboard.writeText(url)
+      toast('Link copied')
+    } catch {
+      /* the link is shown below to copy by hand */
+    }
   }
 
   async function chooseFile(file: File | undefined) {
@@ -61,7 +83,7 @@ export default function Settings() {
 
   return (
     <div className="stack">
-      <PageHead title="Settings" sub={`This phone is ${me.display_name}'s`} />
+      <PageHead title="Settings" sub={`Using the app as ${me.display_name}`} />
 
       <section className="card">
         <h2>Us</h2>
@@ -75,6 +97,14 @@ export default function Settings() {
             <input type="color" aria-label={`Color for ${m.display_name}`} defaultValue={m.color} onBlur={(e) => members.update(m.id, { color: e.target.value })} style={{ width: 44, height: 44, border: 0, background: 'none' }} />
           </div>
         ))}
+        <p className="label">Use the app as</p>
+        <div className="actions" style={{ marginTop: 0 }}>
+          {people.map((m) => (
+            <button key={m.id} type="button" className={`btn${m.id === me.id ? ' btn-primary' : ''}`} aria-pressed={m.id === me.id} onClick={() => switchTo(m.id)}>
+              {m.display_name}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="card">
@@ -97,33 +127,44 @@ export default function Settings() {
       </section>
 
       <section className="card">
-        <h2>Your data</h2>
-        <p className="muted small">Back up everything, or load a data file (such as your starter plan).</p>
+        <h2>Share with your partner</h2>
+        <p className="muted small">
+          Makes a view-only copy of today's planner. She can look but not change anything, with no login. Anyone with the
+          link can see it, so send it privately. Send a new one whenever you want her to see fresh progress.
+        </p>
         <div className="actions">
-          <button type="button" className="btn" onClick={exportAll}>Export data</button>
+          <button type="button" className="btn btn-primary" onClick={() => void shareLink()}>Share view-only link</button>
+          <button type="button" className="btn" onClick={() => download('life-planner-view.json', JSON.stringify(snapshot()))}>Download view-only file</button>
         </div>
-        <label className="label" htmlFor="import-file">Import data from a file</label>
+        {link && (
+          <>
+            <label className="label" htmlFor="the-link">Link</label>
+            <textarea id="the-link" className="input" readOnly rows={3} value={link} onFocus={(e) => e.currentTarget.select()} style={{ padding: '0.5rem 0.75rem' }} />
+            {link.length > LONG_LINK && (
+              <p className="callout">This link is long ({link.length.toLocaleString('en-US')} characters). If your messaging app cuts it off, send the file instead.</p>
+            )}
+          </>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>Your data</h2>
+        <p className="muted small">Your planner is saved only on this phone. Download a backup now and then, and before clearing browser data.</p>
+        <div className="actions">
+          <button type="button" className="btn" onClick={exportAll}>Download backup</button>
+        </div>
+        <label className="label" htmlFor="import-file">Restore or import from a file</label>
         <input id="import-file" className="input" type="file" accept="application/json,.json" onChange={(e) => { void chooseFile(e.target.files?.[0]); e.target.value = '' }} />
         {importError && <p role="alert" className="error">{importError}</p>}
         {pending && (
           <div className="callout">
-            <p>
-              This replaces: {Object.entries(pending).map(([t, rows]) => `${t} (${rows.length})`).join(', ')}.
-            </p>
+            <p>This replaces: {Object.entries(pending).map(([t, rows]) => `${t} (${rows.length})`).join(', ')}.</p>
             <div className="actions">
               <button type="button" className="btn btn-primary" onClick={confirmImport}>Replace my data</button>
               <button type="button" className="btn" onClick={() => setPending(null)}>Cancel</button>
             </div>
           </div>
         )}
-      </section>
-
-      <section className="card">
-        <h2>This phone</h2>
-        <p className="muted small">Disconnecting forgets the GitHub token on this phone only. Your data stays in the repo.</p>
-        <div className="actions">
-          <button type="button" className="btn btn-danger" onClick={() => { clearConfig(); localStorage.removeItem('lp.me'); window.location.reload() }}>Disconnect this phone</button>
-        </div>
       </section>
     </div>
   )

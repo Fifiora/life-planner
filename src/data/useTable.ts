@@ -34,7 +34,7 @@ export function useTable<T extends { id: string }>(table: string) {
 
   return {
     rows: state.rows as unknown as T[],
-    loading: !state.loaded,
+    loading: false,
     error: saveError ?? state.error,
     insert,
     update,

@@ -183,3 +183,22 @@ code { background: var(--line); padding: 0.1rem 0.35rem; border-radius: 0.4rem; 
 .plain-btn { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; min-height: 24px; }
 .tier-preview { margin-top: 0.7rem; }
 .winner { font-weight: 700; }
+
+/* ---------- Header chip and view-only copy ---------- */
+.head-actions { display: flex; align-items: center; gap: 0.25rem; }
+.chip { min-height: 36px; padding: 0 0.8rem; border-radius: 1rem; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.view-badge { background: color-mix(in srgb, var(--study) 18%, transparent); color: var(--study); }
+.view-banner { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; padding: 0.5rem 0.8rem; border-radius: 0.9rem; background: color-mix(in srgb, var(--study) 14%, transparent); font-size: 0.85rem; font-weight: 600; }
+.view-banner .plain-btn { color: var(--muted); text-decoration: underline; }
+
+/* A shared copy can be looked at but not changed (changes are also refused in code). */
+.view-only .add-btn,
+.view-only main form,
+.view-only .time-wrap,
+.view-only .list-row .btn,
+.view-only .list-row .icon-btn,
+.view-only .empty .btn,
+.view-only .edit-only { display: none !important; }
+.view-only .check,
+.view-only .plain-btn:not(.view-banner .plain-btn),
+.view-only .stat { pointer-events: none; }
