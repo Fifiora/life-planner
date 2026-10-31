@@ -287,6 +287,8 @@ describe('resuming, stopping and testing', () => {
     backend.pulls.length = 0
     resumeSync()
     await flush(0)
+    // Setting up the key is real (not fake-timer) work whose length varies, so wait for the result rather than for a fixed moment.
+    for (let i = 0; i < 1500 && (backend.pulls.length < 1 || getSyncStatus() === null); i++) await realSleep(2)
     expect(backend.pulls.length).toBeGreaterThanOrEqual(1)
     expect(getSyncStatus()).not.toBeNull()
   })
