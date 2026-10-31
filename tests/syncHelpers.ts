@@ -3,10 +3,12 @@ import { TransportError, type KV, type LocalStore, type SyncRow, type Transport 
 
 export class MemoryKV implements KV {
   m = new Map<string, string>()
+  failSet = false
   get(key: string) {
     return this.m.get(key) ?? null
   }
   set(key: string, value: string) {
+    if (this.failSet) throw new Error('quota exceeded')
     this.m.set(key, value)
   }
   remove(key: string) {
@@ -23,8 +25,13 @@ export class MemoryLocal implements LocalStore {
   applyError: Error | null = null
   applied: Record<string, Row[]>[] = []
 
+  /** Runs after the next getAll(): lets a test make an edit at an exact moment. */
+  afterGetAll: (() => void) | null = null
+
   getAll() {
-    return JSON.parse(JSON.stringify(this.tables)) as Record<string, Row[]>
+    const out = JSON.parse(JSON.stringify(this.tables)) as Record<string, Row[]>
+    this.afterGetAll?.()
+    return out
   }
   apply(tables: Record<string, Row[]>) {
     if (this.applyError) throw this.applyError
@@ -42,6 +49,14 @@ export class MemoryLocal implements LocalStore {
     const prev = this.rows(table)
     this.tables[table] = next
     this.listeners.forEach((l) => l(table, prev, next))
+  }
+  /** Change rows without telling anyone (like another tab, or an edit made before sync started). */
+  silentPut(table: string, row: Row) {
+    const rows = this.rows(table)
+    this.tables[table] = rows.some((r) => r.id === row.id) ? rows.map((r) => (r.id === row.id ? row : r)) : [...rows, row]
+  }
+  silentRemove(table: string, id: string) {
+    this.tables[table] = this.rows(table).filter((r) => r.id !== id)
   }
   put(table: string, row: Row) {
     const rows = this.rows(table)

@@ -42,32 +42,39 @@ describe('household id', () => {
   })
 })
 
+const M = { updated_at: 1_700_000_000_000_123, deleted: false }
+
 describe('row encryption', () => {
   it('round-trips a row and does not show its contents', async () => {
     const key = await deriveKey(generateCode())
-    const payload = await encryptRow(key, 'bills', row)
+    const payload = await encryptRow(key, 'bills', row, M)
     expect(payload).not.toContain('Rent')
-    expect(await decryptRow(key, 'bills', 'r1', payload)).toEqual(row)
+    expect(await decryptRow(key, 'bills', 'r1', payload, M)).toEqual(row)
   })
   it('gives a different ciphertext each time (fresh IV)', async () => {
     const key = await deriveKey(generateCode())
-    expect(await encryptRow(key, 'bills', row)).not.toBe(await encryptRow(key, 'bills', row))
+    expect(await encryptRow(key, 'bills', row, M)).not.toBe(await encryptRow(key, 'bills', row, M))
   })
   it('refuses a wrong code, another table, another id, a truncated payload and junk', async () => {
-    const code = generateCode()
-    const key = await deriveKey(code)
+    const key = await deriveKey(generateCode())
     const other = await deriveKey(generateCode())
-    const payload = await encryptRow(key, 'bills', row)
-    await expect(decryptRow(other, 'bills', 'r1', payload)).rejects.toThrow()
-    await expect(decryptRow(key, 'routines', 'r1', payload)).rejects.toThrow()
-    await expect(decryptRow(key, 'bills', 'r2', payload)).rejects.toThrow()
-    await expect(decryptRow(key, 'bills', 'r1', payload.slice(0, payload.length - 8))).rejects.toThrow()
-    await expect(decryptRow(key, 'bills', 'r1', 'not base64 !!')).rejects.toThrow()
+    const payload = await encryptRow(key, 'bills', row, M)
+    await expect(decryptRow(other, 'bills', 'r1', payload, M)).rejects.toThrow()
+    await expect(decryptRow(key, 'routines', 'r1', payload, M)).rejects.toThrow()
+    await expect(decryptRow(key, 'bills', 'r2', payload, M)).rejects.toThrow()
+    await expect(decryptRow(key, 'bills', 'r1', payload.slice(0, payload.length - 8), M)).rejects.toThrow()
+    await expect(decryptRow(key, 'bills', 'r1', 'not base64 !!', M)).rejects.toThrow()
+  })
+  it('refuses a row whose change time or deleted flag was altered on the server', async () => {
+    const key = await deriveKey(generateCode())
+    const payload = await encryptRow(key, 'bills', row, M)
+    await expect(decryptRow(key, 'bills', 'r1', payload, { ...M, updated_at: M.updated_at + 1 })).rejects.toThrow()
+    await expect(decryptRow(key, 'bills', 'r1', payload, { ...M, deleted: true })).rejects.toThrow()
   })
   it('gives the same key for the same code however it was typed', async () => {
     const code = generateCode()
     const a = await deriveKey(code)
     const b = await deriveKey(code.toLowerCase().replace(/-/g, ''))
-    expect(await decryptRow(b, 'bills', 'r1', await encryptRow(a, 'bills', row))).toEqual(row)
+    expect(await decryptRow(b, 'bills', 'r1', await encryptRow(a, 'bills', row, M), M)).toEqual(row)
   })
 })

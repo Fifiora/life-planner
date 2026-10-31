@@ -105,6 +105,15 @@ describe('startup', () => {
       expect((await startup('')).mode).toBe('view')
     })
 
+    it('treats a phone that is sharing live as having its own planner (no unlock screen, no old copy)', async () => {
+      localStorage.setItem('lp.sync.code', 'ABCD-EFGH-JKMN-PQRS-TUVW-XYZ2')
+      fetchMock.mockResolvedValue(respond(PRELOAD))
+      expect((await startup('')).mode).toBe('own')
+      expect(fetchMock).not.toHaveBeenCalled()
+      localStorage.setItem('lp.snapshot', await sample())
+      expect((await startup('')).mode).toBe('own')
+    })
+
     it('stops offering it after "start empty"', async () => {
       localStorage.setItem('lp.skipPreload', '1')
       fetchMock.mockResolvedValue(respond(PRELOAD))

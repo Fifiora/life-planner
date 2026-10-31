@@ -75,6 +75,14 @@ describe('joining', () => {
     expect(getCode()).toBeNull()
   })
 
+  it('refuses a code nobody is using, and leaves this phone alone', async () => {
+    local.tables = { routines: [row('own')] }
+    await expect(joinWithCode(generateCode())).rejects.toThrow(/No shared planner found/)
+    expect(local.rows('routines')).toHaveLength(1)
+    expect(getCode()).toBeNull()
+    expect(getSyncStatus()).toBeNull()
+  })
+
   it('downloads a backup first, then makes this phone match the shared planner', async () => {
     const code = await sharedFromAnotherPhone()
     useDevice()
@@ -102,6 +110,17 @@ describe('joining', () => {
     expect(local.rows('routines')).toHaveLength(1)
     expect(getCode()).toBeNull()
     expect(getSyncStatus()).toBeNull()
+  })
+})
+
+describe('a double tap', () => {
+  it('on Start sharing leaves one engine and one code', async () => {
+    local.tables = { bills: [row('b1')] }
+    const results = await Promise.allSettled([startSharing(), startSharing()])
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+    expect(backend.onChanged.size).toBe(1)
+    const ok = results.find((r) => r.status === 'fulfilled') as PromiseFulfilledResult<string>
+    expect(getCode()).toBe(ok.value)
   })
 })
 

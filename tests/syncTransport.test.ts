@@ -21,7 +21,7 @@ describe('config', () => {
 })
 
 describe('Supabase transport: calls', () => {
-  it('pushes rows to sync_push with the key in both headers', async () => {
+  it('pushes rows to sync_push with the key in the apikey header', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(reply(42))
     const t = createSupabaseTransport({ url: URL_, key: KEY, fetchImpl })
     const rows: SyncRow[] = [{ tbl: 'bills', id: 'b1', payload: 'abc', deleted: false, updated_at: 5, seq: 9 }]
@@ -29,7 +29,7 @@ describe('Supabase transport: calls', () => {
     const { url, init, body } = lastCall(fetchImpl)
     expect(url).toBe(`${URL_}/rest/v1/rpc/sync_push`)
     expect(init.method).toBe('POST')
-    expect(init.headers).toMatchObject({ apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' })
+    expect(init.headers).toEqual({ apikey: KEY, 'Content-Type': 'application/json' }) // a publishable key is not a JWT: no Authorization header
     expect(body).toEqual({ p_household: HOUSEHOLD, p_rows: [{ tbl: 'bills', id: 'b1', payload: 'abc', deleted: false, updated_at: 5 }] })
   })
 
