@@ -11,15 +11,14 @@ export function PageHead({ title, sub }: { title: string; sub?: string }) {
         {sub && <p className="sub">{sub}</p>}
       </div>
       <div className="head-actions">
-        {readOnly ? (
-          <span className="badge view-badge">👁 View-only</span>
-        ) : (
+        {readOnly && <span className="badge view-badge">👁 View-only</span>}
+        {other && (
+          <button type="button" className="chip" aria-label={`Switch person (now ${me.display_name})`} onClick={() => switchTo(other.id)}>
+            👤 {me.display_name}
+          </button>
+        )}
+        {!readOnly && (
           <>
-            {other && (
-              <button type="button" className="chip" aria-label={`Switch person (now ${me.display_name})`} onClick={() => switchTo(other.id)}>
-                👤 {me.display_name}
-              </button>
-            )}
             <Link to="/settings" className="icon-btn" aria-label="Settings" style={{ textDecoration: 'none', display: 'grid', placeItems: 'center' }}>
               ⚙️
             </Link>

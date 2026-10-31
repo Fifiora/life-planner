@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useHousehold } from '../data/household'
-import { getAllRows, replaceRows } from '../data/tableStore'
+import { getAllRows, replaceMany } from '../data/tableStore'
 import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
 import { DEFAULT_ANCHOR, todayCT } from '../lib/dates'
@@ -8,6 +8,7 @@ import { buildExport, parseImport } from '../lib/export'
 import { buildViewLink, encodeSnapshot, makeSnapshot, trimForSharing } from '../lib/snapshot'
 import type { Member, Row } from '../types'
 import { PageHead } from '../ui/PageHead'
+import { SharedCopyNotice } from '../ui/SharedCopyNotice'
 import { useToast } from '../ui/Toast'
 
 function download(name: string, text: string) {
@@ -73,7 +74,7 @@ export default function Settings() {
   async function confirmImport() {
     if (!pending) return
     try {
-      for (const [table, rows] of Object.entries(pending)) await replaceRows(table, rows)
+      await replaceMany(pending)
       toast('Data imported')
       setPending(null)
     } catch (err) {
@@ -84,6 +85,8 @@ export default function Settings() {
   return (
     <div className="stack">
       <PageHead title="Settings" sub={`Using the app as ${me.display_name}`} />
+
+      <SharedCopyNotice />
 
       <section className="card">
         <h2>Us</h2>
@@ -149,7 +152,7 @@ export default function Settings() {
 
       <section className="card">
         <h2>Your data</h2>
-        <p className="muted small">Your planner is saved only on this phone. Download a backup now and then, and before clearing browser data.</p>
+        <p className="muted small">Your planner is saved only on this phone. Download a backup now and then. On an iPhone, also use Share → Add to Home Screen, or Safari may clear the data after a week of not opening the site.</p>
         <div className="actions">
           <button type="button" className="btn" onClick={exportAll}>Download backup</button>
         </div>

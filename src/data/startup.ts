@@ -10,11 +10,18 @@ export interface BootResult {
 
 const SNAPSHOT_KEY = 'lp.snapshot'
 
+/** Forget the shared copy on this phone and go back to the plain site address. */
+export function removeSharedCopy(): void {
+  localStorage.removeItem(SNAPSHOT_KEY)
+  window.location.href = window.location.pathname + window.location.search
+}
+
 /**
  * Decides what to show before the app starts: a shared view-only copy (from a link, or remembered
- * from an earlier link) or this phone's own planner.
+ * from an earlier link) or this phone's own planner. A bad link never hides a copy remembered earlier.
  */
 export async function startup(hash: string): Promise<BootResult> {
+  let linkError: string | undefined
   const link = /^#v=(.+)$/.exec(hash)
   if (link) {
     try {
@@ -27,7 +34,7 @@ export async function startup(hash: string): Promise<BootResult> {
       }
       return { mode: 'view', fromLink: true, createdAt: snap.createdAt }
     } catch {
-      return { mode: 'own', fromLink: false, error: 'That view-only link looks damaged or cut off. Ask for a new one, or for the file version.' }
+      linkError = 'That view-only link looks damaged or cut off. Ask for a new one, or for the file version.'
     }
   }
 
@@ -36,10 +43,10 @@ export async function startup(hash: string): Promise<BootResult> {
     try {
       const snap = await decodeSnapshot(remembered)
       loadSnapshot(snap.tables)
-      return { mode: 'view', fromLink: false, createdAt: snap.createdAt }
+      return { mode: 'view', fromLink: false, createdAt: snap.createdAt, ...(linkError ? { error: linkError } : {}) }
     } catch {
       localStorage.removeItem(SNAPSHOT_KEY)
     }
   }
-  return { mode: 'own', fromLink: false }
+  return { mode: 'own', fromLink: false, ...(linkError ? { error: linkError } : {}) }
 }

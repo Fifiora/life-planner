@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { encodeSnapshot, parseSnapshotJson } from '../lib/snapshot'
 import type { Member } from '../types'
+import { removeSharedCopy } from './startup'
 import { isReadOnly } from './tableStore'
 import { useTable } from './useTable'
 
@@ -23,6 +24,7 @@ export function useHousehold(): HouseholdValue {
 }
 
 const ME_KEY = 'lp.me'
+const VIEW_AS_KEY = 'lp.viewas' // who a viewer of a shared copy is looking as (separate from the owner's choice)
 const COLORS = ['#16a34a', '#6366f1']
 
 /** For a phone that was sent a view-only file instead of a link. */
@@ -94,8 +96,8 @@ function WhoAreYou({ members, onPick }: { members: Member[]; onPick: (id: string
 export function HouseholdProvider({ children }: { children: ReactNode }) {
   const members = useTable<Member>('members')
   const readOnly = isReadOnly()
-  const [meId, setMeId] = useState(() => localStorage.getItem(ME_KEY))
-  const me = readOnly ? members.rows[0] : members.rows.find((m) => m.id === meId)
+  const [meId, setMeId] = useState(() => localStorage.getItem(readOnly ? VIEW_AS_KEY : ME_KEY))
+  const me = readOnly ? (members.rows.find((m) => m.id === meId) ?? members.rows[0]) : members.rows.find((m) => m.id === meId)
 
   const value = useMemo<HouseholdValue | null>(
     () =>
@@ -106,7 +108,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
             me,
             readOnly,
             switchTo: (id: string) => {
-              localStorage.setItem(ME_KEY, id)
+              localStorage.setItem(readOnly ? VIEW_AS_KEY : ME_KEY, id)
               setMeId(id)
             },
           }
@@ -115,7 +117,14 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   )
 
   if (members.rows.length === 0) {
-    if (readOnly) return <div className="app center-note">This view-only copy is empty.</div>
+    if (readOnly) {
+      return (
+        <div className="app center-note">
+          <p>This view-only copy is empty.</p>
+          <button type="button" className="btn mt" onClick={removeSharedCopy}>Remove this copy</button>
+        </div>
+      )
+    }
     return (
       <Onboarding
         onSave={(names) => {

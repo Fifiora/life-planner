@@ -6,6 +6,8 @@ import { startup } from './data/startup'
 import './index.css'
 
 async function main() {
+  // Ask the browser not to clear this site's saved data when space is tight (ignored if unsupported).
+  void navigator.storage?.persist?.()
   const boot = await startup(window.location.hash)
   if (boot.fromLink) {
     // Move the shared data out of the address bar; it is remembered on this phone.

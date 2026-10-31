@@ -76,13 +76,16 @@ export async function refresh(table: string): Promise<void> {
   if (JSON.stringify(rows) !== JSON.stringify(e.state.rows)) setState(e, rows)
 }
 
+const VIEW_ONLY_ERROR = 'This is a view-only copy — nothing can be changed here.'
+const SAVE_ERROR = "Couldn't save on this phone — its storage may be full."
+
 /** Saves first, then shows the result, so a failed save leaves the screen untouched. */
 function commit(table: string, next: Row[]) {
-  if (snapshot) throw new Error('This is a view-only copy — nothing can be changed here.')
+  if (snapshot) throw new Error(VIEW_ONLY_ERROR)
   try {
     localStorage.setItem(PREFIX + table, JSON.stringify(next))
   } catch {
-    throw new Error("Couldn't save on this phone — its storage may be full.")
+    throw new Error(SAVE_ERROR)
   }
   setState(entry(table), next)
 }
@@ -103,6 +106,29 @@ export async function removeRow(table: string, id: string): Promise<void> {
 /** Replace the whole table (used by "Import data"). */
 export async function replaceRows(table: string, rows: Row[]): Promise<void> {
   commit(table, rows)
+}
+
+/** Replace several tables together: either all of them are saved, or none (used by "Import data"). */
+export async function replaceMany(tables: Record<string, Row[]>): Promise<void> {
+  if (snapshot) throw new Error(VIEW_ONLY_ERROR)
+  const previous = new Map<string, string | null>()
+  try {
+    for (const [table, rows] of Object.entries(tables)) {
+      previous.set(table, localStorage.getItem(PREFIX + table))
+      localStorage.setItem(PREFIX + table, JSON.stringify(rows))
+    }
+  } catch {
+    for (const [table, raw] of previous) {
+      try {
+        if (raw === null) localStorage.removeItem(PREFIX + table)
+        else localStorage.setItem(PREFIX + table, raw)
+      } catch {
+        /* nothing more we can do for this one */
+      }
+    }
+    throw new Error(SAVE_ERROR)
+  }
+  for (const [table, rows] of Object.entries(tables)) setState(entry(table), rows)
 }
 
 /** Adds `rows` only if the table is still empty (first-time setup). */

@@ -10,6 +10,8 @@ export interface Snapshot {
 }
 
 const KEEP_LOG_DAYS = 45
+const MAX_LINK_CHARS = 400_000 // longer than any real link
+const MAX_UNPACKED_BYTES = 5_000_000 // a real planner is far smaller; stops a tiny link that unpacks to gigabytes
 
 export function makeSnapshot(tables: Record<string, Row[]>, now: Date = new Date()): Snapshot {
   return { v: 1, createdAt: now.toISOString(), tables }
@@ -40,15 +42,33 @@ function fromBase64Url(text: string): Uint8Array {
   return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))
 }
 
-async function pipe(bytes: Uint8Array, transform: CompressionStream | DecompressionStream): Promise<Uint8Array> {
+async function pipe(bytes: Uint8Array, transform: CompressionStream | DecompressionStream, maxBytes = Infinity): Promise<Uint8Array> {
   const source = new ReadableStream<Uint8Array>({
     start(controller) {
       controller.enqueue(bytes)
       controller.close()
     },
   })
-  const out = source.pipeThrough(transform as unknown as ReadableWritablePair<Uint8Array, Uint8Array>)
-  return new Uint8Array(await new Response(out).arrayBuffer())
+  const reader = source.pipeThrough(transform as unknown as ReadableWritablePair<Uint8Array, Uint8Array>).getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.length
+    if (total > maxBytes) {
+      await reader.cancel()
+      throw new Error('too large')
+    }
+    chunks.push(value)
+  }
+  const out = new Uint8Array(total)
+  let offset = 0
+  for (const c of chunks) {
+    out.set(c, offset)
+    offset += c.length
+  }
+  return out
 }
 
 /** "g." + compressed, or "p." + plain text where this browser cannot compress. */
@@ -61,13 +81,15 @@ export async function encodeSnapshot(snapshot: Snapshot): Promise<string> {
 export async function decodeSnapshot(text: string): Promise<Snapshot> {
   const bad = () => new Error("That doesn't look like a complete view-only link. Ask for a new one.")
   try {
+    if (text.length > MAX_LINK_CHARS) throw bad()
     const m = /^([gp])\.([A-Za-z0-9_-]+)$/.exec(text.trim())
     if (!m) throw bad()
     let bytes = fromBase64Url(m[2])
     if (m[1] === 'g') {
       if (typeof DecompressionStream === 'undefined') throw bad()
-      bytes = await pipe(bytes, new DecompressionStream('gzip'))
+      bytes = await pipe(bytes, new DecompressionStream('gzip'), MAX_UNPACKED_BYTES)
     }
+    if (bytes.length > MAX_UNPACKED_BYTES) throw bad()
     return parseSnapshotJson(new TextDecoder().decode(bytes))
   } catch {
     throw bad()

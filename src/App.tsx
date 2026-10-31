@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { HouseholdProvider, useHousehold } from './data/household'
-import type { BootResult } from './data/startup'
+import { removeSharedCopy, type BootResult } from './data/startup'
 import Finance from './screens/Finance'
 import Food from './screens/Food'
 import Health from './screens/Health'
@@ -9,6 +9,7 @@ import Settings from './screens/Settings'
 import Study from './screens/Study'
 import Today from './screens/Today'
 import Travel from './screens/Travel'
+import { ErrorBoundary } from './ui/ErrorBoundary'
 import { TabBar } from './ui/TabBar'
 import { ToastProvider } from './ui/Toast'
 
@@ -17,14 +18,7 @@ function ViewBanner({ createdAt }: { createdAt?: string }) {
   return (
     <div className="view-banner" role="note">
       <span>👁 View-only copy{when ? ` · shared ${when}` : ''}</span>
-      <button
-        type="button"
-        className="plain-btn"
-        onClick={() => {
-          localStorage.removeItem('lp.snapshot')
-          window.location.href = window.location.pathname + window.location.search
-        }}
-      >
+      <button type="button" className="plain-btn" onClick={removeSharedCopy}>
         Remove this copy
       </button>
     </div>
@@ -73,9 +67,11 @@ export default function App({ boot }: { boot: BootResult }) {
   return (
     <ToastProvider>
       <div className={boot.mode === 'view' ? 'view-only' : undefined}>
-        <HouseholdProvider>
-          <Shell boot={boot} />
-        </HouseholdProvider>
+        <ErrorBoundary>
+          <HouseholdProvider>
+            <Shell boot={boot} />
+          </HouseholdProvider>
+        </ErrorBoundary>
       </div>
     </ToastProvider>
   )
