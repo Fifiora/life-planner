@@ -121,3 +121,10 @@ Sound, avatar customisation, a shop or currency, losing XP or HP for missed days
 - Default style is `anime` for both phones from first load after the update; Classic is one tap away.
 - Health activities, Study milestones, trivia answers and bill payments earn XP; receipts and calendar events do not. The XP numbers in the table are starting values and are easy to tune.
 - Boss and recap are shared (same for both of you), while style is per phone.
+
+## Deviations recorded during the build
+
+- **Bill XP and payers.** Bill payments carried no payer, so `BillPayment` gained an optional `member_id`, set from the person ticking the bill. Payments made before this update earn no XP and no Debt Slayer badge.
+- **Payoffs** are marked on the bill itself (`paid`), not as a payment row, so the Payoff Hero badge is a household badge (any paid one-time bill).
+- **Quiet celebrations.** Nothing is celebrated on a phone's first load, and when more than three new things arrive at once (an import or a first sync) they are marked as seen without a fanfare.
+- **Streak in the hero.** Under Anime the hero streak is the day streak with the rest day; under Classic it stays the best per-routine streak as before.

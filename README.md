@@ -56,6 +56,22 @@ npm run build   # typecheck + production build
 
 The app has a light and a dark palette (Settings → Appearance), frosted-glass cards with hover effects, and a wide-screen layout: on a laptop the bottom bar becomes a left sidebar and cards flow into two or three columns. Phones keep the single-column layout.
 
+## Anime style, XP and shared goals
+
+Each phone picks a style in Settings (or the header button / laptop sidebar): **Anime** (the default) or **Classic**, which is the plain look and wording. Anime adds an original mascot (Pip), a sunrise/night-city look, and a small game layer. Classic hides all of it.
+
+Everything in the game layer is worked out from data that already syncs, so the two phones always agree and nothing needs repairing:
+
+| What you do | XP |
+|---|---|
+| Tick a routine | 10 (plus a streak bonus up to 20 a day) |
+| Log a health activity | 15, plus 1 per 10 minutes (up to 15 more) |
+| Finish a study milestone | 15 |
+| Answer a trivia question (first try per question) | 3, or 8 if correct |
+| Tick a bill as paid (from this update on) | 20 |
+
+Level n needs `50 * n * (n - 1)` XP. Each area (Health, Study, Travel, Food, Finance) has its own level; you and the party have levels too. One empty day a week is forgiven in your streak. There are badges (Trophies card), a shared weekly boss, a monthly recap ("episode") and a daily cheer button. Cheers are the only new stored data (`cheers`), synced like everything else. Which celebrations you have already seen is kept on each phone only (`lp.seen`).
+
 ## Live sync (optional)
 
 Two phones (or a phone and a laptop) can share one planner, so what either of you adds shows up on the other within seconds. There are no logins: you pair once with a code.
