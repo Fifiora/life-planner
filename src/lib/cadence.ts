@@ -126,10 +126,11 @@ function nextPeriodStart(cadence: Cadence, date: string, anchor: string): string
  * otherwise the start of the next period (on its weekday, for weekly routines with one).
  */
 export function nextDue(routine: Routine, logs: RoutineLog[], today: string, anchor: string): string {
-  const weekly = routine.cadence === 'weekly' && routine.weekday != null
+  // Weekly routines on a weekday, and "a <weekday> in the month / quarter", fall on that weekday.
+  const onWeekday = routine.weekday != null && (routine.cadence === 'weekly' || routine.cadence === 'monthly' || routine.cadence === 'quarterly')
   if (!periodProgress(routine, logs, today, anchor).done) {
-    return weekly ? nextOccurrence(today, routine.weekday as number) : today
+    return onWeekday ? nextOccurrence(today, routine.weekday as number) : today
   }
   const start = nextPeriodStart(routine.cadence, today, anchor)
-  return weekly ? addDays(start, ((routine.weekday as number) + 6) % 7) : start
+  return onWeekday ? nextOccurrence(start, routine.weekday as number) : start
 }

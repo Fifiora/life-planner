@@ -410,7 +410,7 @@ html[data-theme="dark"] { color-scheme: dark; }
 .block-text { display: block; }
 
 /* ---------- Glass and gloss ---------- */
-html[data-theme="dark"] { color-scheme: dark; }
+
 .card, .kpi-card, .wday, .tile, .payoffs {
   background: linear-gradient(160deg, var(--gloss) 0%, transparent 42%), var(--card);
   border: 1px solid var(--edge);
@@ -465,8 +465,8 @@ html[data-theme="dark"] { color-scheme: dark; }
   .stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); gap: 1rem; align-items: start; }
   .stack > * + * { margin-top: 0; }
   .stack > .page-head, .stack > .tabs, .stack > .weekstrip, .stack > .kpi-row, .stack > .tiles,
-  .stack > .view-banner, .stack > .pill-row, .stack > .mpills, .stack > .wide, .stack > .verse { grid-column: 1 / -1; }
-  .stack > .donut-card { grid-column: span 2; container-type: inline-size; }
+  .stack > .pill-row, .stack > .mpills, .stack > .wide, .stack > .verse { grid-column: 1 / -1; }
+  .stack > .donut-card { grid-column: 1 / -1; container-type: inline-size; }
   .kpi-row { grid-template-columns: repeat(4, 1fr); }
   .weekstrip { gap: 0.6rem; }
   .wday { min-height: 72px; }
@@ -481,3 +481,7 @@ html[data-theme="dark"] { color-scheme: dark; }
 }
 
 .streak-chip { color: color-mix(in srgb, var(--food) 62%, var(--ink)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .card:hover, .btn:hover, .cal-cell:hover, .wday:hover, .kpi-card:hover, .tile:hover, .btn:active { transform: none !important; }
+}

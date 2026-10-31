@@ -28,7 +28,7 @@ export function migrateOwnData(): number {
         if (changed > 0) localStorage.setItem('lp.data.routines', JSON.stringify(next))
       }
     }
-    if (raw !== null) localStorage.setItem(FLAG, '1')
+    localStorage.setItem(FLAG, '1')
     return changed
   } catch {
     return 0

@@ -5,10 +5,12 @@ const KIND: Record<string, string> = { bill: 'Bill', payoff: 'Payoff', spent: 'S
 
 /** The right-hand detail for one chosen donut slice. */
 export function BreakdownPanel({ breakdown, income, planned }: { breakdown: Breakdown; income: number; planned: boolean }) {
-  const { rows, total, previousTotal, change } = breakdown
+  const { rows, total, previousTotal, change, hasPrevious } = breakdown
   const share = income > 0 ? Math.round((total / income) * 100) : 0
   const vs =
-    previousTotal === 0 && change === 0
+    !hasPrevious
+      ? 'First month with data'
+      : previousTotal === 0 && change === 0
       ? 'Nothing last month either'
       : change === 0
         ? 'Same as last month'

@@ -9,6 +9,7 @@ import Study from '../src/screens/Study'
 import Today from '../src/screens/Today'
 import Travel from '../src/screens/Travel'
 import { getAllRows, loadSnapshot } from '../src/data/tableStore'
+import { todayCT } from '../src/lib/dates'
 import { renderScreen, saved, seedPlanner } from './seed'
 
 vi.mock('../src/lib/session', async (importOriginal) => ({ ...(await importOriginal<typeof import('../src/lib/session')>()), reloadApp: vi.fn() }))
@@ -319,7 +320,7 @@ describe('Settings cycle start', () => {
 
 describe('Finance overview chart share of income', () => {
   it('uses the income that was actually logged when there is some', async () => {
-    localStorage.setItem('lp.data.expenses', JSON.stringify([{ id: 'inc', date: new Date().toISOString().slice(0, 10), amount: 8500, category: 'income', note: 'Pay', member_id: 'a', kind: 'income', source: 'manual' }]))
+    localStorage.setItem('lp.data.expenses', JSON.stringify([{ id: 'inc', date: todayCT(), amount: 8500, category: 'income', note: 'Pay', member_id: 'a', kind: 'income', source: 'manual' }]))
     renderScreen(<Finance />)
     await userEvent.click(await screen.findByRole('button', { name: /housing/i }))
     expect(within(screen.getByRole('complementary', { name: 'Breakdown for Housing' })).getByText('20% of income')).toBeInTheDocument()

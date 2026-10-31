@@ -75,7 +75,7 @@ describe('ReceiptLogger', () => {
     fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2020-01-05' } })
     await userEvent.click(screen.getByRole('button', { name: 'Save receipt' }))
     const note = await screen.findByRole('status', { name: 'Receipt saved' })
-    expect(note).toHaveTextContent('Saved $85')
+    expect(note).toHaveTextContent('Saved $84.50')
     expect(note).toHaveTextContent('2020-01-05')
   })
 

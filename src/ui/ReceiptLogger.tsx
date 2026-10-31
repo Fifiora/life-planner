@@ -38,6 +38,7 @@ export function ReceiptLogger({ store = receiptStore, compress = compressImage }
   const [photo, setPhoto] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [savedNote, setSavedNote] = useState<string | null>(null)
 
   const month = monthKeyCT()
   const receipts = expenses.rows
@@ -46,9 +47,11 @@ export function ReceiptLogger({ store = receiptStore, compress = compressImage }
 
   async function save(e: FormEvent) {
     e.preventDefault()
-    const n = Number(amount)
-    if (!(n > 0)) return setError('Enter the receipt total.')
+    const typed = amount.trim()
+    const n = Number(typed)
+    if (!/^\d{1,6}(\.\d{1,2})?$/.test(typed) || !(n > 0)) return setError('Enter the receipt total.')
     setError(null)
+    setSavedNote(null)
     setBusy(true)
     try {
       let receipt_id: string | undefined
@@ -69,6 +72,8 @@ export function ReceiptLogger({ store = receiptStore, compress = compressImage }
       setAmount('')
       setNote('')
       setPhoto(null)
+      const when = date || todayCT()
+      setSavedNote(`Saved $${n.toFixed(2)} to Groceries${when.slice(0, 7) === month ? '' : ` (dated ${when}, so it is not in this month's list)`}.`)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -116,6 +121,7 @@ export function ReceiptLogger({ store = receiptStore, compress = compressImage }
             </p>
           )}
           {error && <p role="alert" className="error">{error}</p>}
+          {savedNote && <p role="status" aria-label="Receipt saved" className="callout ok">{savedNote}</p>}
           <button type="submit" className="btn btn-primary block mt" disabled={busy}>Save receipt</button>
         </form>
       )}

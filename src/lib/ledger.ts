@@ -99,6 +99,8 @@ export interface Breakdown {
   total: number
   previousTotal: number
   change: number
+  /** False when there is nothing from last month to compare with (so "up from nothing" is not claimed). */
+  hasPrevious: boolean
 }
 
 function breakdownRows(category: string, bills: Bill[], payments: BillPayment[], expenses: Expense[], month: string, planned: boolean): BreakdownRow[] {
@@ -134,10 +136,10 @@ export function categoryBreakdown(input: { category: string; bills: Bill[]; paym
   const rows = breakdownRows(category, bills, payments, expenses, month, planned)
   const total = rows.reduce((s, r) => s + r.amount, 0)
   const previous = shiftMonthKey(month, -1)
-  const previousTotal = planned
-    ? (plannedByCategory(bills, previous)[category] ?? 0)
-    : (monthActuals(bills, payments, expenses, previous).spentByCategory[category] ?? 0)
-  return { category, rows, total, previousTotal, change: total - previousTotal }
+  const before = planned ? null : monthActuals(bills, payments, expenses, previous)
+  const previousTotal = before ? (before.spentByCategory[category] ?? 0) : (plannedByCategory(bills, previous)[category] ?? 0)
+  const hasPrevious = before ? before.spent > 0 : bills.length > 0
+  return { category, rows, total, previousTotal, change: total - previousTotal, hasPrevious }
 }
 
 // ---------- Transfers and cancel tracker ----------

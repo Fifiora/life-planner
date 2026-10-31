@@ -62,6 +62,13 @@ export function createReceiptStore(): ReceiptStore {
 
 export const receiptStore: ReceiptStore = createReceiptStore()
 
+/** After expenses were replaced (a restore), forget the photos whose expense no longer exists. */
+export async function removeOrphanPhotos(before: { receipt_id?: unknown }[], after: { receipt_id?: unknown }[], store: ReceiptStore = receiptStore): Promise<void> {
+  const keep = new Set(after.map((e) => e.receipt_id).filter((id): id is string => typeof id === 'string'))
+  const gone = before.map((e) => e.receipt_id).filter((id): id is string => typeof id === 'string' && !keep.has(id))
+  await Promise.all(gone.map((id) => store.remove(id).catch(() => undefined)))
+}
+
 /** Shrinks a photo (longest side 1200px, JPEG) so many receipts fit on a phone. Returns the original if the browser can't. */
 export async function compressImage(file: Blob, maxSide = 1200, quality = 0.7): Promise<Blob> {
   try {

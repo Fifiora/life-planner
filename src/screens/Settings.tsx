@@ -8,6 +8,7 @@ import { DEFAULT_ANCHOR, todayCT } from '../lib/dates'
 import { createPinRecord, isPinRecord, isValidPin } from '../lib/pin'
 import { isDate } from '../lib/calendar'
 import { readFileText } from '../lib/files'
+import { removeOrphanPhotos } from '../lib/receipts'
 import { eraseThisPhone, logOut, reloadApp } from '../lib/session'
 import { buildExport, parseImport } from '../lib/export'
 import { shareOrCopy } from '../lib/share'
@@ -98,7 +99,9 @@ export default function Settings() {
   async function confirmImport() {
     if (!pending) return
     try {
+      const photosBefore = getAllRows().expenses ?? []
       await replaceMany(pending)
+      if (pending.expenses) void removeOrphanPhotos(photosBefore, pending.expenses)
       toast('Data imported')
       setPending(null)
     } catch (err) {

@@ -75,7 +75,7 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
           detail={(category) => (
             <BreakdownPanel
               breakdown={categoryBreakdown({ category, bills: f.bills.rows, payments: f.payments.rows, expenses: f.expenses.rows, month, planned: usingPlan })}
-              income={totalIncome}
+              income={kpis.realIncome}
               planned={usingPlan}
             />
           )}

@@ -26,6 +26,8 @@ const CIRC = 2 * Math.PI * R
  */
 export function Donut({ shares, centerLabel, detail }: { shares: Share[]; centerLabel?: string; detail?: (category: string) => ReactNode }) {
   const [selected, setSelected] = useState<string | null>(null)
+  // A category that left the chart must not come back selected when it returns.
+  if (selected && !shares.some((s) => s.category === selected)) setSelected(null)
   if (shares.length === 0) return <p className="muted small">No spending yet this month.</p>
 
   const active = selected && shares.some((s) => s.category === selected) ? selected : null
