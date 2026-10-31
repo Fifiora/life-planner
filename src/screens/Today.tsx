@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { useHousehold } from '../data/household'
 import { useFinance } from '../data/useFinance'
 import { useRoutineData } from '../data/useRoutineData'
+import { useEvents } from '../data/useEvents'
 import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
-import { periodProgress, scopedLogs } from '../lib/cadence'
+import { periodProgress, scopedLogs, streak } from '../lib/cadence'
 import { monthKeyCT, weekStart } from '../lib/dates'
 import { Confetti } from '../ui/Confetti'
 import { useIncrease } from '../data/useIncrease'
@@ -21,7 +22,10 @@ import { PageHead } from '../ui/PageHead'
 import { Ring } from '../ui/Ring'
 import { RoutineForm } from '../ui/RoutineForm'
 import { RoutineRows } from '../ui/RoutineList'
+import { QuickAdd } from '../ui/QuickAdd'
 import { Sheet } from '../ui/Sheet'
+import { UpNext } from '../ui/UpNext'
+import { WeekStrip } from '../ui/WeekStrip'
 
 const ratio = (done: number, total: number) => (total === 0 ? 0 : done / total)
 
@@ -53,6 +57,7 @@ export default function Today() {
   const trips = useTable<TripPlan>('trip_plans')
   const money = useFinance(monthKeyCT())
   const turns = useTable<Turn>('turns')
+  const events = useEvents()
   const [editing, setEditing] = useState<Routine | null>(null)
   const [creating, setCreating] = useState(false)
 
@@ -82,6 +87,9 @@ export default function Today() {
   const hostTurn = turns.rows.find((t) => t.name === 'Nights host')
   const host = members.find((m) => m.id === hostTurn?.current_member_id)
 
+  const doneToday = todayItems.filter(isDone).length
+  const bestStreak = Math.max(0, ...data.routines.filter((r) => r.cadence === 'daily').map((r) => streak(r, scopedLogs(r, data.logs, me.id), data.today, data.anchor)))
+
   const nothing = data.routines.length === 0
   const lastBackup = Number(localStorage.getItem('lp.lastBackup')) || null
   const backupDue = !readOnly && needsBackup(lastBackup, Date.now(), data.routines.length > 0)
@@ -94,12 +102,22 @@ export default function Today() {
         sub={new Date(`${data.today}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })}
       />
 
+      <WeekStrip today={data.today} events={events.events} />
+
       <section className="card" aria-label="Progress">
+        {(todayItems.length > 0 || bestStreak >= 2) && (
+          <p className="headline">
+            {todayItems.length > 0 && <span>{`${doneToday} of ${todayItems.length} done today`}</span>}
+            {bestStreak >= 2 && <span className="streak-chip">{`🔥 ${bestStreak}-day streak`}</span>}
+          </p>
+        )}
         <div className="rings">
           {rings.map((r) => <Ring key={r.label} label={r.label} color={r.color} value={r.value} size={58} />)}
         </div>
         {host && <p className="muted small mt">🎲 Next night in is hosted by <strong>{host.display_name}</strong></p>}
       </section>
+
+      <UpNext today={data.today} events={events.events} />
 
       <MoneyCard f={money} />
 
@@ -143,6 +161,8 @@ export default function Today() {
           )}
         </>
       )}
+
+      <QuickAdd />
 
       <Sheet open={creating} onClose={() => setCreating(false)} title="Add a routine">
         <RoutineForm onSave={async (v) => { await data.saveRoutine(v); setCreating(false) }} />
