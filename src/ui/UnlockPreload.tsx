@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { replaceMany } from '../data/tableStore'
+import { mergeMissing } from '../data/tableStore'
 import { decryptPreload, type PreloadFile } from '../lib/preload'
 import { encodeSnapshot, parseSnapshotJson, type Snapshot } from '../lib/snapshot'
 
@@ -40,9 +40,9 @@ export function UnlockPreload({
   async function makeMine() {
     if (!snapshot) return
     try {
-      await replaceMany(snapshot.tables)
+      const added = await mergeMissing(snapshot.tables)
       const first = snapshot.tables.members?.[0]
-      if (first) localStorage.setItem('lp.me', first.id)
+      if (first && added.members) localStorage.setItem('lp.me', first.id)
       onFinished()
     } catch (err) {
       setError(messageOf(err))

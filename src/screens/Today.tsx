@@ -23,6 +23,7 @@ import { Ring } from '../ui/Ring'
 import { RoutineForm } from '../ui/RoutineForm'
 import { RoutineRows } from '../ui/RoutineList'
 import { QuickAdd } from '../ui/QuickAdd'
+import { StarterPlanLoader } from '../ui/StarterPlanLoader'
 import { Sheet } from '../ui/Sheet'
 import { UpNext } from '../ui/UpNext'
 import { WeekStrip } from '../ui/WeekStrip'
@@ -146,6 +147,7 @@ export default function Today() {
             actionLabel="Add a routine"
             onAction={() => setCreating(true)}
           />
+          <StarterPlanLoader />
         </section>
       ) : (
         <>

@@ -137,6 +137,41 @@ export async function insertIfEmpty(table: string, rows: Record<string, unknown>
   commit(table, rows.map((r) => ({ ...r, id: newId() }) as Row))
 }
 
+/** What identifies "the same thing" when merging a plan in, besides its id: a name (or a key for settings). */
+const SAME_THING: Record<string, string> = { routines: 'name', bills: 'name', income: 'name', places: 'name', settings: 'key' }
+const norm = (v: unknown) => String(v ?? '').trim().toLowerCase()
+
+/**
+ * Adds rows from a plan that this phone does not have yet, never changing or removing anything it has.
+ * A row counts as already here if its id matches, or it has the same name (key, for settings).
+ * Names entered on this phone are kept. Returns how many rows were added per table.
+ */
+export async function mergeMissing(tables: Record<string, Row[]>): Promise<Record<string, number>> {
+  if (snapshot) throw new Error(VIEW_ONLY_ERROR)
+  const next: Record<string, Row[]> = {}
+  const added: Record<string, number> = {}
+  for (const [table, rows] of Object.entries(tables)) {
+    if (!(TABLES as readonly string[]).includes(table) || !Array.isArray(rows)) continue
+    const have = entry(table).state.rows
+    if (table === 'members' && have.length > 0) continue
+    const field = SAME_THING[table]
+    const ids = new Set(have.map((r) => r.id))
+    const names = new Set(field ? have.map((r) => norm(r[field])) : [])
+    const fresh = rows.filter((r) => !ids.has(r.id) && !(field && names.has(norm(r[field]))))
+    if (fresh.length > 0) {
+      next[table] = [...have, ...fresh]
+      added[table] = fresh.length
+    }
+  }
+  if (Object.keys(next).length > 0) await replaceMany(next)
+  return added
+}
+
+/** True once this phone has any routines, bills or income (names alone do not count). */
+export function hasPlanData(): boolean {
+  return ['routines', 'bills', 'income'].some((t) => readSaved(t).length > 0)
+}
+
 /** Every table's rows, straight from storage (or the shared copy). */
 export function getAllRows(): Record<string, Row[]> {
   const out: Record<string, Row[]> = {}

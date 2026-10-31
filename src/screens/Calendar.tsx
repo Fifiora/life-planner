@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useEvents } from '../data/useEvents'
 import { useTable } from '../data/useTable'
 import { useRoutineData } from '../data/useRoutineData'
@@ -10,7 +10,8 @@ import { AgendaList } from '../ui/AgendaList'
 import { DaySheet } from '../ui/DaySheet'
 import { MonthGrid } from '../ui/MonthGrid'
 import { PageHead } from '../ui/PageHead'
-import type { NightOption } from '../types'
+import type { Bill, NightOption } from '../types'
+import { money } from '../lib/format'
 
 // The 6-week grid of the last month reaches into the next year, so the range ends one year before 9999.
 const MIN_YEAR = 1000
@@ -22,6 +23,7 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
   const data = useRoutineData()
   const events = useEvents()
   const nights = useTable<NightOption>('night_options')
+  const bills = useTable<Bill>('bills')
   const [params] = useSearchParams()
   const linked = params.get('date')
   const linkedDate = isDate(linked) ? linked : null
@@ -33,6 +35,7 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
 
   const today = data.today
   const [year, mm] = month.split('-')
+  const payoffs = bills.rows.filter((b) => b && b.kind === 'one_time' && b.due_month === month)
   const goTo = (m: string) => { setYearDraft(null); setMonth(m) }
 
   // Daily routines would put the same dots on every day, so dots show events and weekday-specific routines only.
@@ -74,6 +77,22 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
             <button type="button" className={`seg${view === 'agenda' ? ' active' : ''}`} aria-pressed={view === 'agenda'} onClick={() => setView('agenda')}>Agenda view</button>
           </div>
         </div>
+
+        {payoffs.length > 0 && (
+          <section className="payoffs" aria-label={`Payoffs due in ${monthLabel(month)}`}>
+            <div className="subheader">Payoffs due this month</div>
+            <ul className="list">
+              {payoffs.map((b) => (
+                <li key={b.id} className="list-row">
+                  <span className="grow" style={{ textDecoration: b.paid ? 'line-through' : undefined, opacity: b.paid ? 0.6 : 1 }}>{b.name}</span>
+                  <span>{money(b.amount)}</span>
+                  {b.paid && <span className="badge">Paid</span>}
+                </li>
+              ))}
+            </ul>
+            <Link to="/finance">Open in Finance</Link>
+          </section>
+        )}
 
         {view === 'month' ? (
           <MonthGrid month={month} today={today} selected={selected} markersFor={markersFor} completionFor={completionFor} eventCountFor={eventCountFor} onSelect={setSelected} />

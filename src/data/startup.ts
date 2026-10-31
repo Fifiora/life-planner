@@ -1,6 +1,6 @@
 import { isPreloadFile, type PreloadFile } from '../lib/preload'
 import { decodeSnapshot } from '../lib/snapshot'
-import { hasOwnData, loadSnapshot } from './tableStore'
+import { hasOwnData, hasPlanData, loadSnapshot } from './tableStore'
 
 export interface BootResult {
   mode: 'own' | 'view' | 'locked'
@@ -14,7 +14,7 @@ export interface BootResult {
 const SNAPSHOT_KEY = 'lp.snapshot'
 
 /** The planner locked with a passphrase that is published alongside the site (if there is one). */
-async function fetchPreload(): Promise<PreloadFile | null> {
+export async function fetchPreload(): Promise<PreloadFile | null> {
   try {
     const res = await fetch('./preload.enc.json', { cache: 'no-store' })
     if (!res.ok) return null
@@ -64,7 +64,7 @@ export async function startup(hash: string): Promise<BootResult> {
     }
   }
 
-  if (!hasOwnData() && localStorage.getItem('lp.skipPreload') !== '1') {
+  if (!hasPlanData() && localStorage.getItem('lp.skipPreload') !== '1') {
     const preload = await fetchPreload()
     if (preload) return { mode: 'locked', fromLink: false, preload, ...(linkError ? { error: linkError } : {}) }
   }

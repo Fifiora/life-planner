@@ -15,6 +15,7 @@ import { buildViewLink, encodeSnapshot, makeSnapshot, trimForSharing } from '../
 import type { Member, Row } from '../types'
 import { PageHead } from '../ui/PageHead'
 import { SharedCopyNotice } from '../ui/SharedCopyNotice'
+import { StarterPlanLoader } from '../ui/StarterPlanLoader'
 import { useToast } from '../ui/Toast'
 
 function download(name: string, text: string) {
@@ -194,6 +195,12 @@ export default function Settings() {
             </div>
           </div>
         )}
+      </section>
+
+      <section className="card">
+        <h2>Starter plan</h2>
+        <p className="muted small">Our routines, monthly bills, one-time payoffs and targets come with the site, locked with the passphrase. Load them any time: only what is missing is added, and nothing you changed is touched.</p>
+        <StarterPlanLoader />
       </section>
 
       <section className="card">

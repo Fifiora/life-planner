@@ -1,3 +1,4 @@
+import { StarterPlanLoader } from '../../ui/StarterPlanLoader'
 import { useState } from 'react'
 import type { FinanceData } from '../../data/useFinance'
 import { useHousehold } from '../../data/household'
@@ -42,6 +43,13 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
   return (
     <>
       <Confetti fire={celebrate} />
+      {f.bills.rows.length === 0 && (
+        <section className="card">
+          <h2>No bills yet</h2>
+          <p className="muted small">Load the monthly bills and one-time payoffs that came with the site, or add your own below.</p>
+          <StarterPlanLoader />
+        </section>
+      )}
       <section className="card">
         <h2>Paid this month</h2>
         <div className="bar mt" role="progressbar" aria-label="Bills paid this month" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
