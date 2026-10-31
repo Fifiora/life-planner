@@ -163,3 +163,29 @@ describe('routinesOn for "a weekday in the month"', () => {
     expect(routinesOn('2026-11-08', [q], '2026-11-02')).toHaveLength(0)
   })
 })
+
+describe('a monthly weekday routine once it was done', () => {
+  const market = routine({ id: 'm', name: 'Farmers market', cadence: 'monthly', weekday: 2 })
+  const log = (date: string, member = 'a'): RoutineLog => ({ id: `l-${date}-${member}`, routine_id: 'm', member_id: member, date, done: true, value: null })
+  const anchor = '2026-11-02'
+  it('stops showing on later Tuesdays of the same month, but still on the day it was done', () => {
+    const opts = { logs: [log('2026-11-03')], memberId: 'a' }
+    expect(routinesOn('2026-11-03', [market], anchor, opts)).toHaveLength(1)
+    expect(routinesOn('2026-11-10', [market], anchor, opts)).toHaveLength(0)
+    expect(routinesOn('2026-11-24', [market], anchor, opts)).toHaveLength(0)
+  })
+  it('comes back the next month', () => {
+    expect(routinesOn('2026-12-01', [market], anchor, { logs: [log('2026-11-03')], memberId: 'a' })).toHaveLength(1)
+  })
+  it('keeps showing before it was done', () => {
+    expect(routinesOn('2026-11-03', [market], anchor, { logs: [log('2026-11-10')], memberId: 'a' })).toHaveLength(1)
+  })
+  it('only a shared routine is hidden by the partner doing it', () => {
+    const partner = { logs: [log('2026-11-03', 'b')], memberId: 'a' }
+    expect(routinesOn('2026-11-10', [market], anchor, partner)).toHaveLength(1)
+    expect(routinesOn('2026-11-10', [{ ...market, shared: true }], anchor, partner)).toHaveLength(0)
+  })
+  it('counts the later Tuesdays as nothing missed in the day shading', () => {
+    expect(dayCompletion('2026-11-10', [market], [log('2026-11-03')], 'a', anchor)).toEqual({ done: 0, total: 0 })
+  })
+})

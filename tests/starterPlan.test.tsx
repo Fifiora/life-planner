@@ -63,6 +63,19 @@ describe('mergeMissing', () => {
   })
 })
 
+describe('mergeMissing keeps plan rows usable and distinct', () => {
+  it('a routine for a plan member that this phone does not have becomes shared by both', async () => {
+    localStorage.setItem('lp.data.members', JSON.stringify([row({ id: 'a' }), row({ id: 'b' })]))
+    await mergeMissing({ routines: [row({ id: 'r1', name: 'Walk', applies_to: 'sm1' }), row({ id: 'r2', name: 'Run', applies_to: 'a' }), row({ id: 'r3', name: 'Read', applies_to: 'both' })] })
+    expect(getAllRows().routines.map((r) => [r.name, r.applies_to])).toEqual([['Walk', 'both'], ['Run', 'a'], ['Read', 'both']])
+  })
+  it('keeps a payoff that has the same name as a monthly bill', async () => {
+    localStorage.setItem('lp.data.bills', JSON.stringify([row({ id: 'b1', name: 'Best Buy', kind: 'recurring', due_month: null })]))
+    expect(await mergeMissing({ bills: [row({ id: 'p1', name: 'Best Buy', kind: 'one_time', due_month: '2026-11' })] })).toEqual({ bills: 1 })
+    expect(await mergeMissing({ bills: [row({ id: 'p1', name: 'Best Buy', kind: 'one_time', due_month: '2026-11' })] })).toEqual({})
+  })
+})
+
 describe('hasPlanData', () => {
   it('is false with only names, true once there are routines, bills or income', () => {
     localStorage.setItem('lp.data.members', JSON.stringify([row({ id: 'm1' })]))

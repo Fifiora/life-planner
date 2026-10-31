@@ -97,6 +97,13 @@ describe('startup', () => {
       expect((await startup('')).mode).toBe('view')
     })
 
+    it('shows a remembered view-only copy even when only names were entered before (no unlock loop)', async () => {
+      localStorage.setItem('lp.data.members', JSON.stringify([{ id: 'me' }]))
+      localStorage.setItem('lp.snapshot', await sample())
+      fetchMock.mockResolvedValue(respond(PRELOAD))
+      expect((await startup('')).mode).toBe('view')
+    })
+
     it('stops offering it after "start empty"', async () => {
       localStorage.setItem('lp.skipPreload', '1')
       fetchMock.mockResolvedValue(respond(PRELOAD))

@@ -54,6 +54,13 @@ describe('ReceiptLogger', () => {
     expect(store.put).toHaveBeenCalledWith(saved('expenses')[0].receipt_id, expect.any(Blob))
   })
 
+  it('lets the phone offer its photo library as well as the camera', () => {
+    renderScreen(<ReceiptLogger store={fakeStore()} compress={noCompress} />)
+    const input = screen.getByLabelText('Snap receipt')
+    expect(input).toHaveAttribute('accept', 'image/*')
+    expect(input).not.toHaveAttribute('capture')
+  })
+
   it('asks for a total', async () => {
     renderScreen(<ReceiptLogger store={fakeStore()} compress={noCompress} />)
     await userEvent.click(screen.getByRole('button', { name: 'Save receipt' }))
