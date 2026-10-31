@@ -38,11 +38,11 @@ export function MonthGrid({
             aria-label={label(date)}
             aria-current={date === today ? 'date' : undefined}
             aria-pressed={selected === date}
-            className={`mcell${date.slice(0, 7) === month ? '' : ' outside'}${date === today ? ' today' : ''}${shade ? ` done${shade}` : ''}`}
+            className={`cal-cell${date.slice(0, 7) === month ? '' : ' outside'}${date === today ? ' today' : ''}${shade ? ` done${shade}` : ''}`}
             onClick={() => onSelect(date)}
           >
-            <span className="mcell-num">{Number(date.slice(8))}</span>
-            <span className="mcell-dots">
+            <span className="cal-num">{Number(date.slice(8))}</span>
+            <span className="cal-dots">
               {markersFor(date).slice(0, 4).map((m) => <span key={m} className="mdot" data-marker={m} style={{ background: m === 'other' ? 'var(--muted)' : `var(--${m})` }} />)}
             </span>
           </button>

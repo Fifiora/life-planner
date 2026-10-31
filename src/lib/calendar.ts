@@ -1,5 +1,5 @@
-import type { Bucket, CalEvent, Routine, RoutineLog } from '../types'
-import { addDays, daysBetween, weekStart } from './dates'
+import type { Bucket, CalEvent, Repeat, Routine, RoutineLog } from '../types'
+import { addDays, daysBetween, DEFAULT_ANCHOR, weekStart } from './dates'
 
 /** True for a real calendar date written YYYY-MM-DD. */
 export function isDate(value: unknown): value is string {
@@ -68,7 +68,8 @@ export function eventOccurrences(event: CalEvent, from: string, to: string): str
 
 /** Routines that belong on this specific day. Monthly/quarterly ones without a weekday belong to the period, not a day. */
 export function routinesOn(date: string, routines: Routine[], anchor: string): Routine[] {
-  const weekIndex = Math.floor(daysBetween(weekStart(anchor), weekStart(date)) / 7)
+  const start = isDate(anchor) ? anchor : DEFAULT_ANCHOR
+  const weekIndex = Math.floor(daysBetween(weekStart(start), weekStart(date)) / 7)
   const evenWeek = ((weekIndex % 2) + 2) % 2 === 0
   return routines.filter((r) => {
     if (r.cadence === 'daily') return true
@@ -105,4 +106,26 @@ export function validateEvent(v: { title: string; date: string; repeat: string; 
     if (v.repeat_until < v.date) return '"Repeat until" must be on or after the date.'
   }
   return null
+}
+
+const BUCKETS = ['health', 'study', 'travel', 'food', 'finance', 'other']
+const REPEATS: Repeat[] = ['none', 'weekly', 'biweekly', 'monthly', 'yearly']
+
+/** A safe copy of a stored event row, or null when it cannot be shown (so one bad row never breaks a screen). */
+export function cleanEvent(row: unknown): CalEvent | null {
+  if (!row || typeof row !== 'object') return null
+  const r = row as Record<string, unknown>
+  if (typeof r.id !== 'string' || typeof r.title !== 'string' || !isDate(r.date)) return null
+  return {
+    id: r.id,
+    title: r.title,
+    date: r.date,
+    time: typeof r.time === 'string' && /^\d{2}:\d{2}$/.test(r.time) ? r.time : null,
+    member: typeof r.member === 'string' ? r.member : 'both',
+    category: (typeof r.category === 'string' && BUCKETS.includes(r.category) ? r.category : 'other') as CalEvent['category'],
+    repeat: typeof r.repeat === 'string' && (REPEATS as string[]).includes(r.repeat) ? (r.repeat as Repeat) : 'none',
+    repeat_until: isDate(r.repeat_until) ? r.repeat_until : null,
+    notes: typeof r.notes === 'string' ? r.notes : '',
+    done_on: Array.isArray(r.done_on) ? r.done_on.filter((d): d is string => typeof d === 'string') : [],
+  }
 }

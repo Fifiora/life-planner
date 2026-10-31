@@ -6,6 +6,7 @@ import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
 import { DEFAULT_ANCHOR, todayCT } from '../lib/dates'
 import { createPinRecord, isPinRecord, isValidPin } from '../lib/pin'
+import { isDate } from '../lib/calendar'
 import { readFileText } from '../lib/files'
 import { eraseThisPhone, logOut, reloadApp } from '../lib/session'
 import { buildExport, parseImport } from '../lib/export'
@@ -147,7 +148,7 @@ export default function Settings() {
             onClick={async () => {
               if (target !== null && Number.isFinite(Number(target)) && Number(target) >= 0) await settings.set('savings_target', String(Number(target)))
               if (flex !== null && Number.isFinite(Number(flex)) && Number(flex) >= 0) await settings.set('flex_budget', String(Number(flex)))
-              await settings.set('biweekly_anchor', anchor ?? settings.get('biweekly_anchor') ?? DEFAULT_ANCHOR)
+              if (anchor === null || isDate(anchor)) await settings.set('biweekly_anchor', anchor ?? settings.get('biweekly_anchor') ?? DEFAULT_ANCHOR)
               toast('Saved')
             }}
           >Save</button>

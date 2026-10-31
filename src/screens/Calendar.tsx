@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useEvents } from '../data/useEvents'
 import { useRoutineData } from '../data/useRoutineData'
-import { dayCompletion, dayMarkers } from '../lib/calendar'
+import { dayCompletion, dayMarkers, isDate } from '../lib/calendar'
 import { todayCT } from '../lib/dates'
 import { monthLabel, shiftMonthKey } from '../lib/format'
 import { AgendaList } from '../ui/AgendaList'
@@ -14,8 +15,11 @@ const MONTH_NAMES = Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(2000,
 export default function Calendar({ initialDate }: { initialDate?: string }) {
   const data = useRoutineData()
   const events = useEvents()
-  const [month, setMonth] = useState((initialDate ?? todayCT()).slice(0, 7))
-  const [selected, setSelected] = useState<string | null>(null)
+  const [params] = useSearchParams()
+  const linked = params.get('date')
+  const linkedDate = isDate(linked) ? linked : null
+  const [month, setMonth] = useState((linkedDate ?? initialDate ?? todayCT()).slice(0, 7))
+  const [selected, setSelected] = useState<string | null>(linkedDate)
   const [view, setView] = useState<'month' | 'agenda'>('month')
   const [agendaDays, setAgendaDays] = useState(14)
   const [yearDraft, setYearDraft] = useState<string | null>(null)

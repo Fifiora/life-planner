@@ -14,7 +14,7 @@ export function WeekStrip({ today, events }: { today: string; events: CalEvent[]
       {Array.from({ length: 7 }, (_, i) => addDays(start, i)).map((d) => {
         const busy = events.some((e) => eventOccurrences(e, d, d).length > 0)
         return (
-          <Link key={d} to="/calendar" className={`wday${d === today ? ' today' : ''}`} aria-label={full(d)} aria-current={d === today ? 'date' : undefined}>
+          <Link key={d} to={`/calendar?date=${d}`} className={`wday${d === today ? ' today' : ''}`} aria-label={full(d)} aria-current={d === today ? 'date' : undefined}>
             <span className="wday-name">{short(d)}</span>
             <span className="wday-num">{Number(d.slice(8))}</span>
             <span className="wday-dot" style={{ opacity: busy ? 1 : 0 }} />

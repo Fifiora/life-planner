@@ -1,3 +1,4 @@
+import { cleanEvent } from '../lib/calendar'
 import type { CalEvent } from '../types'
 import { useTable } from './useTable'
 
@@ -6,7 +7,7 @@ export type EventValues = Omit<CalEvent, 'id' | 'done_on'>
 /** The couple's own calendar events, with add / edit / delete and per-day ticking for repeats. */
 export function useEvents() {
   const table = useTable<CalEvent>('events')
-  const events = table.rows
+  const events = table.rows.map(cleanEvent).filter((e): e is CalEvent => e !== null)
 
   return {
     events,
