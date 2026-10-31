@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useHousehold } from '../data/household'
 import { getCode, startSharing, stopSyncing, testConnection, useSyncStatus } from '../data/syncRuntime'
 import { reloadApp } from '../lib/session'
+import { migrateLocalPin } from '../lib/pinStore'
 import { JoinForm } from './JoinForm'
 import { describeSync } from './SyncStatus'
 
@@ -30,6 +31,7 @@ export function SyncCard({ onJoined = reloadApp }: { onJoined?: () => void }) {
     setStopped(false)
     try {
       setFresh(await startSharing())
+      await migrateLocalPin(true) // a PIN set on this phone before sharing now covers both devices
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { joinWithCode } from '../data/syncRuntime'
+import { PinRequiredError, joinWithCode } from '../data/syncRuntime'
 import { reloadApp } from '../lib/session'
 import { isValidCode } from '../lib/syncCrypto'
 
@@ -11,6 +11,8 @@ export function JoinForm({ onJoined = reloadApp, onCancel, warning = REPLACE_WAR
   const [typed, setTyped] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [needPin, setNeedPin] = useState(false)
+  const [pin, setPin] = useState('')
 
   async function join(e: FormEvent) {
     e.preventDefault()
@@ -18,9 +20,11 @@ export function JoinForm({ onJoined = reloadApp, onCancel, warning = REPLACE_WAR
     setBusy(true)
     setError(null)
     try {
-      await joinWithCode(typed)
+      await joinWithCode(typed, pin ? { pin } : undefined)
+      localStorage.removeItem('lp.pin') // the shared planner's PIN (if any) now applies; this phone's own is forgotten
       onJoined()
     } catch (err) {
+      if (err instanceof PinRequiredError) setNeedPin(true)
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
@@ -32,6 +36,12 @@ export function JoinForm({ onJoined = reloadApp, onCancel, warning = REPLACE_WAR
       <p className="callout">{warning}</p>
       <label className="label" htmlFor="sync-code">Pairing code</label>
       <input id="sync-code" className="input" autoCapitalize="characters" autoCorrect="off" autoComplete="off" value={typed} onChange={(e) => setTyped(e.target.value)} />
+      {needPin && (
+        <>
+          <label className="label" htmlFor="join-pin">PIN</label>
+          <input id="join-pin" className="input" type="password" inputMode="numeric" autoComplete="off" value={pin} onChange={(e) => setPin(e.target.value)} />
+        </>
+      )}
       {error && <p role="alert" className="error">{error}</p>}
       <div className="actions">
         <button type="submit" className="btn btn-primary" disabled={busy}>Replace this phone and join</button>

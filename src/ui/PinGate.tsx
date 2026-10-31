@@ -1,16 +1,8 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react'
 import { shouldLock } from '../lib/lockPolicy'
 import { isPinRecord, verifyPin, type PinRecord } from '../lib/pin'
+import { effectivePin, pinSignature, subscribePin } from '../lib/pinStore'
 import { eraseThisPhone, reloadApp } from '../lib/session'
-
-function readRecord(): PinRecord | null {
-  try {
-    const parsed: unknown = JSON.parse(localStorage.getItem('lp.pin') ?? 'null')
-    return isPinRecord(parsed) ? parsed : null
-  } catch {
-    return null
-  }
-}
 
 const eraseAndReload = () => {
   eraseThisPhone()
@@ -29,8 +21,13 @@ export function PinGate({
   onErase?: () => void
   now?: () => number
 }) {
-  const [record] = useState(readRecord)
-  const [unlocked, setUnlocked] = useState(() => !record || sessionStorage.getItem('lp.unlocked') === '1')
+  // The PIN in force can change while the app is open (set on another paired device); it applies the next time the app locks.
+  const signature = useSyncExternalStore(subscribePin, pinSignature)
+  const record = useMemo<PinRecord | null>(() => {
+    const parsed: unknown = JSON.parse(signature)
+    return isPinRecord(parsed) ? parsed : null
+  }, [signature])
+  const [unlocked, setUnlocked] = useState(() => !effectivePin() || sessionStorage.getItem('lp.unlocked') === '1')
   const [pin, setPin] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [forgot, setForgot] = useState(false)
@@ -88,6 +85,7 @@ export function PinGate({
         <p className="mt"><button type="button" className="plain-btn muted" onClick={() => setForgot(true)}>Forgot PIN?</button></p>
       ) : (
         <div className="card mt">
+          {localStorage.getItem('lp.sync.code') !== null && <p className="muted small">If your other device is still logged in, open Settings there and set a new PIN. It applies here too.</p>}
           <p className="muted small">The only way in without the PIN is to erase this phone's planner data. Anything you haven't backed up is lost.</p>
           <div className="actions">
             <button type="button" className="btn btn-danger" onClick={onErase}>Erase this phone and start over</button>

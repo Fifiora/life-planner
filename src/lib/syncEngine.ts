@@ -193,7 +193,7 @@ export class SyncEngine {
   }
 
   /** Make this phone match the shared copy exactly (joining). Refuses if the shared copy is empty: that is a mistyped code. */
-  async replaceFromRemote(): Promise<{ pulled: number }> {
+  async replaceFromRemote(opts: { beforeApply?: (tables: Record<string, Row[]>) => Promise<void> } = {}): Promise<{ pulled: number }> {
     const tables: Record<string, Row[]> = Object.fromEntries(TABLES.map((t) => [t, [] as Row[]]))
     const meta: Meta = {}
     let cursor = 0
@@ -224,6 +224,7 @@ export class SyncEngine {
     if (unreadable > 0) {
       throw new Error(`${unreadable} item${unreadable === 1 ? '' : 's'} in the shared planner could not be read with this code. Nothing on this phone was changed. Check the code (and that the first phone's clock is right) and try again.`)
     }
+    await opts.beforeApply?.(tables) // may refuse (it throws) before anything on this phone is touched
     if (this.stopped) return { pulled: 0 }
     this.opts.local.apply(tables)
     this.meta = meta

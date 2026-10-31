@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
+import { clearPin, isSharing, pinSignature, savePin, subscribePin } from '../lib/pinStore'
 import { setThemeChoice, type ThemeChoice } from '../lib/theme'
-import { useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { useHousehold } from '../data/household'
 import { getAllRows, replaceMany } from '../data/tableStore'
 import { useSettings } from '../data/useSettings'
@@ -44,13 +45,7 @@ export default function Settings() {
   const [link, setLink] = useState<string | null>(null)
   const [flex, setFlex] = useState<string | null>(null)
   const [confirmErase, setConfirmErase] = useState(false)
-  const [pinOn, setPinOn] = useState(() => {
-    try {
-      return isPinRecord(JSON.parse(localStorage.getItem('lp.pin') ?? 'null'))
-    } catch {
-      return false
-    }
-  })
+  const pinOn = useSyncExternalStore(subscribePin, pinSignature) !== 'null'
   const theme = useThemeChoice()
   const style = useStyleChoice()
   const todayKey = useToday()
@@ -64,12 +59,11 @@ export default function Settings() {
   async function setPin() {
     if (!isValidPin(pin1)) return setPinError('Use 4 to 8 digits.')
     if (pin1 !== pin2) return setPinError("The two PINs don't match.")
-    localStorage.setItem('lp.pin', JSON.stringify(await createPinRecord(pin1)))
+    await savePin(await createPinRecord(pin1))
     sessionStorage.setItem('lp.unlocked', '1') // you just set it, so don't lock yourself out now
     setPinError(null)
     setPin1('')
     setPin2('')
-    setPinOn(true)
     toast('PIN set')
   }
 
@@ -257,11 +251,12 @@ export default function Settings() {
       <section className="card">
         <h2>App PIN</h2>
         <p className="muted small">An optional lock that asks for a PIN each time the app is opened. It keeps casual eyes out; it doesn't encrypt the data stored on this phone.</p>
+        {isSharing() && <p className="muted small">This PIN is shared by all your paired devices: set it once and it applies everywhere, and a new device needs it to join.</p>}
         {pinOn ? (
           <>
             <div className="actions">
               <button type="button" className="btn" onClick={() => { sessionStorage.removeItem('lp.unlocked'); reloadApp() }}>Lock now</button>
-              <button type="button" className="btn btn-danger" onClick={() => { localStorage.removeItem('lp.pin'); setPinOn(false) }}>Remove PIN</button>
+              <button type="button" className="btn btn-danger" onClick={() => void clearPin()}>Remove PIN</button>
             </div>
             <label className="label" htmlFor="lock-after">Lock when away</label>
             <select id="lock-after" className="input" value={lockAfter} onChange={(e) => { localStorage.setItem('lp.lockAfter', e.target.value); setLockAfter(e.target.value) }}>

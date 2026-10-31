@@ -1,3 +1,5 @@
+import { verifyPin } from '../lib/pin'
+import { recordFromSettingsRows } from '../lib/pinStore'
 import { useSyncExternalStore } from 'react'
 import { buildExport } from '../lib/export'
 import { downloadText } from '../lib/files'
@@ -195,16 +197,33 @@ export async function startSharing(): Promise<string> {
  * Other phone: enter the code. A backup of what this phone holds is downloaded first, then this phone is made to
  * match the shared planner. If the shared planner cannot be reached, nothing here changes.
  */
-export async function joinWithCode(input: string, over?: { downloadBackup?: () => void }): Promise<void> {
+/** The shared planner has a PIN and none was given. */
+export class PinRequiredError extends Error {
+  constructor() {
+    super('This planner has a PIN. Enter it to join.')
+    this.name = 'PinRequiredError'
+  }
+}
+
+export async function joinWithCode(input: string, over?: { downloadBackup?: () => void; pin?: string }): Promise<void> {
   if (!isValidCode(input)) throw new Error("That doesn't look like a pairing code.")
   const d = getDeps()
   const code = formatCode(normalizeCode(input))
   const mine = ++generation
   teardown()
-  ;(over?.downloadBackup ?? d.downloadBackup)()
   const { engine, household } = await buildEngine(code)
   try {
-    await engine.replaceFromRemote()
+    await engine.replaceFromRemote({
+      beforeApply: async (tables) => {
+        // If the planner has a PIN, this phone must know it before anything is replaced.
+        const record = recordFromSettingsRows((tables.settings ?? []) as { key?: unknown; value?: unknown }[])
+        if (record) {
+          if (!over?.pin) throw new PinRequiredError()
+          if (!(await verifyPin(over.pin, record))) throw new Error("That PIN isn't right.")
+        }
+        ;(over?.downloadBackup ?? d.downloadBackup)() // the backup is taken just before this phone is replaced
+      },
+    })
     if (mine !== generation) throw new Error('Superseded by a newer request.')
   } catch (err) {
     engine.stop()
