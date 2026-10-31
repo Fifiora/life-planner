@@ -4,7 +4,8 @@ import { useHousehold } from '../../data/household'
 import { todayCT } from '../../lib/dates'
 import { categoryTotals, payoffProgress } from '../../lib/finance2'
 import { money, monthLabel } from '../../lib/format'
-import { budgetFor, cancelTracker, monthCallouts, monthKpis, plannedByCategory, spendShares, transfersToMake } from '../../lib/ledger'
+import { budgetFor, cancelTracker, categoryBreakdown, monthCallouts, monthKpis, plannedByCategory, spendShares, transfersToMake } from '../../lib/ledger'
+import { BreakdownPanel } from '../../ui/BreakdownPanel'
 import { Callouts } from '../../ui/Callouts'
 import { Donut } from '../../ui/Donut'
 import { PayoffCard } from '../../ui/PayoffCard'
@@ -68,7 +69,17 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
 
       <section className="card">
         <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Spending by category</h2></div>{usingPlan && <span className="pill">planned</span>}</div>
-        <Donut shares={shares} centerLabel={money(shares.reduce((s, x) => s + x.total, 0))} />
+        <Donut
+          shares={shares}
+          centerLabel={money(shares.reduce((s, x) => s + x.total, 0))}
+          detail={(category) => (
+            <BreakdownPanel
+              breakdown={categoryBreakdown({ category, bills: f.bills.rows, payments: f.payments.rows, expenses: f.expenses.rows, month, planned: usingPlan })}
+              income={totalIncome}
+              planned={usingPlan}
+            />
+          )}
+        />
       </section>
 
       <section className="card">

@@ -360,3 +360,22 @@ html[data-theme="dark"] { color-scheme: dark; }
 
 .back-btn { display: inline-flex; align-items: center; min-height: 40px; padding: 0 0.8rem 0 0.4rem; margin-bottom: 0.3rem; border: 0; border-radius: 0.8rem; background: transparent; color: var(--brand); font: inherit; font-weight: 700; cursor: pointer; }
 .back-btn:hover { background: color-mix(in srgb, var(--brand) 12%, transparent); }
+
+/* ---------- Interactive donut ---------- */
+.donut-layout { display: grid; gap: 1rem; }
+.donut-main { display: grid; gap: 0.8rem; justify-items: stretch; }
+.donut-main > .chip { justify-self: start; }
+.slice { cursor: pointer; transition: stroke-width 0.2s ease, opacity 0.2s ease, filter 0.2s ease; }
+.slice:hover { stroke-width: 17; filter: brightness(1.08); }
+.slice.dimmed { opacity: 0.3; }
+.legend-row { display: flex; align-items: center; gap: 0.5rem; width: 100%; min-height: 40px; padding: 0.2rem 0.5rem; border: 0; border-radius: 0.8rem; background: transparent; color: var(--ink); font: inherit; font-size: 0.9rem; text-align: left; cursor: pointer; transition: background 0.15s ease, opacity 0.2s ease; }
+.legend-row:hover { background: color-mix(in srgb, var(--brand) 10%, transparent); }
+.legend-row[aria-pressed="true"] { background: color-mix(in srgb, var(--brand) 16%, transparent); font-weight: 700; }
+.legend-row[data-dimmed="true"] { opacity: 0.4; }
+.breakdown { border-radius: 1rem; padding: 0.9rem; background: color-mix(in srgb, var(--brand) 7%, var(--card)); border: 1px solid var(--line); animation: screen-in 0.2s ease both; }
+.breakdown h3 { margin: 0 0 0.2rem; }
+.breakdown-total { font-size: 1.5rem; font-weight: 750; margin: 0; }
+.chip-kind { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.1rem 0.45rem; border-radius: 0.6rem; background: var(--line); color: var(--muted); }
+@media (min-width: 46rem) {
+  .donut-layout.has-detail { grid-template-columns: 1fr 1fr; align-items: start; }
+}

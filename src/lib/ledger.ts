@@ -85,6 +85,61 @@ export function plannedByCategory(bills: Bill[], month: string): Record<string, 
   return by
 }
 
+// ---------- One category in detail ----------
+
+export interface BreakdownRow {
+  label: string
+  amount: number
+  kind: 'bill' | 'payoff' | 'spent'
+}
+
+export interface Breakdown {
+  category: string
+  rows: BreakdownRow[]
+  total: number
+  previousTotal: number
+  change: number
+}
+
+function breakdownRows(category: string, bills: Bill[], payments: BillPayment[], expenses: Expense[], month: string, planned: boolean): BreakdownRow[] {
+  const rows: BreakdownRow[] = []
+  if (planned) {
+    for (const b of bills) {
+      if ((b.kind === 'recurring' || b.due_month === month) && normCategory(b.category) === category) {
+        rows.push({ label: b.name, amount: b.amount, kind: b.kind === 'one_time' ? 'payoff' : 'bill' })
+      }
+    }
+  } else {
+    const inMonth = expenses.filter((e) => e.date.slice(0, 7) === month)
+    for (const e of inMonth) {
+      if (kindOf(e) === 'expense' && normCategory(e.category) === category) rows.push({ label: e.note?.trim() || cap(category), amount: e.amount, kind: 'spent' })
+    }
+    if (!inMonth.some((e) => e.source === 'bank')) {
+      const byId = new Map(bills.map((b) => [b.id, b]))
+      for (const p of payments) {
+        const bill = byId.get(p.bill_id)
+        if (p.month === month && bill && bill.kind === 'recurring' && normCategory(bill.category) === category) rows.push({ label: bill.name, amount: bill.amount, kind: 'bill' })
+      }
+      for (const b of bills) {
+        if (b.kind === 'one_time' && b.paid && b.due_month === month && normCategory(b.category) === category) rows.push({ label: b.name, amount: b.amount, kind: 'payoff' })
+      }
+    }
+  }
+  return rows.sort((a, b) => b.amount - a.amount || a.label.localeCompare(b.label))
+}
+
+/** What makes up one category in a month (planned bills, or what really happened), and how it compares with last month. */
+export function categoryBreakdown(input: { category: string; bills: Bill[]; payments: BillPayment[]; expenses: Expense[]; month: string; planned: boolean }): Breakdown {
+  const { category, bills, payments, expenses, month, planned } = input
+  const rows = breakdownRows(category, bills, payments, expenses, month, planned)
+  const total = rows.reduce((s, r) => s + r.amount, 0)
+  const previous = shiftMonthKey(month, -1)
+  const previousTotal = planned
+    ? (plannedByCategory(bills, previous)[category] ?? 0)
+    : (monthActuals(bills, payments, expenses, previous).spentByCategory[category] ?? 0)
+  return { category, rows, total, previousTotal, change: total - previousTotal }
+}
+
 // ---------- Transfers and cancel tracker ----------
 
 export interface TransferItem {

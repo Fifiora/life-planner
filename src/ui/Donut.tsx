@@ -1,3 +1,4 @@
+import { useState, type ReactNode } from 'react'
 import { cap, money } from '../lib/format'
 import type { Share } from '../lib/ledger'
 
@@ -18,48 +19,84 @@ export function categoryColor(category: string): string {
 const R = 38
 const CIRC = 2 * Math.PI * R
 
-/** Spending split into slices, with a legend of amounts and shares beside it. */
-export function Donut({ shares, centerLabel }: { shares: Share[]; centerLabel?: string }) {
+/**
+ * Spending split into slices, with a legend of amounts and shares beside it.
+ * Choose a slice or a legend row to dim the rest and show its breakdown; choose it again (or the empty
+ * area, or "Show all") to bring everything back.
+ */
+export function Donut({ shares, centerLabel, detail }: { shares: Share[]; centerLabel?: string; detail?: (category: string) => ReactNode }) {
+  const [selected, setSelected] = useState<string | null>(null)
   if (shares.length === 0) return <p className="muted small">No spending yet this month.</p>
+
+  const active = selected && shares.some((s) => s.category === selected) ? selected : null
+  const toggle = (category: string) => setSelected(active === category ? null : category)
   const label = `Spending by category: ${shares.map((s) => `${s.category} ${s.pct}%`).join(', ')}`
+  const sum = shares.reduce((s, x) => s + x.total, 0)
   let used = 0
+
   return (
-    <div className="donut-row">
-      <div role="img" aria-label={label} className="donut">
-        <svg viewBox="0 0 100 100" aria-hidden>
-          <circle cx="50" cy="50" r={R} fill="none" stroke="var(--line)" strokeWidth="14" />
-          {shares.map((s) => {
-            const length = (s.total / shares.reduce((sum, x) => sum + x.total, 0)) * CIRC
-            const circle = (
-              <circle
-                key={s.category}
-                cx="50"
-                cy="50"
-                r={R}
-                fill="none"
-                stroke={categoryColor(s.category)}
-                strokeWidth="14"
-                strokeDasharray={`${Math.max(0, length - 0.6)} ${CIRC}`}
-                strokeDashoffset={-used}
-                transform="rotate(-90 50 50)"
-              />
-            )
-            used += length
-            return circle
-          })}
-          {centerLabel && <text x="50" y="54" textAnchor="middle" fontSize="11" fontWeight="700" fill="currentColor">{centerLabel}</text>}
-        </svg>
+    <div className={`donut-layout${active && detail ? ' has-detail' : ''}`}>
+      <div className="donut-main">
+        <div role="img" aria-label={label} className="donut" onClick={() => setSelected(null)}>
+          <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r={R} fill="none" stroke="var(--line)" strokeWidth="14" />
+            {shares.map((s) => {
+              const length = (s.total / sum) * CIRC
+              const circle = (
+                <circle
+                  key={s.category}
+                  data-category={s.category}
+                  className={`slice${active === s.category ? ' selected' : ''}${active && active !== s.category ? ' dimmed' : ''}`}
+                  cx="50"
+                  cy="50"
+                  r={R}
+                  fill="none"
+                  stroke={categoryColor(s.category)}
+                  strokeWidth={active === s.category ? 17 : 14}
+                  strokeDasharray={`${Math.max(0, length - 0.6)} ${CIRC}`}
+                  strokeDashoffset={-used}
+                  transform="rotate(-90 50 50)"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggle(s.category)
+                  }}
+                >
+                  <title>{`${cap(s.category)}: ${money(s.total)} (${s.pct}%)`}</title>
+                </circle>
+              )
+              used += length
+              return circle
+            })}
+            {centerLabel && <text x="50" y="54" textAnchor="middle" fontSize="11" fontWeight="700" fill="currentColor">{centerLabel}</text>}
+          </svg>
+        </div>
+        <ul className="legend">
+          {shares.map((s) => (
+            <li key={s.category}>
+              <button
+                type="button"
+                className="legend-row"
+                aria-pressed={active === s.category}
+                data-dimmed={active && active !== s.category ? 'true' : undefined}
+                onClick={() => toggle(s.category)}
+              >
+                <span className="dot" style={{ background: categoryColor(s.category) }} aria-hidden />
+                <span className="grow">{cap(s.category)}</span>
+                <strong>{money(s.total)}</strong>
+                <span className="muted small">{`${s.pct}%`}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        {active && (
+          <button type="button" className="chip" onClick={() => setSelected(null)}>Show all</button>
+        )}
       </div>
-      <ul className="legend">
-        {shares.map((s) => (
-          <li key={s.category}>
-            <span className="dot" style={{ background: categoryColor(s.category) }} aria-hidden />
-            <span className="grow">{cap(s.category)}</span>
-            <strong>{money(s.total)}</strong>
-            <span className="muted small">{`${s.pct}%`}</span>
-          </li>
-        ))}
-      </ul>
+      {active && detail && (
+        <aside role="complementary" aria-label={`Breakdown for ${cap(active)}`} className="breakdown">
+          {detail(active)}
+        </aside>
+      )}
     </div>
   )
 }
