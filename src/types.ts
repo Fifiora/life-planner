@@ -186,3 +186,19 @@ export interface ChecklistItem {
   key: string
   done: boolean
 }
+
+export type Repeat = 'none' | 'weekly' | 'biweekly' | 'monthly' | 'yearly'
+
+/** An event the couple adds to the calendar. Repeats are worked out when shown, so they never run out. */
+export interface CalEvent {
+  id: string
+  title: string
+  date: string // YYYY-MM-DD, first day
+  time: string | null // HH:MM, or null for all day
+  member: string // 'both' or a member id
+  category: Bucket | 'other'
+  repeat: Repeat
+  repeat_until: string | null
+  notes: string
+  done_on: string[] // dates of repeats that were ticked off
+}

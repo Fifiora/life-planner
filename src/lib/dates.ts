@@ -1,6 +1,9 @@
 const TZ = 'America/Chicago'
 const DAY_MS = 86_400_000
 
+/** The day the shared plan begins (a Monday). The calendar has no end date and no limit either way. */
+export const PLAN_START = '2026-10-26'
+
 /** Default start (a Monday) of the 2-week cycle until Settings saves one. */
 export const DEFAULT_ANCHOR = '2026-11-02'
 
