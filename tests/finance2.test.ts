@@ -3,6 +3,8 @@ import {
   billsPaidSummary,
   buildInsights,
   categoryTotals,
+  defaultExpenseDate,
+  trackingStart,
   flexView,
   forecast,
   payoffProgress,
@@ -30,6 +32,13 @@ describe('categoryTotals', () => {
       { category: 'housing', total: 2000, count: 1, pctOfIncome: 20 },
       { category: 'utilities', total: 1000, count: 1, pctOfIncome: 10 },
       { category: 'subscriptions', total: 20, count: 2, pctOfIncome: 0.2 },
+    ])
+  })
+  it('treats Food, food and "food " as one category', () => {
+    const mixed = [rec('a', 'Groceries', 500, 'Food'), rec('b', 'Snacks', 50, 'food '), rec('c', 'Power', 100, 'utilities')]
+    expect(categoryTotals(mixed, 1000)).toEqual([
+      { category: 'food', total: 550, count: 2, pctOfIncome: 55 },
+      { category: 'utilities', total: 100, count: 1, pctOfIncome: 10 },
     ])
   })
   it('ignores one-time payoffs and copes with no income or no bills', () => {
@@ -123,5 +132,30 @@ describe('buildInsights', () => {
     expect(lines.some((l) => /From January 2027, \$1,980 is left each month/.test(l))).toBe(true)
     expect(lines.some((l) => /Housing is your biggest expense: \$2,000 \(20% of income\)/.test(l))).toBe(true)
     expect(lines.some((l) => /\$1,500 of payoffs still to pay, 47 days to go/.test(l))).toBe(true)
+  })
+})
+
+describe('trackingStart', () => {
+  const entry = (month: string) => ({ id: month, month, amount: 1 })
+  it('starts at the configured month, or earlier if something was saved before it', () => {
+    expect(trackingStart([entry('2026-12')], '2026-11')).toBe('2026-11')
+    expect(trackingStart([entry('2026-10'), entry('2026-12')], '2026-11')).toBe('2026-10')
+    expect(trackingStart([], '2026-11')).toBe('2026-11')
+  })
+})
+
+describe('defaultExpenseDate', () => {
+  it('is today when viewing the current month, else the first of the month shown', () => {
+    expect(defaultExpenseDate('2026-11', '2026-11-18')).toBe('2026-11-18')
+    expect(defaultExpenseDate('2026-10', '2026-11-18')).toBe('2026-10-01')
+    expect(defaultExpenseDate('2026-12', '2026-11-18')).toBe('2026-12-01')
+  })
+})
+
+describe('buildInsights after the deadline', () => {
+  it('talks about days past the deadline, not negative days', () => {
+    const payoff = payoffProgress([one('o1', 'Card A', 1500, '2026-12')], '2027-01-06', '2027-01-01')
+    const lines = buildInsights({ rows: [], categories: [], payoff, target: 5000 })
+    expect(lines).toEqual(['$1,500 of payoffs still to pay, 5 days past the deadline.'])
   })
 })

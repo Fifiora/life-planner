@@ -8,6 +8,7 @@ import Settings from '../src/screens/Settings'
 import Study from '../src/screens/Study'
 import Today from '../src/screens/Today'
 import Travel from '../src/screens/Travel'
+import { getAllRows, loadSnapshot } from '../src/data/tableStore'
 import { renderScreen, saved, seedPlanner } from './seed'
 
 vi.mock('../src/lib/session', async (importOriginal) => ({ ...(await importOriginal<typeof import('../src/lib/session')>()), reloadApp: vi.fn() }))
@@ -156,5 +157,54 @@ describe('Settings', () => {
     renderScreen(<Settings />)
     const section = (await screen.findByText('App PIN')).closest('section') as HTMLElement
     expect(within(section).getByLabelText('New PIN')).toBeInTheDocument()
+  })
+})
+
+describe('Today and Finance agree', () => {
+  it('lowers the Finance ring when extra spending is logged', async () => {
+    const today = new Date().toISOString().slice(0, 10)
+    localStorage.setItem('lp.data.expenses', JSON.stringify([{ id: 'e1', date: today, amount: 6000, category: 'dining', note: '', member_id: 'a' }]))
+    renderScreen(<Today />)
+    const ring = await screen.findByRole('progressbar', { name: 'Finance' })
+    expect(ring).toHaveAttribute('aria-valuenow', '88')
+  })
+})
+
+describe('Savings before the tracking start', () => {
+  it('still counts money put aside earlier than the start month', async () => {
+    localStorage.setItem('lp.data.savings', JSON.stringify([{ id: 's1', month: '2026-10', amount: 500 }]))
+    renderScreen(<Finance />)
+    await userEvent.click(await screen.findByRole('tab', { name: 'Savings' }))
+    expect(screen.getByText(/\$500 of/)).toBeInTheDocument()
+  })
+})
+
+describe('Settings with a damaged PIN record', () => {
+  it('offers to set a PIN rather than claiming one is on', async () => {
+    localStorage.setItem('lp.pin', 'garbage')
+    renderScreen(<Settings />)
+    expect(await screen.findByLabelText('New PIN')).toBeInTheDocument()
+  })
+})
+
+describe('view-only copy', () => {
+  beforeEach(() => loadSnapshot(getAllRows()))
+
+  it('has no income editor to reach by keyboard', async () => {
+    renderScreen(<Finance />)
+    await screen.findByText('Left after bills')
+    expect(screen.queryByRole('button', { name: /income/i })).not.toBeInTheDocument()
+  })
+
+  it('cannot tick off a bill', async () => {
+    renderScreen(<Finance />)
+    await userEvent.click(await screen.findByRole('tab', { name: 'Bills' }))
+    expect(screen.getByRole('checkbox', { name: /rent paid/i })).toBeDisabled()
+  })
+
+  it('cannot tick off a routine', async () => {
+    renderScreen(<Health />)
+    const checks = await screen.findAllByRole('button', { name: /mark daily activity done|undo daily activity/i })
+    expect(checks.every((c) => (c as HTMLButtonElement).disabled)).toBe(true)
   })
 })

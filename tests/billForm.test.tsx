@@ -23,4 +23,15 @@ describe('BillForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ name: 'Rent', amount: 100, kind: 'recurring' }))
   })
+
+  it('saves the category in lower case without stray spaces', async () => {
+    const onSave = vi.fn()
+    render(<BillForm onSave={onSave} />)
+    await userEvent.type(screen.getByLabelText('Name'), 'Groceries')
+    await userEvent.type(screen.getByLabelText('Amount'), '500')
+    await userEvent.clear(screen.getByLabelText('Category'))
+    await userEvent.type(screen.getByLabelText('Category'), ' Food ')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ category: 'food' }))
+  })
 })
