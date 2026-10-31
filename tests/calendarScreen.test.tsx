@@ -86,17 +86,20 @@ describe('Calendar with a damaged cycle start', () => {
 })
 
 describe('Calendar year box and the ends of the range', () => {
-  it('ignores years that are not four digits from 1000 to 9999', () => {
+  it('ignores years that are not four digits from 1000 to 9998', () => {
     renderScreen(<Calendar initialDate="2026-10-15" />)
     const year = screen.getByLabelText('Year')
     fireEvent.change(year, { target: { value: '0099' } })
     expect(screen.getByRole('heading', { name: 'October 2026' })).toBeInTheDocument()
-    fireEvent.change(year, { target: { value: '12345' } })
+    fireEvent.change(year, { target: { value: '9999' } })
     expect(screen.getByRole('heading', { name: 'October 2026' })).toBeInTheDocument()
-    expect(year).toHaveValue(2026)
+    fireEvent.change(year, { target: { value: '2040' } })
+    fireEvent.change(year, { target: { value: '20401' } })
+    expect(year).toHaveValue(2040)
+    expect(screen.getByRole('heading', { name: 'October 2040' })).toBeInTheDocument()
   })
-  it('stops the arrows at December 9999 and January 1000', () => {
-    const { unmount } = renderScreen(<Calendar initialDate="9999-12-10" />)
+  it('stops the arrows at December 9998 and January 1000', () => {
+    const { unmount } = renderScreen(<Calendar initialDate="9998-12-10" />)
     expect(screen.getByRole('button', { name: 'Next month' })).toBeDisabled()
     unmount()
     renderScreen(<Calendar initialDate="1000-01-10" />)

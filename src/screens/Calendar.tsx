@@ -10,7 +10,10 @@ import { DaySheet } from '../ui/DaySheet'
 import { MonthGrid } from '../ui/MonthGrid'
 import { PageHead } from '../ui/PageHead'
 
+// The 6-week grid of the last month reaches into the next year, so the range ends one year before 9999.
 const MIN_YEAR = 1000
+const MAX_YEAR = 9998
+const clampMonth = (m: string) => (m < `${MIN_YEAR}-01` ? `${MIN_YEAR}-01` : m > `${MAX_YEAR}-12` ? `${MAX_YEAR}-12` : m)
 const MONTH_NAMES = Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(2000, i, 1)).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' }))
 
 export default function Calendar({ initialDate }: { initialDate?: string }) {
@@ -19,7 +22,7 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
   const [params] = useSearchParams()
   const linked = params.get('date')
   const linkedDate = isDate(linked) ? linked : null
-  const [month, setMonth] = useState((linkedDate ?? initialDate ?? todayCT()).slice(0, 7))
+  const [month, setMonth] = useState(clampMonth((linkedDate ?? initialDate ?? todayCT()).slice(0, 7)))
   const [selected, setSelected] = useState<string | null>(linkedDate)
   const [view, setView] = useState<'month' | 'agenda'>('month')
   const [agendaDays, setAgendaDays] = useState(14)
@@ -42,7 +45,7 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
         <div className="cal-head">
           <button type="button" className="icon-btn" aria-label="Previous month" disabled={month <= `${MIN_YEAR}-01`} onClick={() => goTo(shiftMonthKey(month, -1))}>‹</button>
           <h2>{monthLabel(month)}</h2>
-          <button type="button" className="icon-btn" aria-label="Next month" disabled={month >= '9999-12'} onClick={() => goTo(shiftMonthKey(month, 1))}>›</button>
+          <button type="button" className="icon-btn" aria-label="Next month" disabled={month >= `${MAX_YEAR}-12`} onClick={() => goTo(shiftMonthKey(month, 1))}>›</button>
         </div>
 
         <div className="cal-tools">
@@ -58,7 +61,7 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
             onChange={(e) => {
               if (e.target.value.length > 4) return
               setYearDraft(e.target.value)
-              if (/^\d{4}$/.test(e.target.value) && Number(e.target.value) >= MIN_YEAR) setMonth(`${e.target.value}-${mm}`)
+              if (/^\d{4}$/.test(e.target.value) && Number(e.target.value) >= MIN_YEAR && Number(e.target.value) <= MAX_YEAR) setMonth(`${e.target.value}-${mm}`)
             }}
             onBlur={() => setYearDraft(null)}
           />
