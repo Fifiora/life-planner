@@ -4,7 +4,7 @@ export type Cadence = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly'
 
 export interface Member {
   id: string
-  user_id: string
+  user_id?: string
   display_name: string
   color: string
 }
@@ -116,3 +116,6 @@ export interface TriviaAttempt {
   chosen_index: number
   correct: boolean
 }
+
+/** A stored row: always has an id, plus whatever fields its table uses. */
+export type Row = { id: string } & Record<string, unknown>

@@ -1,44 +1,67 @@
 import { useState } from 'react'
 import { useHousehold } from '../data/household'
+import { replaceRows } from '../data/tableStore'
 import { useSettings } from '../data/useSettings'
-import { DEFAULT_ANCHOR } from '../lib/dates'
 import { useTable } from '../data/useTable'
-import { buildExport } from '../lib/export'
-import { supabase } from '../lib/supabase'
-import type { Member } from '../types'
+import { DEFAULT_ANCHOR } from '../lib/dates'
+import { buildExport, parseImport } from '../lib/export'
+import { clearConfig, loadConfig, readTable } from '../lib/githubStore'
+import { TABLES } from '../lib/tables'
+import type { Member, Row } from '../types'
 import { PageHead } from '../ui/PageHead'
 import { useToast } from '../ui/Toast'
 
-const TABLES = [
-  'members', 'routines', 'routine_logs', 'night_options', 'night_votes', 'turns', 'milestones',
-  'trivia_topics', 'trivia_questions', 'trivia_attempts', 'places', 'trip_plans', 'income', 'bills', 'settings',
-]
-
 export default function Settings() {
-  const { me, householdId } = useHousehold()
+  const { me } = useHousehold()
   const members = useTable<Member>('members')
   const settings = useSettings()
   const toast = useToast()
   const [target, setTarget] = useState<string | null>(null)
   const [anchor, setAnchor] = useState<string | null>(null)
+  const [pending, setPending] = useState<Record<string, Row[]> | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
 
   async function exportAll() {
+    const cfg = loadConfig()
+    if (!cfg) return
     const out: Record<string, Record<string, unknown>[]> = {}
     for (const t of TABLES) {
-      const { data } = await supabase.from(t).select('*').eq('household_id', householdId)
-      out[t] = (data ?? []) as Record<string, unknown>[]
+      const res = await readTable(cfg, t)
+      out[t] = res === 'unchanged' ? [] : res.rows
     }
     const url = URL.createObjectURL(new Blob([buildExport(out)], { type: 'application/json' }))
     const a = document.createElement('a')
     a.href = url
     a.download = 'life-planner-export.json'
     a.click()
-    URL.revokeObjectURL(url)
+    window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  }
+
+  async function chooseFile(file: File | undefined) {
+    if (!file) return
+    try {
+      setPending(parseImport(await file.text()))
+      setImportError(null)
+    } catch (err) {
+      setPending(null)
+      setImportError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  async function confirmImport() {
+    if (!pending) return
+    try {
+      for (const [table, rows] of Object.entries(pending)) await replaceRows(table, rows)
+      toast('Data imported')
+      setPending(null)
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : String(err))
+    }
   }
 
   return (
     <div className="stack">
-      <PageHead title="Settings" sub={`Signed in as ${me.display_name}`} />
+      <PageHead title="Settings" sub={`This phone is ${me.display_name}'s`} />
 
       <section className="card">
         <h2>Us</h2>
@@ -75,10 +98,31 @@ export default function Settings() {
 
       <section className="card">
         <h2>Your data</h2>
-        <p className="muted small">Download everything as a JSON backup.</p>
+        <p className="muted small">Back up everything, or load a data file (such as your starter plan).</p>
         <div className="actions">
           <button type="button" className="btn" onClick={exportAll}>Export data</button>
-          <button type="button" className="btn btn-danger" onClick={() => supabase.auth.signOut()}>Sign out</button>
+        </div>
+        <label className="label" htmlFor="import-file">Import data from a file</label>
+        <input id="import-file" className="input" type="file" accept="application/json,.json" onChange={(e) => { void chooseFile(e.target.files?.[0]); e.target.value = '' }} />
+        {importError && <p role="alert" className="error">{importError}</p>}
+        {pending && (
+          <div className="callout">
+            <p>
+              This replaces: {Object.entries(pending).map(([t, rows]) => `${t} (${rows.length})`).join(', ')}.
+            </p>
+            <div className="actions">
+              <button type="button" className="btn btn-primary" onClick={confirmImport}>Replace my data</button>
+              <button type="button" className="btn" onClick={() => setPending(null)}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>This phone</h2>
+        <p className="muted small">Disconnecting forgets the GitHub token on this phone only. Your data stays in the repo.</p>
+        <div className="actions">
+          <button type="button" className="btn btn-danger" onClick={() => { clearConfig(); localStorage.removeItem('lp.me'); window.location.reload() }}>Disconnect this phone</button>
         </div>
       </section>
     </div>

@@ -41,7 +41,7 @@ describe('HouseholdProvider', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save names' }))
     await userEvent.click(await screen.findByRole('button', { name: "I'm Ben" }))
     expect(await screen.findByText('Hello Ben of 2')).toBeInTheDocument()
-    expect(gh.rows('members').map((m) => m.display_name)).toEqual(['Ada', 'Ben'])
+    await vi.waitFor(() => expect(gh.rows('members').map((m) => m.display_name)).toEqual(['Ada', 'Ben']))
   })
 
   it('needs both names before saving', async () => {

@@ -32,9 +32,6 @@ jobs:
         run: set -o pipefail; npm test 2>&1 | tee test.log
       - name: Build
         run: set -o pipefail; npm run build 2>&1 | tee build.log
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - name: Report failure as annotations
         if: failure()
         run: |
