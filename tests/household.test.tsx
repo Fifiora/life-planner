@@ -65,4 +65,20 @@ describe('HouseholdProvider', () => {
     renderIt()
     expect(await screen.findByRole('button', { name: "I'm Ada" })).toBeInTheDocument()
   })
+
+  it('does not create duplicates when the other phone finished setting up first', async () => {
+    const gh = installFakeGithub()
+    renderIt()
+    await userEvent.type(await screen.findByLabelText('First person'), 'Ada')
+    await userEvent.type(screen.getByLabelText('Second person'), 'Ben')
+    gh.state.onBeforePut = () =>
+      gh.partnerWrites('members', [
+        { id: 'p1', display_name: 'Zed', color: '#111' },
+        { id: 'p2', display_name: 'Yan', color: '#222' },
+      ])
+    await userEvent.click(screen.getByRole('button', { name: 'Save names' }))
+    expect(await screen.findByRole('button', { name: "I'm Zed" })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: "I'm Ada" })).not.toBeInTheDocument()
+    expect(gh.rows('members').map((m) => m.display_name)).toEqual(['Zed', 'Yan'])
+  })
 })

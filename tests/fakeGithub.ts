@@ -33,6 +33,9 @@ export function installFakeGithub(initial: Record<string, unknown[]> = {}, owner
   const state = {
     failWrites: null as number | null,
     holdNextGet: null as Deferred | null,
+    holdNextPut: null as Deferred | null,
+    nextPut: null as { status: number; message: string } | null,
+    largeFileBytes: null as number | null,
     onBeforePut: null as (() => void) | null,
     conflictAlways: false,
     repoStatus: 200,
@@ -60,7 +63,11 @@ export function installFakeGithub(initial: Record<string, unknown[]> = {}, owner
       let res: Response
       if (!f) res = json(404, { message: 'Not Found' })
       else if (headers.get('If-None-Match') === `"${f.sha}"`) res = new Response(null, { status: 304 })
-      else res = json(200, { sha: f.sha, content: toB64(f.content), encoding: 'base64' }, { ETag: `"${f.sha}"` })
+      else if (state.largeFileBytes !== null && f.content.length > state.largeFileBytes) {
+        // Like GitHub for files over 1 MB: no content in the normal answer, but the raw media type works.
+        if ((headers.get('Accept') ?? '').includes('raw')) res = new Response(f.content, { status: 200, headers: { ETag: `"${f.sha}"` } })
+        else res = json(200, { sha: f.sha, content: '', encoding: 'none' }, { ETag: `"${f.sha}"` })
+      } else res = json(200, { sha: f.sha, content: toB64(f.content), encoding: 'base64' }, { ETag: `"${f.sha}"` })
       const hold = state.holdNextGet
       if (hold) {
         state.holdNextGet = null
@@ -71,6 +78,16 @@ export function installFakeGithub(initial: Record<string, unknown[]> = {}, owner
 
     if (method === 'PUT') {
       state.putCount++
+      const holdPut = state.holdNextPut
+      if (holdPut) {
+        state.holdNextPut = null
+        await holdPut.promise
+      }
+      if (state.nextPut) {
+        const n = state.nextPut
+        state.nextPut = null
+        return json(n.status, { message: n.message })
+      }
       if (state.failWrites) return json(state.failWrites, { message: 'server says no' })
       if (state.onBeforePut) {
         const hook = state.onBeforePut

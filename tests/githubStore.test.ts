@@ -62,6 +62,14 @@ describe('readTable', () => {
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer t')
     expect(init.cache).toBe('no-store')
   })
+  it('reads a file too big for GitHub\'s normal answer', async () => {
+    const rows = Array.from({ length: 40 }, (_, i) => ({ id: String(i), name: `Row number ${i}` }))
+    const gh = installFakeGithub({ routine_logs: rows })
+    gh.state.largeFileBytes = 100
+    const res = await readTable(cfg, 'routine_logs')
+    expect(res).toMatchObject({ sha: 'sha1' })
+    expect((res as { rows: unknown[] }).rows).toHaveLength(40)
+  })
   it('explains a rejected token', async () => {
     const gh = installFakeGithub({ places: [] })
     gh.fetch.mockResolvedValueOnce(new Response(JSON.stringify({ message: 'Bad credentials' }), { status: 401 }))
@@ -84,13 +92,36 @@ describe('mutate', () => {
   it('gives up with a clear message after the allowed tries', async () => {
     const gh = installFakeGithub({ bills: [] })
     gh.state.conflictAlways = true
-    await expect(mutate(cfg, 'bills', (r) => r, { tries: 2, delayMs: 0 })).rejects.toThrow(/changed this at the same time/i)
+    await expect(mutate(cfg, 'bills', (r) => [...r, { id: 'x' }], { tries: 2, delayMs: 0 })).rejects.toThrow(/changed this at the same time/i)
     expect(gh.state.putCount).toBe(2)
   })
   it('passes on the reason when GitHub rejects the write', async () => {
     const gh = installFakeGithub()
     gh.state.failWrites = 500
-    await expect(mutate(cfg, 'bills', (r) => r)).rejects.toThrow(/server says no/)
+    await expect(mutate(cfg, 'bills', (r) => [...r, { id: 'x' }])).rejects.toThrow(/server says no/)
+  })
+  it('does not write when the change leaves the list as it was', async () => {
+    const gh = installFakeGithub({ bills: [{ id: '1' }] })
+    await mutate(cfg, 'bills', (r) => r)
+    expect(gh.state.putCount).toBe(0)
+  })
+  it('retries when GitHub answers 422 because the file version was missing or old', async () => {
+    const gh = installFakeGithub({ bills: [{ id: '1' }] })
+    gh.state.nextPut = { status: 422, message: 'Invalid request.\n\n"sha" wasn\'t supplied.' }
+    await mutate(cfg, 'bills', (r) => [...r, { id: '2' }], { delayMs: 0 })
+    expect(gh.state.putCount).toBe(2)
+    expect(gh.rows('bills').map((r) => r.id)).toEqual(['1', '2'])
+  })
+  it('does not call every 422 a conflict', async () => {
+    const gh = installFakeGithub({ bills: [] })
+    gh.state.nextPut = { status: 422, message: 'Invalid request: content is too large' }
+    await expect(mutate(cfg, 'bills', (r) => [...r, { id: '2' }], { delayMs: 0 })).rejects.toThrow(/too large/)
+    expect(gh.state.putCount).toBe(1)
+  })
+  it('says so plainly when GitHub rate-limits us instead of blaming the token', async () => {
+    const gh = installFakeGithub({ bills: [] })
+    gh.state.nextPut = { status: 403, message: 'API rate limit exceeded for user' }
+    await expect(mutate(cfg, 'bills', (r) => [...r, { id: '2' }], { delayMs: 0 })).rejects.toThrow(/rate limit/i)
   })
 })
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { saveConfig } from '../src/lib/githubStore'
-import { getState, insertRow, refresh, removeRow, replaceRows, resetStore, subscribe, updateRow } from '../src/data/tableStore'
+import { getState, insertIfEmpty, insertRow, refresh, removeRow, replaceRows, resetStore, subscribe, updateRow } from '../src/data/tableStore'
 import { deferred, installFakeGithub } from './fakeGithub'
 
 beforeEach(() => {
@@ -109,5 +109,48 @@ describe('tableStore', () => {
     gh.fetch.mockResolvedValueOnce(new Response(JSON.stringify({ message: 'Bad credentials' }), { status: 401 }))
     await refresh('bills')
     expect(getState('bills').error).toMatch(/token/i)
+  })
+
+  it('does not let a refresh that starts mid-save wipe the edit', async () => {
+    const gh = installFakeGithub()
+    const putHold = deferred()
+    gh.state.holdNextPut = putHold
+    const saving = insertRow('bills', { name: 'Mine' })
+    await vi.waitFor(() => expect(gh.state.putCount).toBe(1))
+    await refresh('bills') // reads the file as it was before the save
+    expect(getState('bills').rows.map((r) => r.name)).toEqual(['Mine'])
+    putHold.resolve()
+    await saving
+    expect(gh.rows('bills')).toHaveLength(1)
+  })
+
+  it('does not let a refresh that read the old file, but lands after the save, wipe the edit', async () => {
+    const gh = installFakeGithub()
+    const putHold = deferred()
+    gh.state.holdNextPut = putHold
+    const saving = insertRow('bills', { name: 'Mine' })
+    await vi.waitFor(() => expect(gh.state.putCount).toBe(1))
+    const getHold = deferred()
+    gh.state.holdNextGet = getHold
+    const stale = refresh('bills') // reads the old file now, delivers its answer late
+    putHold.resolve()
+    await saving
+    getHold.resolve()
+    await stale
+    expect(getState('bills').rows.map((r) => r.name)).toEqual(['Mine'])
+  })
+
+  it('adds starter rows when the table is empty', async () => {
+    const gh = installFakeGithub()
+    await insertIfEmpty('members', [{ display_name: 'A' }, { display_name: 'B' }])
+    expect(gh.rows('members').map((r) => r.display_name)).toEqual(['A', 'B'])
+    expect(getState('members').rows.map((r) => r.display_name)).toEqual(['A', 'B'])
+  })
+
+  it('keeps what is already there when someone else filled the table first', async () => {
+    const gh = installFakeGithub({ members: [{ id: 'x', display_name: 'Existing' }] })
+    await insertIfEmpty('members', [{ display_name: 'A' }, { display_name: 'B' }])
+    expect(gh.rows('members').map((r) => r.display_name)).toEqual(['Existing'])
+    expect(getState('members').rows.map((r) => r.display_name)).toEqual(['Existing'])
   })
 })
