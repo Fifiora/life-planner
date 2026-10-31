@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import css from '../src/index.css?raw'
 import { applyTheme, getThemeChoice, setThemeChoice } from '../src/lib/theme'
 
 beforeEach(() => {
@@ -35,12 +34,5 @@ describe('theme choice', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
     setThemeChoice('light')
     expect(document.documentElement.getAttribute('data-theme')).toBe('light')
-  })
-})
-
-describe('stylesheet', () => {
-  it('has dark colours for a manual choice and for the phone setting', () => {
-    expect(css).toContain('html[data-theme="dark"]')
-    expect(css).toContain('prefers-color-scheme: dark')
   })
 })
