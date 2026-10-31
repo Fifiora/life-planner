@@ -24,7 +24,7 @@ const plain = JSON.stringify({
     members: [{ id: 'sm1', display_name: 'Stone', color: '#111' }],
   },
 })
-const ok = vi.fn().mockResolvedValue(plain)
+const ok = async () => plain
 const row = (over: Record<string, unknown>) => ({ id: 'x', ...over })
 
 beforeEach(() => {
