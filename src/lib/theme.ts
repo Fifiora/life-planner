@@ -1,6 +1,7 @@
 export type ThemeChoice = 'system' | 'light' | 'dark'
 
 const KEY = 'lp.theme'
+export const THEME_EVENT = 'lp:theme'
 
 export function getThemeChoice(): ThemeChoice {
   try {
@@ -37,4 +38,5 @@ export function setThemeChoice(choice: ThemeChoice): void {
     /* storage full or blocked: the choice still applies until the app closes */
   }
   applyTheme(choice, phoneIsDark())
+  window.dispatchEvent(new Event(THEME_EVENT)) // other buttons showing the choice update themselves
 }

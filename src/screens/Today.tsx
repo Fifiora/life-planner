@@ -19,7 +19,8 @@ import { SavingsBar } from '../ui/SavingsBar'
 import type { Bill, Income, Milestone, Routine, TripPlan, Turn } from '../types'
 import { EmptyState } from '../ui/EmptyState'
 import { PageHead } from '../ui/PageHead'
-import { Ring } from '../ui/Ring'
+import { TodayHero, type HeroRing } from '../ui/TodayHero'
+import { daypart } from '../lib/daypart'
 import { RoutineForm } from '../ui/RoutineForm'
 import { RoutineRows } from '../ui/RoutineList'
 import { QuickAdd } from '../ui/QuickAdd'
@@ -72,12 +73,17 @@ export default function Today() {
   const weekMs = milestones.rows.filter((m) => m.week_start === weekStart(data.today))
   const monthTrips = trips.rows.filter((t) => t.planned_month === monthKeyCT())
 
-  const rings = [
-    { label: 'Health', color: 'var(--health)', value: ratio(healthToday.filter(isDone).length, healthToday.length) },
-    { label: 'Study', color: 'var(--study)', value: ratio(weekMs.filter((m) => m.done).length, weekMs.length) },
-    { label: 'Travel', color: 'var(--travel)', value: ratio(monthTrips.filter((t) => t.status === 'done').length, monthTrips.length) },
-    { label: 'Food', color: 'var(--food)', value: ratio(food.filter(isDone).length, food.length) },
-    { label: 'Finance', color: 'var(--finance)', value: ratio(money.projected, money.target) },
+  const count = (done: number, total: number) => `${done}/${total}`
+  const healthDone = healthToday.filter(isDone).length
+  const studyDone = weekMs.filter((m) => m.done).length
+  const tripsDone = monthTrips.filter((t) => t.status === 'done').length
+  const foodDone = food.filter(isDone).length
+  const rings: HeroRing[] = [
+    { key: 'health', label: 'Health', icon: '💪', color: 'var(--health)', value: ratio(healthDone, healthToday.length), caption: count(healthDone, healthToday.length), to: '/health' },
+    { key: 'study', label: 'Study', icon: '📚', color: 'var(--study)', value: ratio(studyDone, weekMs.length), caption: count(studyDone, weekMs.length), to: '/study' },
+    { key: 'travel', label: 'Travel', icon: '🧭', color: 'var(--travel)', value: ratio(tripsDone, monthTrips.length), caption: count(tripsDone, monthTrips.length), to: '/travel' },
+    { key: 'food', label: 'Food', icon: '🍲', color: 'var(--food)', value: ratio(foodDone, food.length), caption: count(foodDone, food.length), to: '/food' },
+    { key: 'finance', label: 'Finance', icon: '💰', color: 'var(--finance)', value: ratio(money.projected, money.target), caption: `${Math.round(Math.max(0, Math.min(1, ratio(money.projected, money.target))) * 100)}%`, to: '/finance' },
   ]
 
   const complete = rings.filter((r) => r.value >= 1).length
@@ -105,18 +111,7 @@ export default function Today() {
 
       <WeekStrip today={data.today} events={events.events} />
 
-      <section className="card" aria-label="Progress">
-        {(todayItems.length > 0 || bestStreak >= 2) && (
-          <p className="headline">
-            {todayItems.length > 0 && <span>{`${doneToday} of ${todayItems.length} done today`}</span>}
-            {bestStreak >= 2 && <span className="streak-chip">{`🔥 ${bestStreak}-day streak`}</span>}
-          </p>
-        )}
-        <div className="rings">
-          {rings.map((r) => <Ring key={r.label} label={r.label} color={r.color} value={r.value} size={58} />)}
-        </div>
-        {host && <p className="muted small mt">🎲 Next night in is hosted by <strong>{host.display_name}</strong></p>}
-      </section>
+      <TodayHero rings={rings} done={doneToday} total={todayItems.length} streak={bestStreak} part={daypart(new Date().getHours())} host={host?.display_name} />
 
       <UpNext today={data.today} events={events.events} />
 

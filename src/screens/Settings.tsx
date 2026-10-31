@@ -1,4 +1,4 @@
-import { getThemeChoice, setThemeChoice, type ThemeChoice } from '../lib/theme'
+import { setThemeChoice, type ThemeChoice } from '../lib/theme'
 import { useState } from 'react'
 import { useHousehold } from '../data/household'
 import { getAllRows, replaceMany } from '../data/tableStore'
@@ -18,6 +18,7 @@ import { PageHead } from '../ui/PageHead'
 import { SharedCopyNotice } from '../ui/SharedCopyNotice'
 import { SyncCard } from '../ui/SyncCard'
 import { StarterPlanLoader } from '../ui/StarterPlanLoader'
+import { useThemeChoice } from '../ui/ThemeToggle'
 import { useToast } from '../ui/Toast'
 
 
@@ -42,7 +43,7 @@ export default function Settings() {
       return false
     }
   })
-  const [theme, setTheme] = useState<ThemeChoice>(getThemeChoice())
+  const theme = useThemeChoice()
   const [lockAfter, setLockAfter] = useState(() => localStorage.getItem('lp.lockAfter') ?? '1')
   const [pin1, setPin1] = useState('')
   const [pin2, setPin2] = useState('')
@@ -204,7 +205,7 @@ export default function Settings() {
       <section className="card">
         <h2>Appearance</h2>
         <label className="label" htmlFor="theme-choice">Appearance</label>
-        <select id="theme-choice" className="input" value={theme} onChange={(e) => { const c = e.target.value as ThemeChoice; setThemeChoice(c); setTheme(c) }}>
+        <select id="theme-choice" className="input" value={theme} onChange={(e) => setThemeChoice(e.target.value as ThemeChoice)}>
           <option value="system">Match my phone</option>
           <option value="light">Light</option>
           <option value="dark">Dark</option>

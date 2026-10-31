@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { ThemeSwitch } from './ThemeToggle'
 
 const TABS = [
   { to: '/', label: 'Today', icon: '🏡', end: true },
@@ -20,6 +21,7 @@ export function TabBar() {
           <span>{t.label}</span>
         </NavLink>
       ))}
+      <ThemeSwitch />
     </nav>
   )
 }

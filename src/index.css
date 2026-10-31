@@ -159,9 +159,13 @@ code { background: var(--line); padding: 0.1rem 0.35rem; border-radius: 0.4rem; 
 
 /* ---------- Rings ---------- */
 .rings { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.25rem; }
-.ring { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
-.ring-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; }
-.ring-label { font-size: 0.7rem; color: var(--muted); font-weight: 600; }
+.prog-ring { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+.prog-arc { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--ring-color) 55%, transparent)); }
+.prog-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; }
+.prog-pct.prog-icon { font-size: 1.35rem; }
+.prog-label { font-size: 0.7rem; color: var(--muted); font-weight: 650; }
+.prog-caption { font-size: 0.68rem; color: var(--ink); font-weight: 750; font-variant-numeric: tabular-nums; }
+.hero-top .prog-pct { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; }
 
 /* ---------- Lists & rows ---------- */
 .list { list-style: none; margin: 0; padding: 0; }
@@ -493,3 +497,23 @@ html[data-theme="dark"] { color-scheme: dark; }
 .sync-chip.offline .sync-dot { background: var(--food); }
 .sync-chip.error .sync-dot { background: var(--danger); }
 .pairing-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.15rem; font-weight: 700; letter-spacing: 0.08em; word-break: break-all; padding: 0.7rem 0.9rem; border-radius: 0.9rem; background: color-mix(in srgb, var(--brand) 10%, transparent); border: 1px dashed var(--brand); user-select: all; }
+
+/* ---------- Today hero, theme button ---------- */
+.hero-top { display: flex; align-items: center; gap: 1rem; }
+.hero-text { min-width: 0; }
+.hero-text .headline { font-size: 1.05rem; margin-bottom: 0.2rem; }
+.hero .rings { margin-top: 1rem; padding-top: 0.9rem; border-top: 1px solid var(--line); }
+.hero-morning { background: linear-gradient(135deg, rgba(251, 191, 36, 0.22), transparent 60%), linear-gradient(160deg, var(--gloss) 0%, transparent 42%), var(--card); }
+.hero-afternoon { background: linear-gradient(135deg, rgba(14, 165, 233, 0.18), transparent 60%), linear-gradient(160deg, var(--gloss) 0%, transparent 42%), var(--card); }
+.hero-evening { background: linear-gradient(135deg, rgba(139, 92, 246, 0.24), transparent 60%), linear-gradient(160deg, var(--gloss) 0%, transparent 42%), var(--card); }
+.ring-link { display: block; text-decoration: none; color: inherit; border-radius: 1rem; padding: 0.35rem 0; transition: transform 0.15s ease, background 0.15s ease; }
+.ring-link:hover { background: color-mix(in srgb, var(--brand) 9%, transparent); transform: translateY(-2px); }
+.ring-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.theme-btn { font-size: 1.15rem; }
+.side-theme { display: none; }
+@media (min-width: 64rem) {
+  .side-theme { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.2rem; margin-top: auto; padding: 0.25rem; border-radius: 0.9rem; background: color-mix(in srgb, var(--card-solid) 45%, transparent); border: 1px solid var(--line); }
+  .side-theme-btn { min-height: 36px; border: 0; border-radius: 0.7rem; background: transparent; color: var(--muted); font: inherit; font-size: 0.72rem; font-weight: 650; cursor: pointer; }
+  .side-theme-btn[aria-pressed="true"] { background: var(--card-solid); color: var(--ink); box-shadow: 0 2px 8px rgba(30, 40, 100, 0.12); }
+  .hero-top .prog-pct { font-size: 1.5rem; }
+}
