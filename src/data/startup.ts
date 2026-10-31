@@ -53,8 +53,10 @@ export async function startup(hash: string): Promise<BootResult> {
     }
   }
 
+  // A phone that is sharing live already has its own planner, even while it is still empty.
+  const sharing = localStorage.getItem('lp.sync.code') !== null
   const remembered = localStorage.getItem(SNAPSHOT_KEY)
-  if (remembered && !hasPlanData()) {
+  if (remembered && !hasPlanData() && !sharing) {
     try {
       const snap = await decodeSnapshot(remembered)
       loadSnapshot(snap.tables)
@@ -64,7 +66,7 @@ export async function startup(hash: string): Promise<BootResult> {
     }
   }
 
-  if (!hasPlanData() && localStorage.getItem('lp.skipPreload') !== '1') {
+  if (!hasPlanData() && !sharing && localStorage.getItem('lp.skipPreload') !== '1') {
     const preload = await fetchPreload()
     if (preload) return { mode: 'locked', fromLink: false, preload, ...(linkError ? { error: linkError } : {}) }
   }

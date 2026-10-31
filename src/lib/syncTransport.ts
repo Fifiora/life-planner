@@ -23,7 +23,8 @@ export function createSupabaseTransport(opts: TransportOptions = {}): Transport 
     try {
       res = await doFetch(`${url}/rest/v1/rpc/${name}`, {
         method: 'POST',
-        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        // A publishable key is not a JWT: it goes in `apikey` only, never as a Bearer token.
+        headers: { apikey: key, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
     } catch {

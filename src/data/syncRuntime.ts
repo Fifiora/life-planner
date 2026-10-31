@@ -41,6 +41,7 @@ interface Running {
   stop: () => void
 }
 let running: Running | null = null
+let generation = 0 // bumped by every start/join/resume, so a slower, older call can notice it was replaced
 
 // ----- status for the screens -----
 let status: SyncStatus | null = null
@@ -86,7 +87,8 @@ function activate(engine: SyncEngine, household: string): Running {
   let debounce: ReturnType<typeof setTimeout> | null = null
   let stopped = false
 
-  const run = async () => {
+  let inflight: Promise<void> | null = null
+  const attempt = async () => {
     if (stopped || d.isReadOnly()) return
     if (retry) clearTimeout(retry)
     retry = null
@@ -100,6 +102,13 @@ function activate(engine: SyncEngine, household: string): Running {
       fails = 0
       if (result.pushed > 0) d.transport.notify?.(household)
     }
+  }
+  // One attempt at a time: several triggers at once share it (so backoff is counted once, with one retry timer).
+  const run = (): Promise<void> => {
+    inflight ??= attempt().finally(() => {
+      inflight = null
+    })
+    return inflight
   }
   // Timers and quiet triggers wait for a pending retry; events that mean "things changed" try right away.
   const quiet = () => void (retry === null && run())
@@ -148,10 +157,12 @@ function clearSyncKeys() {
 
 /** First phone: make a code, upload everything this phone holds, and keep syncing. Returns the code to share. */
 export async function startSharing(): Promise<string> {
+  const mine = ++generation
   teardown()
   const d = getDeps()
   const code = generateCode()
   const { engine, household } = await buildEngine(code)
+  if (mine !== generation) throw new Error('Superseded by a newer request.')
   d.kv.set('lp.sync.code', code)
   running = activate(engine, household)
   engine.markAllDirty()
@@ -167,11 +178,13 @@ export async function joinWithCode(input: string, over?: { downloadBackup?: () =
   if (!isValidCode(input)) throw new Error("That doesn't look like a pairing code.")
   const d = getDeps()
   const code = formatCode(normalizeCode(input))
+  const mine = ++generation
   teardown()
   ;(over?.downloadBackup ?? d.downloadBackup)()
   const { engine, household } = await buildEngine(code)
   try {
     await engine.replaceFromRemote()
+    if (mine !== generation) throw new Error('Superseded by a newer request.')
   } catch (err) {
     engine.stop()
     clearSyncKeys()
@@ -189,11 +202,14 @@ export function resumeSync(): void {
   if (running || d.isReadOnly()) return
   const code = d.kv.get('lp.sync.code')
   if (!code || !isValidCode(code)) return
-  void buildEngine(code).then(({ engine, household }) => {
-    if (running) return
-    running = activate(engine, household)
-    return running.run()
-  })
+  const mine = ++generation
+  void buildEngine(code)
+    .then(({ engine, household }) => {
+      if (running || mine !== generation) return
+      running = activate(engine, household)
+      return running.run()
+    })
+    .catch(() => undefined) // sync is best effort: never let it break the app
 }
 
 /** Forget the code and the sync notes on this phone. The planner's rows stay. */

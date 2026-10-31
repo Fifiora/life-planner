@@ -6,9 +6,9 @@ create table if not exists public.sync_rows (
   household  text    not null check (household ~ '^[0-9a-f]{64}$'),
   tbl        text    not null check (length(tbl) between 1 and 40),
   row_id     text    not null check (length(row_id) between 1 and 80),
-  payload    text    check (payload is null or length(payload) <= 65536),
+  payload    text    check (payload is null or length(payload) <= 32768),
   deleted    boolean not null default false,
-  updated_at bigint  not null,
+  updated_at bigint  not null check (updated_at between 0 and 9007199254740991),
   seq        bigint  not null,
   primary key (household, tbl, row_id)
 );
@@ -25,7 +25,7 @@ create or replace function public.sync_push(p_household text, p_rows jsonb)
 returns bigint
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   r jsonb;
@@ -33,9 +33,22 @@ declare
   s bigint;
 begin
   if p_household !~ '^[0-9a-f]{64}$' then raise exception 'bad household'; end if;
-  if jsonb_typeof(p_rows) <> 'array' then raise exception 'rows must be an array'; end if;
+  if p_rows is null or jsonb_typeof(p_rows) <> 'array' then raise exception 'rows must be an array'; end if;
   if jsonb_array_length(p_rows) > 500 then raise exception 'too many rows in one push'; end if;
+  if length(p_rows::text) > 1500000 then raise exception 'push too large'; end if;
+
+  -- One push per household at a time. Sequence numbers are then handed out in commit order, so a phone that
+  -- pulls "everything after number N" can never miss a row that commits late.
+  perform pg_advisory_xact_lock(hashtextextended(p_household, 0));
+
+  if (select count(*) from public.sync_rows where household = p_household) > 20000 then
+    raise exception 'this shared planner is full';
+  end if;
+
   for r in select * from jsonb_array_elements(p_rows) loop
+    if jsonb_typeof(r) <> 'object' or r->>'tbl' is null or r->>'id' is null or r->>'updated_at' is null then
+      raise exception 'bad row';
+    end if;
     s := nextval('public.sync_seq');
     insert into public.sync_rows (household, tbl, row_id, payload, deleted, updated_at, seq)
     values (p_household, r->>'tbl', r->>'id', r->>'payload', coalesce((r->>'deleted')::boolean, false), (r->>'updated_at')::bigint, s)
@@ -52,7 +65,7 @@ create or replace function public.sync_pull(p_household text, p_after bigint def
 returns table (tbl text, row_id text, payload text, deleted boolean, updated_at bigint, seq bigint)
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   if p_household !~ '^[0-9a-f]{64}$' then raise exception 'bad household'; end if;
@@ -69,7 +82,7 @@ create or replace function public.sync_ping()
 returns text
 language sql
 security definer
-set search_path = public
+set search_path = ''
 as $$ select 'ok'::text $$;
 
 revoke all on function public.sync_push(text, jsonb) from public;

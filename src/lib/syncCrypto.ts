@@ -54,23 +54,29 @@ export async function deriveKey(code: string): Promise<CryptoKey> {
   )
 }
 
-const aad = (tbl: string, id: string) => encoder.encode(`${tbl}|${id}`)
+/** What the server keeps in the clear next to a row; it is bound into the encryption so it cannot be altered unnoticed. */
+export interface RowMeta {
+  updated_at: number
+  deleted: boolean
+}
 
-/** Locks one row. The table and id are bound in, so a ciphertext cannot be moved to another row. Returns base64 (iv + ciphertext). */
-export async function encryptRow(key: CryptoKey, tbl: string, row: Row): Promise<string> {
+const aad = (tbl: string, id: string, meta: RowMeta) => encoder.encode(`${tbl}|${id}|${meta.updated_at}|${meta.deleted ? 1 : 0}`)
+
+/** Locks one row (or, for a delete, just its id). The table, id, change time and deleted flag are bound in. Returns base64 (iv + ciphertext). */
+export async function encryptRow(key: CryptoKey, tbl: string, row: Row, meta: RowMeta): Promise<string> {
   const iv = crypto.getRandomValues(new Uint8Array(12))
-  const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: aad(tbl, row.id) }, key, encoder.encode(JSON.stringify(row))))
+  const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: aad(tbl, row.id, meta) }, key, encoder.encode(JSON.stringify(row))))
   const out = new Uint8Array(iv.length + cipher.length)
   out.set(iv)
   out.set(cipher, iv.length)
   return toBase64(out)
 }
 
-/** Opens one row; throws if the key, table, id or bytes are wrong. */
-export async function decryptRow(key: CryptoKey, tbl: string, id: string, payload: string): Promise<Row> {
+/** Opens one row; throws if the key, table, id, change time, deleted flag or bytes are wrong. */
+export async function decryptRow(key: CryptoKey, tbl: string, id: string, payload: string, meta: RowMeta): Promise<Row> {
   const bytes = fromBase64(payload)
   if (bytes.length < 13) throw new Error('Damaged row.')
-  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytes.subarray(0, 12), additionalData: aad(tbl, id) }, key, bytes.subarray(12))
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytes.subarray(0, 12), additionalData: aad(tbl, id, meta) }, key, bytes.subarray(12))
   const row = JSON.parse(new TextDecoder().decode(plain)) as Row
   if (!row || row.id !== id) throw new Error('Row does not match its id.')
   return row

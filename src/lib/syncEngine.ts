@@ -2,7 +2,7 @@ import type { Row } from '../types'
 import { decryptRow, encryptRow } from './syncCrypto'
 import { TABLES } from './tables'
 
-/** One row as the server holds it: scrambled `payload`, or a tombstone (`deleted`) with none. */
+/** One row as the server holds it: scrambled `payload` (also for deletes), the change time and the deleted flag. */
 export interface SyncRow {
   tbl: string
   id: string
@@ -56,11 +56,28 @@ export interface SyncResult {
   rejected: number
 }
 
-type Meta = Record<string, Record<string, { u: number; d?: 1 }>>
+/** `u` change time, `d` deleted, `h` fingerprint of the row as last synced (to notice changes made behind our back). */
+type MetaEntry = { u: number; d?: 1; h?: number }
+type Meta = Record<string, Record<string, MetaEntry>>
 
 const BATCH = 200
 const PAGE = 1000 // the most rows the server returns in one pull
+const MAX_PAYLOAD = 32_768 // matches the server's limit
+const MAX_ID = 80
+const MAX_TABLE = 40
+const MAX_AHEAD = 30 * 24 * 3600 * 1000 * 1000 // a remote change time more than 30 days ahead of this phone's clock is not believed
 const KEYS = { meta: 'lp.sync.meta', cursor: 'lp.sync.cursor', dirty: 'lp.sync.dirty', clock: 'lp.sync.clock', device: 'lp.sync.device' }
+const KNOWN_TABLES: readonly string[] = TABLES
+
+/** A short fingerprint of a row's JSON (FNV-1a), enough to tell "changed" from "not changed". */
+function fingerprint(json: string): number {
+  let h = 0x811c9dc5
+  for (let i = 0; i < json.length; i++) {
+    h ^= json.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  return h >>> 0
+}
 
 function readJson<T>(kv: KV, key: string, fallback: T): T {
   try {
@@ -82,9 +99,13 @@ export interface SyncEngineOptions {
   device?: number
 }
 
+const NOTES_FULL = 'Could not save sync notes on this phone (its storage may be full).'
+
 /**
- * Keeps one phone's rows and the shared copy in step. It remembers, per row, when it last changed (`meta`) and
- * which rows still have to be uploaded (`dirty`), and it never sends a row it has just received.
+ * Keeps one phone's rows and the shared copy in step. It remembers, per row, when it last changed and what the row
+ * looked like then (`meta`), and which rows still have to be uploaded (`dirty`). It never sends a row it has just
+ * received, and it re-checks the phone's rows against its notes at every sync, so edits it did not hear about
+ * (another tab, or made before it started) are still found.
  */
 export class SyncEngine {
   private meta: Meta
@@ -93,10 +114,13 @@ export class SyncEngine {
   private cursor: number
   private device: number
   private off: (() => void) | null = null
+  private stopped = false
   private listeners = new Set<(s: SyncStatus) => void>()
   private current: SyncStatus
   private inflight: Promise<SyncResult> | null = null
   private again = false
+  private skipped = 0
+  private notesError = false
 
   constructor(private opts: SyncEngineOptions) {
     this.meta = readJson<Meta>(opts.kv, KEYS.meta, {})
@@ -105,7 +129,13 @@ export class SyncEngine {
     this.cursor = Number(opts.kv.get(KEYS.cursor)) || 0
     const saved = opts.kv.get(KEYS.device)
     this.device = opts.device ?? (saved !== null ? Number(saved) : Math.floor(Math.random() * 1000))
-    if (saved === null || opts.device !== undefined) opts.kv.set(KEYS.device, String(this.device))
+    if (saved === null || opts.device !== undefined) {
+      try {
+        opts.kv.set(KEYS.device, String(this.device))
+      } catch {
+        /* reported when the notes are saved */
+      }
+    }
     this.current = { state: 'idle', lastSyncedAt: null, pending: this.pendingCount() }
   }
 
@@ -119,24 +149,31 @@ export class SyncEngine {
   }
 
   start(): void {
-    if (this.off) return
+    if (this.off || this.stopped) return
     this.off = this.opts.local.onLocalChange((table, prev, next) => this.onChange(table, prev, next))
+    if (this.reconcile()) {
+      this.persist()
+      this.publish()
+    }
   }
 
+  /** After this the engine writes nothing more (not even for a sync that is already running). */
   stop(): void {
+    this.stopped = true
     this.off?.()
     this.off = null
   }
 
   /** Mark every row this phone holds as waiting to upload (the first phone, when sharing starts). */
   markAllDirty(): void {
-    for (const [table, rows] of Object.entries(this.opts.local.getAll())) for (const r of rows) this.mark(table, r.id, false)
+    for (const [table, rows] of Object.entries(this.opts.local.getAll())) for (const r of rows) this.mark(table, r.id, false, JSON.stringify(r))
     this.persist()
     this.publish()
   }
 
   /** Upload what changed here, then fetch what changed elsewhere. Never throws; the outcome is in `status`. */
   syncNow(): Promise<SyncResult> {
+    if (this.stopped) return Promise.resolve({ pushed: 0, pulled: 0, rejected: 0 })
     if (this.inflight) {
       this.again = true
       return this.inflight
@@ -147,6 +184,42 @@ export class SyncEngine {
     return this.inflight
   }
 
+  /** Make this phone match the shared copy exactly (joining). Refuses if the shared copy is empty: that is a mistyped code. */
+  async replaceFromRemote(): Promise<{ pulled: number }> {
+    const tables: Record<string, Row[]> = Object.fromEntries(TABLES.map((t) => [t, [] as Row[]]))
+    const meta: Meta = {}
+    let cursor = 0
+    let clock = this.clock
+    let pulled = 0
+    for (;;) {
+      const page = await this.opts.transport.pull(this.opts.household, cursor)
+      if (page.length === 0) break
+      for (const r of page) {
+        cursor = Math.max(cursor, r.seq ?? 0)
+        const row = await this.open(r)
+        if (row === undefined) continue
+        clock = Math.max(clock, r.updated_at)
+        const entry: MetaEntry = r.deleted ? { u: r.updated_at, d: 1 } : { u: r.updated_at, h: fingerprint(JSON.stringify(row)) }
+        ;(meta[r.tbl] ??= {})[r.id] = entry
+        if (!r.deleted && row) {
+          tables[r.tbl].push(row)
+          pulled++
+        }
+      }
+      if (page.length < PAGE) break
+    }
+    if (cursor === 0) throw new Error('No shared planner found for this code. Check the code, and make sure the first phone has been online.')
+    if (this.stopped) return { pulled: 0 }
+    this.opts.local.apply(tables)
+    this.meta = meta
+    this.dirty.clear()
+    this.cursor = cursor
+    this.clock = clock
+    this.persist()
+    this.setStatus({ state: 'idle', lastSyncedAt: this.now(), message: undefined })
+    return { pulled }
+  }
+
   // ----- internals -----
 
   private now(): number {
@@ -154,8 +227,8 @@ export class SyncEngine {
   }
 
   /**
-   * A change time: microseconds-ish (ms x 1000 plus this phone's own 0-999), later than anything issued or seen so
-   * far even if this phone's clock is behind, and never equal to another phone's stamp.
+   * A change time: ms x 1000 plus this phone's own 0-999. Later than anything issued or seen so far even if this
+   * phone's clock is behind, and never equal to another phone's stamp.
    */
   private stamp(): number {
     const base = Math.max(this.now() * 1000, this.clock + 1)
@@ -177,21 +250,27 @@ export class SyncEngine {
   }
 
   private publish(): void {
-    this.setStatus({})
+    this.setStatus(this.notesError ? { state: 'error', message: NOTES_FULL } : {})
   }
 
   private persist(): void {
-    const dirty: Record<string, string[]> = {}
-    for (const [table, ids] of this.dirty) if (ids.size > 0) dirty[table] = [...ids]
-    this.opts.kv.set(KEYS.meta, JSON.stringify(this.meta))
-    this.opts.kv.set(KEYS.dirty, JSON.stringify(dirty))
-    this.opts.kv.set(KEYS.clock, String(this.clock))
-    this.opts.kv.set(KEYS.cursor, String(this.cursor))
+    if (this.stopped) return
+    try {
+      const dirty: Record<string, string[]> = {}
+      for (const [table, ids] of this.dirty) if (ids.size > 0) dirty[table] = [...ids]
+      this.opts.kv.set(KEYS.meta, JSON.stringify(this.meta))
+      this.opts.kv.set(KEYS.dirty, JSON.stringify(dirty))
+      this.opts.kv.set(KEYS.clock, String(this.clock))
+      this.opts.kv.set(KEYS.cursor, String(this.cursor))
+      this.notesError = false
+    } catch {
+      this.notesError = true
+    }
   }
 
-  private mark(table: string, id: string, deleted: boolean): void {
+  private mark(table: string, id: string, deleted: boolean, json?: string): void {
     const u = this.stamp()
-    ;(this.meta[table] ??= {})[id] = deleted ? { u, d: 1 } : { u }
+    ;(this.meta[table] ??= {})[id] = deleted || json === undefined ? { u, d: 1 } : { u, h: fingerprint(json) }
     if (!this.dirty.has(table)) this.dirty.set(table, new Set())
     this.dirty.get(table)!.add(id)
   }
@@ -202,7 +281,7 @@ export class SyncEngine {
     let any = false
     for (const [id, json] of after) {
       if (before.get(id) !== json) {
-        this.mark(table, id, false)
+        this.mark(table, id, false, json)
         any = true
       }
     }
@@ -218,22 +297,71 @@ export class SyncEngine {
     }
   }
 
+  /** Compare the phone's rows with our notes and mark whatever differs (new, edited or removed behind our back). */
+  private reconcile(): boolean {
+    let any = false
+    for (const [table, rows] of Object.entries(this.opts.local.getAll())) {
+      const known = this.meta[table] ?? {}
+      const present = new Set<string>()
+      for (const r of rows) {
+        present.add(r.id)
+        const json = JSON.stringify(r)
+        const m = known[r.id]
+        if (!m || m.d || m.h !== fingerprint(json)) {
+          this.mark(table, r.id, false, json)
+          any = true
+        }
+      }
+      for (const [id, m] of Object.entries(known)) {
+        if (!m.d && !present.has(id)) {
+          this.mark(table, id, true)
+          any = true
+        }
+      }
+    }
+    return any
+  }
+
   private async run(): Promise<SyncResult> {
     const result: SyncResult = { pushed: 0, pulled: 0, rejected: 0 }
+    this.skipped = 0
     this.setStatus({ state: 'syncing' })
+    let pushError: unknown = null
+    let pullError: unknown = null
     try {
-      do {
-        this.again = false
-        result.pushed += await this.pushAll()
-        await this.pullAll(result)
-      } while (this.again)
-      this.setStatus({ state: 'idle', lastSyncedAt: this.now(), message: undefined })
+      this.reconcile()
+      this.persist()
     } catch (err) {
-      if (err instanceof Error && err.name === 'TransportError' && (err as TransportError).kind === 'offline') {
-        this.setStatus({ state: 'offline', message: undefined })
-      } else {
-        this.setStatus({ state: 'error', message: err instanceof Error ? err.message : String(err) })
+      pushError = err
+    }
+    do {
+      this.again = false
+      // A push the server refuses must not stop us from receiving.
+      try {
+        result.pushed += await this.pushAll()
+      } catch (err) {
+        pushError = err
       }
+      if (this.stopped) return result
+      try {
+        await this.pullAll(result)
+      } catch (err) {
+        pullError = err
+      }
+      if (this.stopped) return result
+    } while (this.again && !pushError && !pullError)
+
+    const failure = [pullError, pushError].find((e) => e !== null)
+    const isOffline = (e: unknown) => e instanceof Error && e.name === 'TransportError' && (e as TransportError).kind === 'offline'
+    if (isOffline(pullError) || isOffline(pushError)) {
+      this.setStatus({ state: 'offline', message: undefined })
+    } else if (failure !== undefined) {
+      this.setStatus({ state: 'error', message: failure instanceof Error ? failure.message : String(failure) })
+    } else if (this.notesError) {
+      this.setStatus({ state: 'error', message: NOTES_FULL })
+    } else {
+      const message = this.skipped > 0 ? `${this.skipped} item${this.skipped === 1 ? ' is' : 's are'} too large to sync` : undefined
+      this.setStatus({ state: 'idle', lastSyncedAt: this.now(), message })
     }
     return result
   }
@@ -259,10 +387,20 @@ export class SyncEngine {
       for (const { tbl, id } of batch) {
         const m = this.meta[tbl]?.[id] ?? { u: this.stamp() }
         const row = all[tbl]?.find((r) => r.id === id)
-        if (m.d || !row) rows.push({ tbl, id, payload: null, deleted: true, updated_at: m.u })
-        else rows.push({ tbl, id, payload: await encryptRow(this.opts.key, tbl, row), deleted: false, updated_at: m.u })
+        const deleted = Boolean(m.d) || !row
+        const usable = typeof id === 'string' && id.length > 0 && id.length <= MAX_ID && tbl.length <= MAX_TABLE
+        const payload = usable ? await encryptRow(this.opts.key, tbl, deleted ? { id } : (row as Row), { updated_at: m.u, deleted }) : ''
+        if (this.stopped) return pushed
+        if (!usable || payload.length > MAX_PAYLOAD) {
+          // This row can never be accepted by the server: leave it out so it does not block the others.
+          this.dirty.get(tbl)?.delete(id)
+          this.skipped++
+          continue
+        }
+        rows.push({ tbl, id, payload, deleted, updated_at: m.u })
       }
-      await this.opts.transport.push(this.opts.household, rows)
+      if (rows.length > 0) await this.opts.transport.push(this.opts.household, rows)
+      if (this.stopped) return pushed
       for (const r of rows) {
         // an edit made while this batch was in flight has a later stamp and stays waiting
         if ((this.meta[r.tbl]?.[r.id]?.u ?? r.updated_at) === r.updated_at) this.dirty.get(r.tbl)?.delete(r.id)
@@ -273,86 +411,68 @@ export class SyncEngine {
     }
   }
 
+  /** Decrypt one remote row. Returns the row (null for a delete), or undefined if it must not be trusted or used. */
+  private async open(r: SyncRow): Promise<Row | null | undefined> {
+    if (!KNOWN_TABLES.includes(r.tbl) || !Number.isFinite(r.updated_at) || r.updated_at < 0) return undefined
+    if (r.updated_at > this.now() * 1000 + MAX_AHEAD) return undefined // would win every later edit
+    if (typeof r.payload !== 'string' || r.payload === '') return undefined
+    try {
+      const row = await decryptRow(this.opts.key, r.tbl, r.id, r.payload, { updated_at: r.updated_at, deleted: r.deleted })
+      return r.deleted ? null : row
+    } catch {
+      return undefined
+    }
+  }
+
   private async pullAll(result: SyncResult): Promise<void> {
     for (;;) {
       const page = await this.opts.transport.pull(this.opts.household, this.cursor)
-      if (page.length === 0) return
+      if (this.stopped || page.length === 0) return
       await this.applyPage(page, result)
       if (page.length < PAGE) return
     }
   }
 
-  /** Merge one page of remote rows. Nothing is recorded (cursor included) unless the phone saved them. */
+  /**
+   * Merge one page of remote rows. All waiting (decrypting) is done first; then, with nothing awaited in between,
+   * the phone's rows are read as they are right now and saved, so an edit made meanwhile is never overwritten.
+   * Nothing is recorded (cursor included) unless the phone saved the rows.
+   */
   private async applyPage(page: SyncRow[], result: SyncResult): Promise<void> {
-    const all = this.opts.local.getAll()
-    const changed = new Map<string, Row[]>()
-    const seen: { tbl: string; id: string; u: number; d: boolean }[] = []
     let maxSeq = this.cursor
+    const opened: { r: SyncRow; row: Row | null }[] = []
     for (const r of page) {
       maxSeq = Math.max(maxSeq, r.seq ?? 0)
+      const row = await this.open(r)
+      if (row === undefined) result.rejected++
+      else opened.push({ r, row })
+    }
+    if (this.stopped) return
+
+    const all = this.opts.local.getAll()
+    const changed = new Map<string, Row[]>()
+    const seen: { tbl: string; id: string; entry: MetaEntry }[] = []
+    for (const { r, row } of opened) {
       const m = this.meta[r.tbl]?.[r.id]
       if (m && m.u >= r.updated_at) continue // what we have is newer, or is our own change coming back
-      let decoded: Row | null = null
-      if (!r.deleted) {
-        try {
-          decoded = await decryptRow(this.opts.key, r.tbl, r.id, r.payload ?? '')
-        } catch {
-          result.rejected++
-          continue
-        }
-      }
       const rows = changed.get(r.tbl) ?? [...(all[r.tbl] ?? [])]
       const at = rows.findIndex((x) => x.id === r.id)
-      if (decoded === null) {
+      if (row === null) {
         if (at >= 0) rows.splice(at, 1)
-      } else if (at >= 0) rows[at] = decoded
-      else rows.push(decoded)
+      } else if (at >= 0) rows[at] = row
+      else rows.push(row)
       changed.set(r.tbl, rows)
-      seen.push({ tbl: r.tbl, id: r.id, u: r.updated_at, d: r.deleted })
+      seen.push({ tbl: r.tbl, id: r.id, entry: row === null ? { u: r.updated_at, d: 1 } : { u: r.updated_at, h: fingerprint(JSON.stringify(row)) } })
       result.pulled++
     }
     if (changed.size > 0) this.opts.local.apply(Object.fromEntries(changed)) // throws if the phone cannot save: nothing below runs
     for (const s of seen) {
-      ;(this.meta[s.tbl] ??= {})[s.id] = s.d ? { u: s.u, d: 1 } : { u: s.u }
-      this.clock = Math.max(this.clock, s.u)
+      ;(this.meta[s.tbl] ??= {})[s.id] = s.entry
+      this.clock = Math.max(this.clock, s.entry.u)
       this.dirty.get(s.tbl)?.delete(s.id) // an older local change is replaced by the newer remote one
     }
     this.cursor = maxSeq
     this.persist()
     this.publish()
-  }
-
-  /** Make this phone match the shared copy exactly (joining a household). Anything held here is replaced. */
-  async replaceFromRemote(): Promise<{ pulled: number }> {
-    const tables: Record<string, Row[]> = Object.fromEntries(TABLES.map((t) => [t, [] as Row[]]))
-    const meta: Meta = {}
-    let cursor = 0
-    let clock = this.clock
-    let pulled = 0
-    for (;;) {
-      const page = await this.opts.transport.pull(this.opts.household, cursor)
-      if (page.length === 0) break
-      for (const r of page) {
-        cursor = Math.max(cursor, r.seq ?? 0)
-        clock = Math.max(clock, r.updated_at)
-        ;(meta[r.tbl] ??= {})[r.id] = r.deleted ? { u: r.updated_at, d: 1 } : { u: r.updated_at }
-        if (r.deleted || !(r.tbl in tables)) continue
-        try {
-          tables[r.tbl].push(await decryptRow(this.opts.key, r.tbl, r.id, r.payload ?? ''))
-          pulled++
-        } catch {
-          /* a row this code cannot open is left out */
-        }
-      }
-      if (page.length < PAGE) break
-    }
-    this.opts.local.apply(tables)
-    this.meta = meta
-    this.dirty.clear()
-    this.cursor = cursor
-    this.clock = clock
-    this.persist()
-    this.setStatus({ state: 'idle', lastSyncedAt: this.now(), message: undefined })
-    return { pulled }
   }
 }
