@@ -5,11 +5,13 @@ import App from './App'
 import { startup } from './data/startup'
 import { resumeSync } from './data/syncRuntime'
 import { migrateOwnData } from './lib/migrate'
+import { startStyle } from './lib/style'
 import { startTheme } from './lib/theme'
 import './index.css'
 
 async function main() {
   startTheme()
+  startStyle()
   // Ask the browser not to clear this site's saved data when space is tight (ignored if unsupported).
   void navigator.storage?.persist?.()
   migrateOwnData()
