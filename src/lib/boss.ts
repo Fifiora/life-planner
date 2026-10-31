@@ -1,4 +1,4 @@
-import { addDays, daysBetween, PLAN_START, weekStart } from './dates'
+import { addDays, daysBetween, PLAN_START, shiftMonths, weekStart } from './dates'
 import { memberTicks, type GameData } from './xp'
 
 export interface Boss {
@@ -41,4 +41,15 @@ export function bossProgress(
     if (days.length >= 2) value = [...days[0]].filter((d) => days.every((s) => s.has(d))).length
   }
   return { value, target: boss.target, defeated: value >= boss.target }
+}
+
+/** Bosses beaten in weeks that start inside `month` (a `YYYY-MM` key). */
+export function bossesBeatenIn(month: string, data: GameData, memberIds: string[]): number {
+  const first = `${month}-01`
+  const last = addDays(shiftMonths(first, 1), -1)
+  let n = 0
+  for (let w = weekStart(first) === first ? first : addDays(weekStart(first), 7); w <= last; w = addDays(w, 7)) {
+    if (bossProgress(bossForWeek(w), w, data, memberIds).defeated) n++
+  }
+  return n
 }
