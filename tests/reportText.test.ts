@@ -28,7 +28,8 @@ describe('reportToMarkdown', () => {
   })
   it('labels trivia as all time and prints a dash for an unknown percent', () => {
     const sat = routine('r2', { name: 'Sat walk', applies_to: 'a', cadence: 'weekly', weekday: 6 })
-    const text = md(buildReport('2026-11', reportInput({ routines: [sat] })), 'November 2026')
+    const attempts = [{ id: 't1', question_id: 'q1', member_id: 'a', chosen_index: 0, correct: true }]
+    const text = md(buildReport('2026-11', reportInput({ routines: [sat], attempts })), 'November 2026')
     expect(text).toContain('Trivia (all time)')
     expect(text).toMatch(/Sat walk \(Ada\): 0 of 0 \(—\)/)
   })
