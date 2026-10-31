@@ -82,14 +82,21 @@ html[data-theme="dark"] {
 
 html,
 body {
+  color: var(--ink);
+  min-height: 100%;
+}
+html { background: var(--bg); }
+/* The soft coloured glow sits on its own fixed layer (a fixed background is unreliable on iPads and iPhones). */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
     radial-gradient(900px 520px at 8% -8%, var(--bg-glow-1), transparent 60%),
     radial-gradient(800px 480px at 100% 0%, var(--bg-glow-2), transparent 60%),
-    radial-gradient(700px 500px at 50% 110%, var(--bg-glow-3), transparent 60%),
-    var(--bg);
-  background-attachment: fixed;
-  color: var(--ink);
-  min-height: 100%;
+    radial-gradient(700px 500px at 50% 110%, var(--bg-glow-3), transparent 60%);
 }
 
 body {
@@ -455,30 +462,36 @@ html[data-theme="dark"] { color-scheme: dark; }
 
 /* ---------- Laptop and wider ---------- */
 .side-brand { display: none; }
-@media (min-width: 64rem) {
+:root { --side-w: 13rem; }
+/* Tablets held upright and anything wider get the left sidebar instead of a bottom bar. */
+@media (min-width: 48rem) {
   .tabbar {
-    top: 0; right: auto; width: 14.5rem; flex-direction: column; justify-content: flex-start; gap: 0.25rem;
+    top: 0; right: auto; width: var(--side-w); flex-direction: column; justify-content: flex-start; gap: 0.25rem;
     padding: 1.2rem 0.8rem; border-top: 0; border-right: 1px solid var(--line);
     -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%);
   }
   .side-brand { display: block; padding: 0.4rem 0.9rem 1.2rem; font-size: 1.15rem; font-weight: 750; letter-spacing: -0.01em; }
   .tab { flex: none; flex-direction: row; justify-content: flex-start; gap: 0.75rem; padding: 0.55rem 0.9rem; font-size: 0.95rem; border-radius: 0.9rem; }
   .tab-icon { font-size: 1.25rem; }
-  body:has(.tabbar) .app { max-width: none; margin: 0 0 0 14.5rem; padding: 1.5rem clamp(1.5rem, 3vw, 3rem) 2.5rem; }
+  body:has(.tabbar) .app { max-width: none; margin: 0 0 0 var(--side-w); padding: 1.5rem clamp(1.25rem, 3vw, 3rem) 2.5rem; }
   body:has(.tabbar) .app > * { max-width: 82rem; margin-inline: auto; }
   .stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); gap: 1rem; align-items: start; }
   .stack > * + * { margin-top: 0; }
   .stack > .page-head, .stack > .tabs, .stack > .weekstrip, .stack > .kpi-row, .stack > .tiles,
   .stack > .pill-row, .stack > .mpills, .stack > .wide, .stack > .verse { grid-column: 1 / -1; }
   .stack > .donut-card { grid-column: 1 / -1; container-type: inline-size; }
-  .kpi-row { grid-template-columns: repeat(4, 1fr); }
   .weekstrip { gap: 0.6rem; }
   .wday { min-height: 72px; }
-  .cal-cell { min-height: 86px; align-items: flex-start; padding: 0.5rem 0.6rem; }
+  .cal-cell { min-height: 70px; align-items: flex-start; padding: 0.4rem 0.5rem; }
   .cal-num { font-size: 0.95rem; }
   .fab { bottom: 1.5rem; right: 1.5rem; }
   .backdrop { align-items: center; }
   .sheet { max-width: 36rem; border-radius: 1.5rem; padding-bottom: 1.2rem; }
+}
+@media (min-width: 64rem) {
+  :root { --side-w: 14.5rem; }
+  .kpi-row { grid-template-columns: repeat(4, 1fr); }
+  .cal-cell { min-height: 86px; padding: 0.5rem 0.6rem; }
 }
 @media (min-width: 90rem) {
   .stack { grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr)); }
@@ -511,7 +524,7 @@ html[data-theme="dark"] { color-scheme: dark; }
 .ring-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .theme-btn { font-size: 1.15rem; }
 .side-theme { display: none; }
-@media (min-width: 64rem) {
+@media (min-width: 48rem) {
   .side-theme { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.2rem; margin-top: auto; padding: 0.25rem; border-radius: 0.9rem; background: color-mix(in srgb, var(--card-solid) 45%, transparent); border: 1px solid var(--line); }
   .side-theme-btn { min-height: 36px; border: 0; border-radius: 0.7rem; background: transparent; color: var(--muted); font: inherit; font-size: 0.72rem; font-weight: 650; cursor: pointer; }
   .side-theme-btn[aria-pressed="true"] { background: var(--card-solid); color: var(--ink); box-shadow: 0 2px 8px rgba(30, 40, 100, 0.12); }
