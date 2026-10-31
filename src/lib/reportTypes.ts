@@ -24,12 +24,18 @@ export interface ReportInput {
   savings: SavingsEntry[]
   incomeConfigured: number
   savingsTarget: number
+  /** The first month savings are tracked (`YYYY-MM`). */
+  savingsStart: string
+  /** The day the plan began; nothing before it is counted. */
+  planStart: string
   today: string
 }
 
 export interface MonthRange {
   month: string
   first: string
+  /** The first day that counts: the month's first day, or the plan start if that is later. */
+  start: string
   /** The month's last day, or today while the month is still going. */
   last: string
   days: number
@@ -45,6 +51,8 @@ export interface Scorecard {
   bestStreakByMember: Record<string, number>
   spent: number
   prevSpent: number
+  /** False when last month was before the plan began, so there is nothing to compare with. */
+  prevAvailable: boolean
 }
 
 export interface RoutineRow {
@@ -88,6 +96,8 @@ export interface FinanceSection {
   spent: number
   savedThisMonth: number
   savingsTarget: number
+  /** False for months before savings tracking began. */
+  savingsTracked: boolean
   billsPaid: number
   billsDue: number
   unpaid: string[]
@@ -114,6 +124,8 @@ export interface FocusGoal {
 
 export interface Report {
   month: string
+  /** False when nothing at all was logged in the month. */
+  hasData: boolean
   range: MonthRange
   scorecard: Scorecard
   routines: RoutineRow[]

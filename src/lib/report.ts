@@ -4,7 +4,7 @@ import type { FocusGoal, Report, ReportInput } from './reportTypes'
 
 /** Everything about one month, as plain numbers. The page and the text export both read this. */
 export function buildReport(month: string, input: ReportInput, extra: { game?: { level: number; bossesBeaten: number } | null; focus?: FocusGoal[] } = {}): Report {
-  const range = monthRange(month, input.today)
+  const range = monthRange(month, input.today, input.planStart)
   const scorecard = scorecardSection(range, input)
   const routines = routinesSection(range, input)
   const health = healthSection(range, input)
@@ -14,8 +14,20 @@ export function buildReport(month: string, input: ReportInput, extra: { game?: {
   const finance = financeSection(range, input)
   const calendar = calendarSection(range, input)
   const game = extra.game ?? null
+  const routineIds = new Set(input.routines.map((r) => r.id))
+  const inRange = (d: string) => d >= range.start && d <= range.last
+  const hasData =
+    input.logs.some((l) => l.done && routineIds.has(l.routine_id) && inRange(l.date)) ||
+    input.activities.some((a) => inRange(a.date)) ||
+    input.milestones.some((m) => inRange(m.week_start)) ||
+    input.nights.some((n) => inRange(n.date)) ||
+    input.payments.some((p) => p.month === month) ||
+    input.expenses.some((e) => inRange(e.date)) ||
+    input.savings.some((s) => s.month === month) ||
+    calendar.done > 0
   return {
     month,
+    hasData,
     range,
     scorecard,
     routines,
@@ -27,6 +39,6 @@ export function buildReport(month: string, input: ReportInput, extra: { game?: {
     calendar,
     game,
     focus: extra.focus ?? [],
-    insights: insightsFor({ range, members: input.members, scorecard, routines, health, study, travel, finance, calendar, game: game ? { bossesBeaten: game.bossesBeaten } : undefined }),
+    insights: !hasData ? { wins: [], improve: [] } : insightsFor({ range, members: input.members, scorecard, routines, health, study, travel, finance, calendar, game: game ? { bossesBeaten: game.bossesBeaten } : undefined }),
   }
 }

@@ -3,21 +3,20 @@ import { useHousehold } from '../data/household'
 import { useSettings } from '../data/useSettings'
 import { focusKey, parseFocus, serializeFocus } from '../lib/focus'
 import { monthLabel, shiftMonthKey } from '../lib/format'
-import type { FocusGoal } from '../lib/reportTypes'
 
 const SLOTS = [0, 1, 2]
 
 /**
  * `review`: the goals saved for this report's month, each with a "did we do it?" tick.
- * `plan`: up to three goals for the month after, saved when you leave a box.
+ * `plan`: up to three goals for the month after, saved when you leave a box. Only the boxes you
+ * changed are applied on top of what is saved right now, so a goal your partner added is never lost.
  */
 export function FocusBox({ month, mode }: { month: string; mode: 'review' | 'plan' }) {
   const { readOnly } = useHousehold()
   const settings = useSettings()
   const key = focusKey(mode === 'review' ? month : shiftMonthKey(month, 1))
   const goals = parseFocus(settings.get(key))
-  const [drafts, setDrafts] = useState<Record<string, string[]>>({})
-  const forKey = drafts[key] ?? SLOTS.map((i) => goals[i]?.text ?? '')
+  const [edits, setEdits] = useState<Record<number, string>>({})
 
   if (mode === 'review') {
     if (goals.length === 0) return null
@@ -39,11 +38,14 @@ export function FocusBox({ month, mode }: { month: string; mode: 'review' | 'pla
     )
   }
 
-  const save = () => {
+  const save = async () => {
     if (readOnly) return
-    const next: FocusGoal[] = forKey.map((text, i) => ({ text, done: goals[i]?.done ?? false }))
+    const next = SLOTS.map((i) => (i in edits ? { text: edits[i], done: false } : { text: goals[i]?.text ?? '', done: goals[i]?.done ?? false }))
     const value = serializeFocus(next)
-    if (value !== (settings.get(key) ?? '')) void settings.set(key, value)
+    const unchanged = value === serializeFocus(goals)
+    const nothingToKeep = settings.get(key) === undefined && parseFocus(value).length === 0
+    if (!unchanged && !nothingToKeep) await settings.set(key, value)
+    setEdits({})
   }
   return (
     <section className="card report-focus" aria-labelledby="focus-plan">
@@ -57,9 +59,9 @@ export function FocusBox({ month, mode }: { month: string; mode: 'review' | 'pla
             className="input"
             maxLength={80}
             readOnly={readOnly}
-            value={forKey[i]}
-            onChange={(e) => setDrafts({ ...drafts, [key]: forKey.map((t, j) => (j === i ? e.target.value : t)) })}
-            onBlur={save}
+            value={i in edits ? edits[i] : (goals[i]?.text ?? '')}
+            onChange={(e) => setEdits({ ...edits, [i]: e.target.value })}
+            onBlur={() => void save()}
           />
         </div>
       ))}

@@ -22,10 +22,10 @@ export function reportSections(report: Report, members: MemberRef[]): TextSectio
 
   const { scorecard: s, health: h, study, travel, food, finance: f, calendar: c } = report
   const scoreLines = [
-    ...members.map((m) => `${m.display_name}: ${s.ticksByMember[m.id] ?? 0} ${plural(s.ticksByMember[m.id] ?? 0, 'tick', 'ticks')} (${s.prevTicksByMember[m.id] ?? 0} last month)`),
+    ...members.map((m) => `${m.display_name}: ${s.ticksByMember[m.id] ?? 0} ${plural(s.ticksByMember[m.id] ?? 0, 'tick', 'ticks')}${s.prevAvailable ? ` (${s.prevTicksByMember[m.id] ?? 0} last month)` : ''}`),
     `Completion: ${pct(s.completionPct)}`,
     `Best streak: ${members.map((m) => `${m.display_name} ${s.bestStreakByMember[m.id] ?? 0} days`).join(', ')}`,
-    `Spent: ${money(s.spent)} (last month ${money(s.prevSpent)})`,
+    `Spent: ${money(s.spent)}${s.prevAvailable ? ` (last month ${money(s.prevSpent)})` : ''}`,
   ]
   if (report.game) scoreLines.push(`Level now: ${report.game.level}`, `Bosses beaten: ${report.game.bossesBeaten}`)
   section('Scorecard', scoreLines)
@@ -62,7 +62,7 @@ export function reportSections(report: Report, members: MemberRef[]): TextSectio
       ? [
           `Income: ${money(f.incomeLogged)} logged (${money(f.incomeConfigured)} planned)`,
           `Spent: ${money(f.spent)}`,
-          `Saved: ${money(f.savedThisMonth)} against the ${money(f.savingsTarget)} target`,
+          ...(f.savingsTracked ? [`Saved: ${money(f.savedThisMonth)} against the ${money(f.savingsTarget)} target`] : []),
           `Bills paid: ${f.billsPaid} of ${f.billsDue}`,
           ...(f.payoffsCleared.length > 0 ? [`Payoffs cleared: ${f.payoffsCleared.join(', ')}`] : []),
           ...f.categories.map((x) => `${x.category}: ${money(x.spent)} against ${x.budget > 0 ? money(x.budget) : 'no budget'}`),
@@ -75,7 +75,8 @@ export function reportSections(report: Report, members: MemberRef[]): TextSectio
 
   section('Wins', report.insights.wins.map((i) => i.text), 'None this month.')
   section('Improve next month', report.insights.improve.map((i) => i.text), 'None this month.')
-  return sections
+  // A month with nothing logged is empty all the way down, even if routines and bills are set up.
+  return report.hasData ? sections : sections.map((x) => ({ ...x, lines: [] }))
 }
 
 /** The report as Markdown: for copying, pasting into a message, or saving as a file. */

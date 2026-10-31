@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useHousehold } from '../data/household'
 import { useReport } from '../data/useReport'
@@ -20,6 +21,11 @@ export default function Report({ today }: { today?: string }) {
   const { members } = useHousehold()
   const anime = useStyleChoice() === 'anime'
   const toast = useToast()
+  const [manual, setManual] = useState<string | null>(null)
+  const boxRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    if (manual !== null) boxRef.current?.select()
+  }, [manual])
 
   const current = day.slice(0, 7)
   const finished = finishedMonths(day)
@@ -44,9 +50,24 @@ export default function Report({ today }: { today?: string }) {
           </select>
         </div>
         <button type="button" className="btn" onClick={() => window.print()}>Print or save as PDF</button>
-        <button type="button" className="btn" onClick={async () => toast((await copyText(markdown())) ? 'Copied.' : 'Could not copy. Select the text and copy it yourself.')}>Copy as text</button>
+        <button type="button" className="btn" onClick={async () => {
+          const text = markdown()
+          if (await copyText(text)) {
+            setManual(null)
+            toast('Copied.')
+          } else {
+            setManual(text)
+            toast('Could not copy. Select the text and copy it yourself.')
+          }
+        }}>Copy as text</button>
         <button type="button" className="btn" onClick={() => downloadText(reportFileName(month), markdown(), 'text/markdown')}>Download as file</button>
       </div>
+      {manual !== null && (
+        <section className="card">
+          <label className="label" htmlFor="report-text">Report text</label>
+          <textarea id="report-text" ref={boxRef} className="input" readOnly rows={8} value={manual} />
+        </section>
+      )}
       <ReportView report={report} members={members} />
     </div>
   )

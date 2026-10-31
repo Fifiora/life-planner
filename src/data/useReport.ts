@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { bossesBeatenIn } from '../lib/boss'
+import { PLAN_START } from '../lib/dates'
 import { cleanEvent } from '../lib/calendar'
 import { focusKey, parseFocus } from '../lib/focus'
 import { buildReport } from '../lib/report'
@@ -52,10 +53,12 @@ export function useReport(month: string, today?: string): Report {
           savings: finance.savings.rows,
           incomeConfigured: finance.totalIncome,
           savingsTarget: finance.target,
+          savingsStart: finance.savingsStart,
+          planStart: PLAN_START,
           today: day,
         },
         { game: game.on ? { level: game.me.progress.level, bossesBeaten: bossesBeatenIn(month, game.data, game.memberIds) } : null, focus: parseFocus(focusRaw) },
       ),
-    [month, day, members, routines, logs, activities, milestones, attempts, trips, places, nights, events, finance.expenses.rows, finance.bills.rows, finance.payments.rows, finance.budgets.rows, finance.savings.rows, finance.totalIncome, finance.target, game, focusRaw],
+    [month, day, members, routines, logs, activities, milestones, attempts, trips, places, nights, events, finance.expenses.rows, finance.bills.rows, finance.payments.rows, finance.budgets.rows, finance.savings.rows, finance.totalIncome, finance.target, finance.savingsStart, game, focusRaw],
   )
 }

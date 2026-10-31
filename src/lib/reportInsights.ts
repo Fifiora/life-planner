@@ -34,7 +34,7 @@ export function insightsFor(input: InsightInput): { wins: Insight[]; improve: In
     add(0, 'finance', `${n} monthly ${plural(n, 'bill', 'bills')} not paid${finished ? `: ${finance.unpaid.join(', ')}` : ' yet'}.`)
   }
   const moneyLogged = finance.spent > 0 || finance.incomeLogged > 0 || finance.savedThisMonth > 0 || finance.billsPaid > 0
-  if (finished && moneyLogged && finance.savingsTarget > 0 && finance.savedThisMonth < finance.savingsTarget) {
+  if (finished && finance.savingsTracked && moneyLogged && finance.savingsTarget > 0 && finance.savedThisMonth < finance.savingsTarget) {
     add(0, 'finance', `Savings reached ${money(finance.savedThisMonth)} against the ${money(finance.savingsTarget)} target.`)
   }
   routines
@@ -66,7 +66,7 @@ export function insightsFor(input: InsightInput): { wins: Insight[]; improve: In
     .slice(0, 3)
     .forEach((r) => wins.push({ area: r.bucket, text: `${label(r.name, r.memberId)}: ${r.pct}% done. Keep it up!` }))
   if (finance.billsDue > 0 && finance.unpaid.length === 0) wins.push({ area: 'finance', text: 'Every monthly bill was paid.' })
-  if (finished && moneyLogged && finance.savingsTarget > 0 && finance.savedThisMonth >= finance.savingsTarget) {
+  if (finished && finance.savingsTracked && moneyLogged && finance.savingsTarget > 0 && finance.savedThisMonth >= finance.savingsTarget) {
     wins.push({ area: 'finance', text: `Savings hit ${money(finance.savedThisMonth)}, at or above the ${money(finance.savingsTarget)} target.` })
   }
   if (finished) {
