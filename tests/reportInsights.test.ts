@@ -9,7 +9,7 @@ function base(over: Record<string, unknown> = {}): Parameters<typeof insightsFor
   return {
     range: range(),
     members,
-    scorecard: { ticksByMember: zeroMember(), prevTicksByMember: zeroMember(), expectedTotal: 0, doneTotal: 0, completionPct: null, bestStreakByMember: zeroMember(), spent: 0, prevSpent: 0 },
+    scorecard: { ticksByMember: zeroMember(), prevTicksByMember: zeroMember(), expectedTotal: 0, doneTotal: 0, completionPct: null, bestStreakByMember: zeroMember(), spent: 0, prevSpent: 0, prevAvailable: true },
     routines: [],
     health: { byMember: { a: { workouts: 0, minutes: 0, byType: {} }, b: { workouts: 0, minutes: 0, byType: {} } }, timed: [], weeksWithoutWorkout: [] },
     study: { milestones: { a: { done: 0, total: 0 }, b: { done: 0, total: 0 } }, triviaAllTime: { a: { attempts: 0, correct: 0 }, b: { attempts: 0, correct: 0 } } },
