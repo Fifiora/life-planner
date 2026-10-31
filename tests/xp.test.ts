@@ -51,10 +51,22 @@ describe('memberXp', () => {
     const ms = (id: string, done: boolean) => ({ id, week_start: '2026-11-02', member_id: 'a', text: 't', done })
     expect(memberXp({ ...empty(), milestones: [ms('m1', true), ms('m2', false)] }, 'a').byBucket.study).toBe(15)
   })
-  it('pays for the first trivia attempt on a question only', () => {
+  it('pays once per question: 8 if any attempt was right, otherwise 3, whatever order the rows are in', () => {
     const at = (id: string, q: string, correct: boolean) => ({ id, question_id: q, member_id: 'a', chosen_index: 0, correct })
-    expect(memberXp({ ...empty(), attempts: [at('1', 'q1', true), at('2', 'q1', true)] }, 'a').byBucket.study).toBe(8)
-    expect(memberXp({ ...empty(), attempts: [at('1', 'q1', false), at('2', 'q1', true)] }, 'a').byBucket.study).toBe(3)
+    const study = (attempts: ReturnType<typeof at>[]) => memberXp({ ...empty(), attempts }, 'a').byBucket.study
+    expect(study([at('1', 'q1', true), at('2', 'q1', true)])).toBe(8)
+    expect(study([at('1', 'q1', false), at('2', 'q1', true)])).toBe(8)
+    expect(study([at('1', 'q1', true), at('2', 'q1', false)])).toBe(8)
+    expect(study([at('1', 'q1', false), at('2', 'q1', false)])).toBe(3)
+    expect(study([at('1', 'q1', true), at('2', 'q2', false)])).toBe(11)
+  })
+  it('puts the streak bonus in the same area whatever order the ticks were saved in', () => {
+    const food = routine('r2', 'food')
+    const rows = [tick('1', 'r1', 'a', '2026-11-04'), tick('2', 'r2', 'a', '2026-11-04')]
+    const one = memberXp({ ...empty(), routines: [routine('r1'), food], logs: rows }, 'a')
+    const two = memberXp({ ...empty(), routines: [routine('r1'), food], logs: [...rows].reverse() }, 'a')
+    expect(two.byBucket).toEqual(one.byBucket)
+    expect(one.byBucket).toEqual({ health: 12, study: 0, travel: 0, food: 10, finance: 0 })
   })
   it('pays 20 finance XP per bill payment', () => {
     const d = { ...empty(), payments: [{ id: 'p1', bill_id: 'b', month: '2026-11', paid_on: '2026-11-03', member_id: 'a' }] }

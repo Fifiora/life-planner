@@ -30,10 +30,10 @@ const contrast = (a: string, b: string) => {
 }
 
 const PALETTES = {
-  light: { selector: 'html[data-style="anime"]', want: { '--bg': '#fff1e6', '--card-solid': '#ffffff', '--ink': '#2b1a3a', '--muted': '#6b5577', '--brand': '#d6336c', '--brand-ink': '#ffffff', '--brand-2': '#0b7fa8' } },
+  light: { selector: 'html[data-style="anime"]', want: { '--bg': '#fff1e6', '--card-solid': '#ffffff', '--ink': '#2b1a3a', '--muted': '#6b5577', '--brand': '#c2255c', '--brand-ink': '#ffffff', '--brand-2': '#0b7fa8' } },
   dark: { selector: 'html[data-style="anime"][data-theme="dark"]', want: { '--bg': '#0d0b24', '--card-solid': '#1a1540', '--ink': '#f4f0ff', '--muted': '#b3a8d9', '--brand': '#ff6fa8', '--brand-ink': '#1a0b24', '--brand-2': '#3fe0ff' } },
 }
-const PAIRS: [string, string][] = [['--ink', '--bg'], ['--ink', '--card-solid'], ['--muted', '--bg'], ['--muted', '--card-solid'], ['--brand-ink', '--brand']]
+const PAIRS: [string, string][] = [['--ink', '--bg'], ['--ink', '--card-solid'], ['--muted', '--bg'], ['--muted', '--card-solid'], ['--brand-ink', '--brand'], ['--brand', '--bg'], ['--brand', '--card-solid']]
 
 describe.each(Object.entries(PALETTES))('anime palette (%s)', (_name, { selector, want }) => {
   it('declares the agreed colours', () => {

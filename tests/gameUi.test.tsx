@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { screen } from '@testing-library/react'
+import { loadSnapshot } from '../src/data/tableStore'
 import Today from '../src/screens/Today'
 import Health from '../src/screens/Health'
 import Settings from '../src/screens/Settings'
@@ -36,8 +37,8 @@ describe('Today game layer (anime)', () => {
   it('lists trophies, earned and locked', async () => {
     renderScreen(<Today />)
     expect(await screen.findByRole('heading', { name: 'Trophies' })).toBeInTheDocument()
-    expect(screen.getByLabelText('First Spark, earned')).toBeInTheDocument()
-    expect(screen.getByLabelText('Week of Fire, locked: Keep a seven-day streak.')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'First Spark, earned' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Week of Fire, locked: Keep a seven-day streak.' })).toBeInTheDocument()
   })
 })
 
@@ -62,10 +63,33 @@ describe('Classic hides the game layer', () => {
 describe('Bucket levels and Settings', () => {
   it('Health shows its own level', async () => {
     renderScreen(<Health />)
-    expect(await screen.findByLabelText(/^Health level \d+/)).toHaveTextContent(/^Lv \d+/)
+    expect(await screen.findByRole('img', { name: /^Health level \d+/ })).toHaveTextContent(/^Lv \d+/)
   })
   it('Settings has the trophies too', async () => {
     renderScreen(<Settings />)
     expect(await screen.findByRole('heading', { name: 'Trophies' })).toBeInTheDocument()
+  })
+})
+
+describe('a view-only copy shows none of the game layer', () => {
+  const members = [{ id: 'a', display_name: 'Ada', color: '#16a34a', user_id: '' }, { id: 'b', display_name: 'Ben', color: '#6366f1', user_id: '' }]
+  const routines = [{ id: 'r1', name: 'r1', bucket: 'health', cadence: 'daily', times_per_period: 1, applies_to: 'both', place: null, time_rule: null, weekday: null, active: true }]
+  const snapshot = () => loadSnapshot({ members, routines, routine_logs: [log('x1', 'r1', todayCT())], cheers: [{ id: 'c1', from_member: 'b', to_member: 'a', date: todayCT() }] })
+
+  it('Today has no levels, trophies, boss, mascot or cheers', async () => {
+    snapshot()
+    renderScreen(<Today />)
+    await screen.findByRole('progressbar', { name: 'Done today' })
+    expect(screen.queryByText(/Party Lv/)).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Trophies' })).toBeNull()
+    expect(screen.queryByLabelText('Weekly boss')).toBeNull()
+    expect(screen.queryByRole('img', { name: /^Pip/ })).toBeNull()
+    expect(screen.queryByText(/cheered you on/)).toBeNull()
+  })
+  it('bucket screens have no level chip', async () => {
+    snapshot()
+    renderScreen(<Health />)
+    await screen.findByRole('heading', { name: 'Health' })
+    expect(screen.queryByRole('img', { name: /^Health level/ })).toBeNull()
   })
 })

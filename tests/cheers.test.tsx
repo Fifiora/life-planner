@@ -56,9 +56,10 @@ describe('CheerCard', () => {
 
   it('cannot send a cheer from a view-only copy', async () => {
     const members = [{ id: 'a', display_name: 'Ada', color: '#16a34a', user_id: '' }, { id: 'b', display_name: 'Ben', color: '#6366f1', user_id: '' }]
-    loadSnapshot({ members, routines: [{ id: 'r1', name: 'r1', bucket: 'health', cadence: 'daily', times_per_period: 1, applies_to: 'both', place: null, time_rule: null, weekday: null, active: true }], routine_logs: [log('p1', 'b', todayCT())] })
+    loadSnapshot({ members, routines: [{ id: 'r1', name: 'r1', bucket: 'health', cadence: 'daily', times_per_period: 1, applies_to: 'both', place: null, time_rule: null, weekday: null, active: true }], routine_logs: [log('p1', 'b', todayCT())], cheers: [{ id: 'c1', from_member: 'b', to_member: 'a', date: todayCT() }] })
     renderScreen(<CheerCard />)
     await new Promise((r) => setTimeout(r, 50))
     expect(screen.queryByRole('button', { name: /^Cheer/ })).toBeNull()
+    expect(screen.queryByText(/cheered you on/)).toBeNull()
   })
 })

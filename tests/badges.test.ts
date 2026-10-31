@@ -31,6 +31,8 @@ describe('badges', () => {
     const at = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `a${i}`, question_id: `q${i}`, member_id: 'a', chosen_index: 0, correct: true }))
     expect(run({ ...empty(), attempts: at(9) })).not.toContain('quiz-whiz')
     expect(run({ ...empty(), attempts: at(10) })).toContain('quiz-whiz')
+    const twice = [...at(5), ...at(5).map((a) => ({ ...a, id: `again${a.id}` }))]
+    expect(run({ ...empty(), attempts: twice })).not.toContain('quiz-whiz') // replaying the same 5 questions is not 10 answers
   })
   it('streak badges at 3, 7 and 30 days', () => {
     expect(run({ ...empty(), logs: ticks(days('2026-11-01', 3)) })).toContain('streak-3')
