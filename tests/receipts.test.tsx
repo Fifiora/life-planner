@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import Food from '../src/screens/Food'
 import Finance from '../src/screens/Finance'
 import { getAllRows, loadSnapshot } from '../src/data/tableStore'
-import { createReceiptStore, receiptStore, type ReceiptStore } from '../src/lib/receipts'
+import { createReceiptStore, receiptStore, removeOrphanPhotos, type ReceiptStore } from '../src/lib/receipts'
 import { todayCT } from '../src/lib/dates'
 import { ReceiptLogger } from '../src/ui/ReceiptLogger'
 import { renderScreen, saved, seedPlanner } from './seed'
@@ -61,6 +61,24 @@ describe('ReceiptLogger', () => {
     expect(input).not.toHaveAttribute('capture')
   })
 
+  it.each(['1e9', 'Infinity', '0x10', '-5', '0', 'abc', '1000001'])('rejects %s as a total', async (bad) => {
+    renderScreen(<ReceiptLogger store={fakeStore()} compress={noCompress} />)
+    await userEvent.type(screen.getByLabelText('Receipt total'), bad)
+    await userEvent.click(screen.getByRole('button', { name: 'Save receipt' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter the receipt total.')
+    expect(saved('expenses')).toHaveLength(0)
+  })
+
+  it('says what was saved, also when it is dated outside this month', async () => {
+    renderScreen(<ReceiptLogger store={fakeStore()} compress={noCompress} />)
+    await userEvent.type(screen.getByLabelText('Receipt total'), '84.5')
+    fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2020-01-05' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Save receipt' }))
+    const note = await screen.findByRole('status', { name: 'Receipt saved' })
+    expect(note).toHaveTextContent('Saved $85')
+    expect(note).toHaveTextContent('2020-01-05')
+  })
+
   it('asks for a total', async () => {
     renderScreen(<ReceiptLogger store={fakeStore()} compress={noCompress} />)
     await userEvent.click(screen.getByRole('button', { name: 'Save receipt' }))
@@ -82,6 +100,15 @@ describe('ReceiptLogger', () => {
     loadSnapshot(getAllRows())
     renderScreen(<ReceiptLogger store={fakeStore()} compress={noCompress} />)
     expect(screen.queryByRole('button', { name: 'Save receipt' })).toBeNull()
+  })
+})
+
+describe('removeOrphanPhotos', () => {
+  it('removes photos whose expense is gone after a restore, and keeps the rest', async () => {
+    const store = fakeStore()
+    await removeOrphanPhotos([{ receipt_id: 'a' }, { receipt_id: 'b' }, {}], [{ receipt_id: 'b' }], store)
+    expect(store.remove).toHaveBeenCalledTimes(1)
+    expect(store.remove).toHaveBeenCalledWith('a')
   })
 })
 

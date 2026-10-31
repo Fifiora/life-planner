@@ -48,8 +48,11 @@ describe('migrateOwnData', () => {
     expect(migrateOwnData()).toBe(0)
     expect(JSON.parse(localStorage.getItem('lp.data.routines')!)[0].cadence).toBe('weekly')
   })
-  it('does nothing on an empty phone', () => {
+  it('does nothing on an empty phone, and does not touch a weekly market the user adds afterwards', () => {
     expect(migrateOwnData()).toBe(0)
+    localStorage.setItem('lp.data.routines', JSON.stringify([r({ id: '9', name: 'Farmers market' })]))
+    expect(migrateOwnData()).toBe(0)
+    expect(JSON.parse(localStorage.getItem('lp.data.routines')!)[0].cadence).toBe('weekly')
   })
 })
 

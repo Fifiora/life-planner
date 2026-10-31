@@ -56,6 +56,16 @@ describe('Donut selection', () => {
     expect(screen.queryByRole('complementary')).toBeNull()
   })
 
+  it('does not bring an old selection back when its category returns later', async () => {
+    const { rerender } = render(<Donut shares={shares} detail={detail} />)
+    await userEvent.click(screen.getByRole('button', { name: /dining/i }))
+    rerender(<Donut shares={[shares[0]]} detail={detail} />)
+    expect(screen.queryByRole('complementary')).toBeNull()
+    rerender(<Donut shares={shares} detail={detail} />)
+    expect(screen.queryByRole('complementary')).toBeNull()
+    expect(screen.getByRole('button', { name: /dining/i })).toHaveAttribute('aria-pressed', 'false')
+  })
+
   it('gives each slice a tooltip with its amount', () => {
     const { container } = render(<Donut shares={shares} detail={detail} />)
     expect(container.querySelector('circle[data-category="housing"] title')).toHaveTextContent('Housing: $750 (75%)')

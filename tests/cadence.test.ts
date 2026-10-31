@@ -119,6 +119,18 @@ describe('scopedLogs', () => {
   })
 })
 
+describe('nextDue for "a weekday in the month"', () => {
+  const A = '2026-11-02'
+  const market = () => routine({ cadence: 'monthly', weekday: 2 })
+  it('is the next such weekday while this month is not done', () => {
+    expect(nextDue(market(), [], '2026-11-04', A)).toBe('2026-11-10') // Wednesday -> next Tuesday
+    expect(nextDue(market(), [], '2026-11-03', A)).toBe('2026-11-03') // Tuesday today
+  })
+  it('is the first such weekday of next month once done', () => {
+    expect(nextDue(market(), [log('2026-11-03')], '2026-11-04', A)).toBe('2026-12-01')
+  })
+})
+
 describe('nextDue', () => {
   const A = '2026-11-02' // a Monday
   const today = '2026-11-04' // Wednesday

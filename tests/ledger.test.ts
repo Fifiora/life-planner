@@ -280,6 +280,15 @@ describe('categoryBreakdown', () => {
     expect(d.change).toBe(120)
   })
 
+  it('says whether there was an earlier month to compare with', () => {
+    const bills = [b({ id: 'r', name: 'Rent', amount: 2000, category: 'housing' })]
+    const first = categoryBreakdown({ category: 'dining', bills, payments: [], expenses: [exp({ amount: 40 })], month: '2026-11', planned: false })
+    expect(first.hasPrevious).toBe(false)
+    const second = categoryBreakdown({ category: 'dining', bills, payments: [], expenses: [exp({ amount: 40 }), exp({ id: 'o', date: '2026-10-05', amount: 10 })], month: '2026-11', planned: false })
+    expect(second.hasPrevious).toBe(true)
+    expect(categoryBreakdown({ category: 'housing', bills, payments: [], expenses: [], month: '2026-11', planned: true }).hasPrevious).toBe(true)
+  })
+
   it('does not count paid bills again once bank transactions exist', () => {
     const bills = [b({ id: 'meal', name: 'Meal plan', amount: 50, category: 'dining' })]
     const payments = [{ id: 'p', bill_id: 'meal', month: '2026-11', paid_on: '2026-11-02' }]
