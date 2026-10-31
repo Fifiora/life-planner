@@ -84,7 +84,7 @@ describe('mutate', () => {
   it('gives up with a clear message after the allowed tries', async () => {
     const gh = installFakeGithub({ bills: [] })
     gh.state.conflictAlways = true
-    await expect(mutate(cfg, 'bills', (r) => r, { tries: 2, delayMs: 0 })).rejects.toThrow(/changed at the same time/i)
+    await expect(mutate(cfg, 'bills', (r) => r, { tries: 2, delayMs: 0 })).rejects.toThrow(/changed this at the same time/i)
     expect(gh.state.putCount).toBe(2)
   })
   it('passes on the reason when GitHub rejects the write', async () => {
