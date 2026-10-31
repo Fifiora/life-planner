@@ -7,6 +7,8 @@ import {
   insertRow,
   isReadOnly,
   loadSnapshot,
+  applyRemote,
+  onLocalChange,
   removeRow,
   replaceMany,
   replaceRows,
@@ -152,5 +154,80 @@ describe('view-only copy', () => {
     await expect(replaceRows('bills', [])).rejects.toThrow(/view-only/i)
     await expect(replaceMany({ bills: [] })).rejects.toThrow(/view-only/i)
     expect(localStorage.length).toBe(0)
+  })
+})
+
+describe('change hook for syncing', () => {
+  it('reports insert, update and remove with the rows before and after', async () => {
+    const seen: [string, number, number][] = []
+    const off = onLocalChange((table, prev, next) => seen.push([table, prev.length, next.length]))
+    await insertRow('bills', { id: 'b1', name: 'Rent' })
+    await updateRow('bills', 'b1', { name: 'Rent 2' })
+    await removeRow('bills', 'b1')
+    expect(seen).toEqual([['bills', 0, 1], ['bills', 1, 1], ['bills', 1, 0]])
+    off()
+    await insertRow('bills', { id: 'b2' })
+    expect(seen).toHaveLength(3)
+  })
+
+  it('reports each table of replaceMany and insertIfEmpty', async () => {
+    const tables: string[] = []
+    onLocalChange((table) => tables.push(table))
+    await replaceMany({ bills: [{ id: 'b' }], places: [{ id: 'p' }] })
+    await insertIfEmpty('settings', [{ key: 'k', value: 'v' }])
+    expect(tables.sort()).toEqual(['bills', 'places', 'settings'])
+  })
+
+  it('does not report a save that failed', async () => {
+    const seen: string[] = []
+    onLocalChange((table) => seen.push(table))
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('full')
+    })
+    await expect(insertRow('bills', { id: 'b' })).rejects.toThrow(/storage may be full/i)
+    expect(seen).toEqual([])
+  })
+
+  it('keeps going if a listener throws', async () => {
+    onLocalChange(() => {
+      throw new Error('boom')
+    })
+    await insertRow('bills', { id: 'b1' })
+    expect(saved('bills')).toHaveLength(1)
+  })
+})
+
+describe('applyRemote', () => {
+  it('saves and shows rows without reporting them as local changes', () => {
+    const seen: string[] = []
+    const shown: number[] = []
+    onLocalChange((table) => seen.push(table))
+    subscribe('bills', () => shown.push(getState('bills').rows.length))
+    applyRemote({ bills: [{ id: 'b' }] })
+    expect(getAllRows().bills).toEqual([{ id: 'b' }])
+    expect(saved('bills')).toEqual([{ id: 'b' }])
+    expect(shown).toEqual([1])
+    expect(seen).toEqual([])
+  })
+
+  it('leaves every table as it was when one save fails', async () => {
+    await replaceMany({ bills: [{ id: 'old' }], places: [{ id: 'oldp' }] })
+    const real = Storage.prototype.setItem
+    let calls = 0
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, k: string, v: string) {
+      calls++
+      if (calls === 2) throw new Error('full')
+      return real.call(this, k, v)
+    })
+    expect(() => applyRemote({ bills: [{ id: 'new' }], places: [{ id: 'newp' }] })).toThrow(/storage may be full/i)
+    vi.restoreAllMocks()
+    expect(saved('bills')).toEqual([{ id: 'old' }])
+    expect(saved('places')).toEqual([{ id: 'oldp' }])
+    expect(getAllRows().bills).toEqual([{ id: 'old' }])
+  })
+
+  it('refuses in a view-only copy', () => {
+    loadSnapshot({})
+    expect(() => applyRemote({ bills: [] })).toThrow(/view-only/i)
   })
 })
