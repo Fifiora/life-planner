@@ -13,12 +13,24 @@ Live site: `https://<your-github-username>.github.io/life-planner/`
 
 ## Getting started
 
-1. Open the site on your phone. Enter both of your names once, then pick who you are.
-2. Load the starter plan: *Settings → Restore or import from a file → choose your private `starter-data.json` → Replace my data*. (That file is deliberately not in this repo.)
-3. Back up now and then: *Settings → Download backup*. Your data lives only on that phone; clearing browser data or losing the phone loses it unless you have a backup (the app reminds you every two weeks). **On an iPhone, also add the site to your Home Screen** (Share → Add to Home Screen): otherwise Safari can clear a site's saved data after about a week of not using it, and private tabs don't keep it at all.
-4. To show your partner: *Settings → Share view-only link*, and send it to her privately. If the link comes out too long for your messaging app, use *Download view-only file*; she can open that file from the app's first screen.
+Your plan is already published with the site, **locked with a passphrase** (`public/preload.enc.json`). Without the passphrase it is just scrambled data, so it is safe in this public repo.
 
-Her phone remembers the last copy it was given, so she can reopen the site any time (use the 👤 chip to look as either person). *Remove this copy* in the banner clears it. Links carry a lot of data and are often long; if one gets cut off in a chat app, send the file instead.
+1. Open the site on your phone. It asks for the passphrase once.
+2. Tap **Make this my planner** (or **Just look (read-only)** on your partner's phone). Everything — routines, bills, payoffs, targets — is already there. Then just pick who you are.
+3. Back up now and then: *Settings → Download backup*. Your own ticks and edits live only on that phone; clearing browser data or losing the phone loses them unless you have a backup (the app reminds you every two weeks). **On an iPhone, also add the site to your Home Screen** (Share → Add to Home Screen): otherwise Safari can clear a site's saved data after about a week of not using it, and private tabs don't keep it at all.
+4. To show your partner your latest progress: *Settings → Share view-only link* (or *Download view-only file*) and send it privately.
+
+Her phone remembers what it was given, so she can reopen the site any time (use the 👤 chip to look as either person). *Remove this copy* in the banner clears it. Links carry a lot of data and are often long; if one gets cut off in a chat app, send the file instead.
+
+### Updating the published plan
+
+The published plan is a snapshot: it has the routines, bills and targets, not anyone's ticks. To change it, download a backup from the app and make a new locked file:
+
+```bash
+node --experimental-strip-types scripts/make-preload.mjs <snapshot.json>   # prints a new passphrase, or set PRELOAD_PASSPHRASE
+```
+
+Then commit `public/preload.enc.json`. (The plain snapshot must never be committed.)
 
 ## Developing
 
