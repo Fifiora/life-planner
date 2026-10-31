@@ -116,4 +116,10 @@ Charts and trend graphs across many months (the existing month-versus-month tab 
 - **Page takes an optional `today`** (used by tests) and the Today card shows in both styles.
 - **Settings** holds a small "Reports" card linking to the page.
 - **CI:** the build job is pinned to `ubuntu-24.04` and keeps its install output, after the install step failed transiently three times.
+- **The plan start counts.** Nothing before 2026-10-26 is counted: routine expectations, weeks without a workout, calendar events and ticks all start there, October has no "last month" comparison, and savings are only judged from the month savings tracking began.
+- **A month with nothing logged is empty all the way down** (a new `hasData` on the report): every section says "Nothing logged" and there are no wins or improvements, even when routines and bills are set up.
+- **Overall completion** adds each routine's ticks only up to what was expected, so it can never pass 100%.
+- **Focus box.** Only the boxes you changed are applied on top of what is saved right now, so a goal your partner added on her phone is never overwritten.
+- **If copying is blocked,** the report text appears in a box on the page, selected, for you to copy by hand.
+- **Left for later:** food budget uses the food bills (not a saved budget); the focus count is not in the scorecard; the Markdown puts focus at the end; best three routines are not called out; health "by type" is calculated but not shown; "Level now" is the viewer's only; download without `URL.createObjectURL`; focus goals save on leaving a box only; a month still in progress judges monthly routines early; a finished month's last week can be judged on the first day of the next month; view-only copies reach the report only through the Today card.
 
