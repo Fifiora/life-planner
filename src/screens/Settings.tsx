@@ -7,7 +7,7 @@ import { useTable } from '../data/useTable'
 import { DEFAULT_ANCHOR, todayCT } from '../lib/dates'
 import { createPinRecord, isPinRecord, isValidPin } from '../lib/pin'
 import { isDate } from '../lib/calendar'
-import { readFileText } from '../lib/files'
+import { downloadText as download, readFileText } from '../lib/files'
 import { removeOrphanPhotos } from '../lib/receipts'
 import { eraseThisPhone, logOut, reloadApp } from '../lib/session'
 import { buildExport, parseImport } from '../lib/export'
@@ -19,14 +19,6 @@ import { SharedCopyNotice } from '../ui/SharedCopyNotice'
 import { StarterPlanLoader } from '../ui/StarterPlanLoader'
 import { useToast } from '../ui/Toast'
 
-function download(name: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
-  const a = document.createElement('a')
-  a.href = url
-  a.download = name
-  a.click()
-  window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
-}
 
 const LONG_LINK = 8000
 

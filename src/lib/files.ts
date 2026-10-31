@@ -8,3 +8,13 @@ export function readFileText(file: Blob): Promise<string> {
     reader.readAsText(file)
   })
 }
+
+/** Save text as a file on this phone (a normal browser download). */
+export function downloadText(name: string, text: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
+}

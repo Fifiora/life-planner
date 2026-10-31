@@ -1,12 +1,27 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import { getCode, getSyncStatus, joinWithCode, resumeSync, setSyncDepsForTests, startSharing, stopSyncing, testConnection, useSyncStatus } from '../src/data/syncRuntime'
-import { householdId, isValidCode, generateCode } from '../src/lib/syncCrypto'
+import { deriveKey, householdId, isValidCode, generateCode } from '../src/lib/syncCrypto'
+import { SyncEngine } from '../src/lib/syncEngine'
 import type { Row } from '../src/types'
 import { FakeBackend, MemoryKV, MemoryLocal, offline } from './syncHelpers'
 
 const row = (id: string, extra: Record<string, unknown> = {}): Row => ({ id, name: `Item ${id}`, ...extra })
-const flush = (ms = 0) => vi.advanceTimersByTimeAsync(ms)
+// Web Crypto runs on real time, not fake time: after moving the clock, give it real turns to finish.
+const settle = async () => {
+  for (let i = 0; i < 40; i++) await new Promise((r) => setImmediate(r))
+}
+async function flush(ms = 0) {
+  let left = ms
+  await vi.advanceTimersByTimeAsync(0)
+  await settle()
+  while (left > 0) {
+    const step = Math.min(1000, left)
+    await vi.advanceTimersByTimeAsync(step)
+    await settle()
+    left -= step
+  }
+}
 
 let backend: FakeBackend
 let local: MemoryLocal
@@ -21,7 +36,7 @@ function useDevice(over: { local?: MemoryLocal; kv?: MemoryKV } = {}) {
 }
 
 beforeEach(() => {
-  vi.useFakeTimers()
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] })
   localStorage.clear()
   readOnly = false
   backend = new FakeBackend()
@@ -138,27 +153,21 @@ describe('staying in step', () => {
 
   it('checks straight away when another phone says something changed', async () => {
     await sharing()
-    backend.notify()
+    backend.emitChanged()
     await flush(0)
     expect(backend.pulls).toHaveLength(1)
   })
 
-  it('shows what another phone changed', async () => {
-    const codeLocal = local
-    await sharing()
-    const other = new MemoryLocal()
-    const otherKv = new MemoryKV()
-    const code = getCode() as string
-    setSyncDepsForTests(null)
-    useDevice({ local: other, kv: otherKv })
-    await joinWithCode(code)
-    other.put('bills', row('from-b'))
-    await flush(1000)
-    setSyncDepsForTests(null)
-    useDevice({ local: codeLocal, kv: new MemoryKV() })
-    // the first phone resumes with its saved code and catches up
+  it('shows what another phone changed as soon as it says so', async () => {
+    const code = await startSharing()
+    const otherLocal = new MemoryLocal()
+    const other = new SyncEngine({ household: await householdId(code), key: await deriveKey(code), local: otherLocal, transport: backend, kv: new MemoryKV(), device: 5 })
+    other.start()
+    otherLocal.put('bills', row('from-other'))
+    await other.syncNow()
+    backend.emitChanged()
     await flush(0)
-    expect(householdId).toBeDefined()
+    expect(local.rows('bills').map((r) => r.id)).toEqual(['from-other'])
   })
 })
 

@@ -99,8 +99,12 @@ export class FakeBackend implements Transport {
     this.onChanged.add(onChanged)
     return () => void this.onChanged.delete(onChanged)
   }
+  /** A phone told the others something changed (counted only: the sender never hears its own nudge). */
   notify() {
     this.notified++
+  }
+  /** Simulate another phone's nudge arriving. */
+  emitChanged() {
     this.onChanged.forEach((cb) => cb())
   }
 }

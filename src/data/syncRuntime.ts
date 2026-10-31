@@ -1,0 +1,214 @@
+import { useSyncExternalStore } from 'react'
+import { buildExport } from '../lib/export'
+import { downloadText } from '../lib/files'
+import { deriveKey, formatCode, generateCode, householdId, isValidCode, normalizeCode } from '../lib/syncCrypto'
+import { SyncEngine, type KV, type LocalStore, type SyncStatus, type Transport } from '../lib/syncEngine'
+import { createSupabaseTransport } from '../lib/syncTransport'
+import * as store from './tableStore'
+
+export interface SyncDeps {
+  transport: Transport
+  kv: KV & { remove(key: string): void }
+  local: LocalStore
+  now: () => number
+  downloadBackup: () => void
+  isReadOnly: () => boolean
+}
+
+const SYNC_KEYS = ['code', 'meta', 'cursor', 'dirty', 'clock', 'device'].map((k) => `lp.sync.${k}`)
+const DEBOUNCE_MS = 1000
+const POLL_MS = 20_000
+const BACKOFF_START_MS = 10_000
+const BACKOFF_MAX_MS = 300_000
+
+function realDeps(): SyncDeps {
+  return {
+    transport: createSupabaseTransport(),
+    kv: { get: (k) => localStorage.getItem(k), set: (k, v) => localStorage.setItem(k, v), remove: (k) => localStorage.removeItem(k) },
+    local: { getAll: store.getAllRows, apply: store.applyRemote, onLocalChange: store.onLocalChange },
+    now: () => Date.now(),
+    downloadBackup: () => downloadText('life-planner-backup-before-sync.json', buildExport(store.getAllRows())),
+    isReadOnly: store.isReadOnly,
+  }
+}
+
+let deps: SyncDeps | null = null
+const getDeps = (): SyncDeps => (deps ??= realDeps())
+
+interface Running {
+  engine: SyncEngine
+  run: () => Promise<void>
+  stop: () => void
+}
+let running: Running | null = null
+
+// ----- status for the screens -----
+let status: SyncStatus | null = null
+const listeners = new Set<() => void>()
+const publish = (s: SyncStatus | null) => {
+  status = s
+  listeners.forEach((l) => l())
+}
+const subscribeStatus = (l: () => void) => {
+  listeners.add(l)
+  return () => void listeners.delete(l)
+}
+export const getSyncStatus = (): SyncStatus | null => status
+/** The live sync state for the screens, or null when this phone is not sharing. */
+export function useSyncStatus(): SyncStatus | null {
+  return useSyncExternalStore(subscribeStatus, getSyncStatus)
+}
+
+function teardown() {
+  running?.stop()
+  running = null
+}
+
+/** For tests: swap the network, storage and clock, and stop anything running. Pass null to go back to the real ones. */
+export function setSyncDepsForTests(d: Partial<SyncDeps> | null): void {
+  teardown()
+  publish(null)
+  deps = d ? { ...realDeps(), ...d } : null
+}
+
+async function buildEngine(code: string): Promise<{ engine: SyncEngine; household: string }> {
+  const d = getDeps()
+  const household = await householdId(code)
+  const engine = new SyncEngine({ household, key: await deriveKey(code), local: d.local, transport: d.transport, kv: d.kv, now: d.now })
+  return { engine, household }
+}
+
+/** Start the automatic syncing: after edits, on a timer, when back online, when another phone nudges. */
+function activate(engine: SyncEngine, household: string): Running {
+  const d = getDeps()
+  let fails = 0
+  let retry: ReturnType<typeof setTimeout> | null = null
+  let debounce: ReturnType<typeof setTimeout> | null = null
+  let stopped = false
+
+  const run = async () => {
+    if (stopped || d.isReadOnly()) return
+    if (retry) clearTimeout(retry)
+    retry = null
+    const result = await engine.syncNow()
+    if (stopped) return
+    const state = engine.status.state
+    if (state === 'offline' || state === 'error') {
+      retry = setTimeout(() => void run(), Math.min(BACKOFF_START_MS * 2 ** fails, BACKOFF_MAX_MS))
+      fails++
+    } else {
+      fails = 0
+      if (result.pushed > 0) d.transport.notify?.(household)
+    }
+  }
+  // Timers and quiet triggers wait for a pending retry; events that mean "things changed" try right away.
+  const quiet = () => void (retry === null && run())
+  const now = () => {
+    fails = 0
+    void run()
+  }
+
+  engine.start()
+  const offStatus = engine.onStatus((s) => publish(s))
+  publish(engine.status)
+  const offEdits = d.local.onLocalChange(() => {
+    if (debounce) clearTimeout(debounce)
+    debounce = setTimeout(quiet, DEBOUNCE_MS)
+  })
+  const offNudges = d.transport.subscribe(household, now)
+  const poll = setInterval(() => document.visibilityState === 'visible' && quiet(), POLL_MS)
+  const onVisible = () => document.visibilityState === 'visible' && now()
+  window.addEventListener('online', now)
+  document.addEventListener('visibilitychange', onVisible)
+
+  return {
+    engine,
+    run,
+    stop: () => {
+      stopped = true
+      if (retry) clearTimeout(retry)
+      if (debounce) clearTimeout(debounce)
+      clearInterval(poll)
+      offStatus()
+      offEdits()
+      offNudges()
+      window.removeEventListener('online', now)
+      document.removeEventListener('visibilitychange', onVisible)
+      engine.stop()
+    },
+  }
+}
+
+export const getCode = (): string | null => getDeps().kv.get('lp.sync.code')
+
+function clearSyncKeys() {
+  const d = getDeps()
+  for (const k of SYNC_KEYS) d.kv.remove(k)
+}
+
+/** First phone: make a code, upload everything this phone holds, and keep syncing. Returns the code to share. */
+export async function startSharing(): Promise<string> {
+  teardown()
+  const d = getDeps()
+  const code = generateCode()
+  const { engine, household } = await buildEngine(code)
+  d.kv.set('lp.sync.code', code)
+  running = activate(engine, household)
+  engine.markAllDirty()
+  await running.run()
+  return code
+}
+
+/**
+ * Other phone: enter the code. A backup of what this phone holds is downloaded first, then this phone is made to
+ * match the shared planner. If the shared planner cannot be reached, nothing here changes.
+ */
+export async function joinWithCode(input: string, over?: { downloadBackup?: () => void }): Promise<void> {
+  if (!isValidCode(input)) throw new Error("That doesn't look like a pairing code.")
+  const d = getDeps()
+  const code = formatCode(normalizeCode(input))
+  teardown()
+  ;(over?.downloadBackup ?? d.downloadBackup)()
+  const { engine, household } = await buildEngine(code)
+  try {
+    await engine.replaceFromRemote()
+  } catch (err) {
+    engine.stop()
+    clearSyncKeys()
+    publish(null)
+    throw err instanceof Error ? err : new Error(String(err))
+  }
+  localStorage.removeItem('lp.me') // this phone picks "who am I" again
+  d.kv.set('lp.sync.code', code)
+  running = activate(engine, household)
+}
+
+/** On app start: carry on syncing if this phone has been paired. */
+export function resumeSync(): void {
+  const d = getDeps()
+  if (running || d.isReadOnly()) return
+  const code = d.kv.get('lp.sync.code')
+  if (!code || !isValidCode(code)) return
+  void buildEngine(code).then(({ engine, household }) => {
+    if (running) return
+    running = activate(engine, household)
+    return running.run()
+  })
+}
+
+/** Forget the code and the sync notes on this phone. The planner's rows stay. */
+export function stopSyncing(): void {
+  teardown()
+  clearSyncKeys()
+  publish(null)
+}
+
+/** 'ok', or a plain-language reason the shared project cannot be reached. */
+export async function testConnection(): Promise<string> {
+  try {
+    await getDeps().transport.ping()
+    return 'ok'
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err)
+  }
+}
