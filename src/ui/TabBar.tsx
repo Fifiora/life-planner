@@ -13,6 +13,7 @@ const TABS = [
 export function TabBar() {
   return (
     <nav className="tabbar" aria-label="Main">
+      <div className="side-brand" aria-hidden>🌿 Life Planner</div>
       {TABS.map((t) => (
         <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
           <span aria-hidden className="tab-icon">{t.icon}</span>

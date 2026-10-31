@@ -48,7 +48,7 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
     <div className="stack">
       <PageHead title="Calendar" sub="Everything planned, as far ahead as you like." />
 
-      <section className="card">
+      <section className="card wide">
         <div className="cal-head">
           <button type="button" className="icon-btn" aria-label="Previous month" disabled={month <= `${MIN_YEAR}-01`} onClick={() => goTo(shiftMonthKey(month, -1))}>‹</button>
           <h2 aria-live="polite">{monthLabel(month)}</h2>

@@ -67,7 +67,7 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
         ))}
       </div>
 
-      <section className="card">
+      <section className="card donut-card">
         <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Spending by category</h2></div>{usingPlan && <span className="pill">planned</span>}</div>
         <Donut
           shares={shares}
