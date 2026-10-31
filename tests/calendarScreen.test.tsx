@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { render } from '@testing-library/react'
@@ -107,6 +107,27 @@ describe('Calendar year box and the ends of the range', () => {
   })
 })
 
+describe('Calendar accessibility', () => {
+  it('names days with the year and how many events they hold', () => {
+    localStorage.setItem('lp.data.events', JSON.stringify([evRow({ id: 'a1', title: 'One', date: '2026-10-28' }), evRow({ id: 'a2', title: 'Two', date: '2026-10-28' })]))
+    const { container } = renderScreen(<Calendar initialDate="2026-10-15" />)
+    expect(cell(container, '2026-10-28')).toHaveAccessibleName('Wednesday, October 28, 2026, 2 events')
+    expect(cell(container, '2026-10-29')).toHaveAccessibleName('Thursday, October 29, 2026')
+  })
+  it('announces month changes', () => {
+    renderScreen(<Calendar initialDate="2026-10-15" />)
+    expect(screen.getByRole('heading', { name: 'October 2026' })).toHaveAttribute('aria-live', 'polite')
+  })
+})
+
+describe('Calendar night-in dots', () => {
+  it('marks the day of a planned night in', () => {
+    localStorage.setItem('lp.data.night_options', JSON.stringify([{ id: 'n1', slot_date: '2026-10-29', type: 'game', proposed_by: 'a', activity: 'Catan' }]))
+    const { container } = renderScreen(<Calendar initialDate="2026-10-15" />)
+    expect(cell(container, '2026-10-29').querySelector('[data-marker="night"]')).not.toBeNull()
+  })
+})
+
 describe('Calendar day sheet', () => {
   it('lists the routines due that weekday', async () => {
     const { container } = renderScreen(<Calendar initialDate="2026-10-15" />)
@@ -155,10 +176,48 @@ describe('Calendar day sheet', () => {
     expect(await screen.findByText('Odd')).toBeInTheDocument()
   })
 
+  it('lists routines that belong to the period rather than a weekday', async () => {
+    const { container } = renderScreen(<Calendar initialDate="2026-10-15" />)
+    await userEvent.click(cell(container, '2026-10-28'))
+    const dialog = screen.getByRole('dialog', { name: 'Day details' })
+    expect(within(dialog).getByText('This period')).toBeInTheDocument()
+    expect(within(dialog).getByText('Salon')).toBeInTheDocument()
+  })
+
+  it('says Done on a past day that was ticked', async () => {
+    localStorage.setItem('lp.data.routine_logs', JSON.stringify([{ id: 'p1', routine_id: 'r1', member_id: 'a', date: '2026-10-27', done: true, value: null }]))
+    const { container } = renderScreen(<Calendar initialDate="2026-10-15" />)
+    await userEvent.click(cell(container, '2026-10-27'))
+    expect(within(screen.getByRole('dialog', { name: 'Day details' })).getByText('Done')).toBeInTheDocument()
+  })
+
+  it('keeps an edit when the event was deleted elsewhere meanwhile', async () => {
+    localStorage.setItem('lp.data.events', JSON.stringify([evRow({ id: 'g1', title: 'Gone soon', date: '2026-10-28' })]))
+    const { container } = renderScreen(<Calendar initialDate="2026-10-15" />)
+    await userEvent.click(cell(container, '2026-10-28'))
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit Gone soon' }))
+    localStorage.setItem('lp.data.events', '[]')
+    act(() => { window.dispatchEvent(new StorageEvent('storage', { key: 'lp.data.events', newValue: '[]' })) })
+    const title = screen.getByLabelText('Title')
+    await userEvent.clear(title)
+    await userEvent.type(title, 'Kept edit')
+    await userEvent.click(screen.getByRole('button', { name: 'Save event' }))
+    await waitFor(() => expect(saved('events').map((e) => e.title)).toEqual(['Kept edit']))
+  })
+
   it('survives a corrupt event row', () => {
     localStorage.setItem('lp.data.events', JSON.stringify([{ id: 'x' }, evRow({ id: 'y', date: '' })]))
     renderScreen(<Calendar initialDate="2026-10-15" />)
     expect(screen.getByRole('heading', { name: 'October 2026' })).toBeInTheDocument()
+  })
+})
+
+describe('Calendar agenda empty state', () => {
+  it('points to adding an event', async () => {
+    localStorage.setItem('lp.data.routines', '[]')
+    renderScreen(<Calendar />)
+    await userEvent.click(screen.getByRole('button', { name: 'Agenda view' }))
+    expect(screen.getByText(/Add an event from any day/)).toBeInTheDocument()
   })
 })
 

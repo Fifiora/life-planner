@@ -141,3 +141,11 @@ describe('cleanEvent', () => {
     expect(c).toMatchObject({ time: null, repeat: 'none', category: 'other', member: 'both', done_on: [], notes: '', repeat_until: null })
   })
 })
+
+describe('dayMarkers with nights in', () => {
+  it('adds a night marker on a night-in date only', () => {
+    const base = { routines: [], events: [], anchor: '2026-11-02', nights: ['2026-10-29'] }
+    expect(dayMarkers('2026-10-29', base)).toContain('night')
+    expect(dayMarkers('2026-10-30', base)).not.toContain('night')
+  })
+})
