@@ -92,7 +92,7 @@ describe('StarterPlanLoader', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Load our starter plan' }))
     await userEvent.type(await screen.findByLabelText('Starter plan passphrase'), 'abcd-efgh')
     await userEvent.click(screen.getByRole('button', { name: 'Unlock and add' }))
-    expect(await screen.findByRole('status')).toHaveTextContent(/Added 1 routine, 2 bills/)
+    expect(await screen.findByRole('status', { name: 'Starter plan result' })).toHaveTextContent(/Added 1 routine, 2 bills/)
     expect(saved('bills').map((b) => b.name).sort()).toEqual(['Best Buy card payoff', 'Rent'])
   })
   it('says when everything is already here', async () => {
@@ -105,7 +105,7 @@ describe('StarterPlanLoader', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Load our starter plan' }))
     await userEvent.type(await screen.findByLabelText('Starter plan passphrase'), 'x')
     await userEvent.click(screen.getByRole('button', { name: 'Unlock and add' }))
-    expect(await screen.findByRole('status')).toHaveTextContent('Everything from the starter plan is already here.')
+    expect(await screen.findByRole('status', { name: 'Starter plan result' })).toHaveTextContent('Everything from the starter plan is already here.')
   })
   it('shows a wrong passphrase and adds nothing', async () => {
     renderScreen(<StarterPlanLoader loadFile={async () => file} decrypt={vi.fn().mockRejectedValue(new Error("That passphrase didn't work."))} />)

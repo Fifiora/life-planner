@@ -91,7 +91,7 @@ export function StarterPlanLoader({
         </form>
       )}
       {error && <p role="alert" className="error">{error}</p>}
-      {message && <p role="status" className="callout ok">{message}</p>}
+      {message && <p role="status" aria-label="Starter plan result" className="callout ok">{message}</p>}
     </div>
   )
 }
