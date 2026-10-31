@@ -72,6 +72,21 @@ describe('Live sync card: not sharing yet', () => {
   })
 })
 
+describe('Live sync card: testing before sharing', () => {
+  it('can test the connection before anything is started', async () => {
+    renderScreen(<SyncCard />)
+    await userEvent.click(screen.getByRole('button', { name: 'Test connection' }))
+    expect(await screen.findByRole('status', { name: 'Connection test' })).toHaveTextContent('Connected')
+    expect(rt.startSharing).not.toHaveBeenCalled()
+  })
+  it('shows what is wrong when the test fails', async () => {
+    rt.testConnection.mockResolvedValue('The sync functions are missing: run docs/supabase/setup.sql in Supabase (SQL Editor).')
+    renderScreen(<SyncCard />)
+    await userEvent.click(screen.getByRole('button', { name: 'Test connection' }))
+    expect(await screen.findByRole('status', { name: 'Connection test' })).toHaveTextContent('setup.sql')
+  })
+})
+
 describe('Live sync card: joining', () => {
   async function open() {
     const onJoined = vi.fn()
