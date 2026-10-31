@@ -20,8 +20,9 @@
   --radius: 1.25rem;
 }
 
+/* Dark colours: used when the phone is dark (and no manual choice was made yet), or when dark is chosen in Settings. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  html:not([data-theme]) {
     --bg: #0e1211;
     --card: #161b1a;
     --ink: #f2f1ec;
@@ -38,6 +39,24 @@
     --finance: #fbbf24;
     --shadow: none;
   }
+}
+
+html[data-theme="dark"] {
+  --bg: #0e1211;
+  --card: #161b1a;
+  --ink: #f2f1ec;
+  --muted: #a3a29a;
+  --line: #272d2b;
+  --brand: #2dd4bf;
+  --brand-ink: #04211e;
+  --danger: #f97066;
+  --ok: #4ade80;
+  --health: #4ade80;
+  --study: #a5b4fc;
+  --travel: #38bdf8;
+  --food: #fb923c;
+  --finance: #fbbf24;
+  --shadow: none;
 }
 
 html,

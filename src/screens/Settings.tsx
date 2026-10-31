@@ -1,3 +1,4 @@
+import { getThemeChoice, setThemeChoice, type ThemeChoice } from '../lib/theme'
 import { useState } from 'react'
 import { useHousehold } from '../data/household'
 import { getAllRows, replaceMany } from '../data/tableStore'
@@ -45,6 +46,7 @@ export default function Settings() {
       return false
     }
   })
+  const [theme, setTheme] = useState<ThemeChoice>(getThemeChoice())
   const [lockAfter, setLockAfter] = useState(() => localStorage.getItem('lp.lockAfter') ?? '1')
   const [pin1, setPin1] = useState('')
   const [pin2, setPin2] = useState('')
@@ -191,6 +193,16 @@ export default function Settings() {
             </div>
           </div>
         )}
+      </section>
+
+      <section className="card">
+        <h2>Appearance</h2>
+        <label className="label" htmlFor="theme-choice">Appearance</label>
+        <select id="theme-choice" className="input" value={theme} onChange={(e) => { const c = e.target.value as ThemeChoice; setThemeChoice(c); setTheme(c) }}>
+          <option value="system">Match my phone</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
       </section>
 
       <section className="card">
