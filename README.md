@@ -55,3 +55,15 @@ npm run build   # typecheck + production build
 ## Look and layout
 
 The app has a light and a dark palette (Settings → Appearance), frosted-glass cards with hover effects, and a wide-screen layout: on a laptop the bottom bar becomes a left sidebar and cards flow into two or three columns. Phones keep the single-column layout.
+
+## Live sync (optional)
+
+Two phones (or a phone and a laptop) can share one planner, so what either of you adds shows up on the other within seconds. There are no logins: you pair once with a code.
+
+**One-time setup (already done for this project):** create a free Supabase project, then run `docs/supabase/setup.sql` once in its SQL Editor. The project URL and *publishable* key live in `src/lib/syncConfig.ts` (they are public by design; never put a service_role/secret key in the code).
+
+**Pairing:** on the first phone open *Settings → Live sync → Start sharing* and keep the code it shows. On the other phone open *Settings → Live sync → Join with a code* and enter it. Joining replaces that phone's data with the shared planner (a backup file is downloaded first), so use a phone you have not used yet. Then pick who you are on that phone.
+
+**How it works:** every row is encrypted on the phone with a key derived from the code before it is uploaded; the database only holds scrambled text and can only be reached through three small functions. If you both change the same item, the most recent change wins. Deletes are shared too. Each phone keeps working offline and catches up when it is back online. A small chip in the page header shows *Synced just now*, *Offline* or *Sync problem*; *Settings → Live sync → Test connection* checks the link.
+
+**Good to know:** keep the code private (anyone with it can read and change the planner) and keep a copy: if you lose every phone and the code, the synced copy cannot be decrypted. Use one window of the app at a time. Receipt photos, the PIN, the light/dark choice and "who am I" stay on each phone. Importing a backup on a synced phone replaces the shared planner on every phone. The free Supabase plan pauses an idle project after about a week; a weekly GitHub job (`.github/workflows/keepalive.yml`) pings it, and the planner keeps working locally if it is ever paused.
