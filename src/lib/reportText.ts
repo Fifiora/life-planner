@@ -1,4 +1,4 @@
-import { money } from './format'
+import { cap, money } from './format'
 import type { MemberRef, Report } from './reportTypes'
 
 export interface TextSection {
@@ -27,13 +27,16 @@ export function reportSections(report: Report, members: MemberRef[]): TextSectio
     `Best streak: ${members.map((m) => `${m.display_name} ${s.bestStreakByMember[m.id] ?? 0} days`).join(', ')}`,
     `Spent: ${money(s.spent)}${s.prevAvailable ? ` (last month ${money(s.prevSpent)})` : ''}`,
   ]
-  if (report.game) scoreLines.push(`Level now: ${report.game.level}`, `Bosses beaten: ${report.game.bossesBeaten}`)
+  if (report.focus.length > 0) scoreLines.push(`Focus goals: ${report.focus.filter((g) => g.done).length} of ${report.focus.length} done`)
+  if (report.game) scoreLines.push(`Level now: ${members.map((m) => `${m.display_name} ${report.game?.levels[m.id] ?? 1}`).join(', ')}`, `Bosses beaten: ${report.game.bossesBeaten}`)
   section('Scorecard', scoreLines)
 
-  section('Routines', report.routines.map((r) => `${label(r.name, r.memberId)}: ${r.count} of ${r.expected} (${pct(r.pct)})`))
+  const known = report.routines.filter((r) => r.pct !== null)
+  const strongest = known.length >= 3 ? [`Strongest: ${[...known].sort((a, b) => (b.pct as number) - (a.pct as number) || a.name.localeCompare(b.name)).slice(0, 3).map((r) => `${label(r.name, r.memberId)} ${r.pct}%`).join(', ')}`] : []
+  section('Routines', [...report.routines.map((r) => `${label(r.name, r.memberId)}: ${r.count} of ${r.expected} (${pct(r.pct)})`), ...(report.routines.length > 0 ? strongest : [])])
 
   const healthLines = [
-    ...members.filter((m) => (h.byMember[m.id]?.workouts ?? 0) > 0).map((m) => `${m.display_name}: ${h.byMember[m.id].workouts} ${plural(h.byMember[m.id].workouts, 'workout', 'workouts')}, ${h.byMember[m.id].minutes} minutes`),
+    ...members.filter((m) => (h.byMember[m.id]?.workouts ?? 0) > 0).map((m) => `${m.display_name}: ${h.byMember[m.id].workouts} ${plural(h.byMember[m.id].workouts, 'workout', 'workouts')} (${Object.entries(h.byMember[m.id].byType).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([type, n]) => `${type} ${n}`).join(', ')}), ${h.byMember[m.id].minutes} minutes`),
     ...h.timed.filter((t) => t.logged > 0).map((t) => `${label(t.name, t.memberId)}: on time ${pct(t.pct)} (${t.onTime} of ${t.logged} logged days)`),
   ]
   section('Health', healthLines)
@@ -65,7 +68,7 @@ export function reportSections(report: Report, members: MemberRef[]): TextSectio
           ...(f.savingsTracked ? [`Saved: ${money(f.savedThisMonth)} against the ${money(f.savingsTarget)} target`] : []),
           `Bills paid: ${f.billsPaid} of ${f.billsDue}`,
           ...(f.payoffsCleared.length > 0 ? [`Payoffs cleared: ${f.payoffsCleared.join(', ')}`] : []),
-          ...f.categories.map((x) => `${x.category}: ${money(x.spent)} against ${x.budget > 0 ? money(x.budget) : 'no budget'}`),
+          ...f.categories.map((x) => `${cap(x.category)}: ${money(x.spent)} against ${x.budget > 0 ? money(x.budget) : 'no budget'}`),
           ...f.changes.map((x) => `${x.category} ${x.delta > 0 ? 'up' : 'down'} ${money(Math.abs(x.delta))} since last month`),
         ]
       : [],
@@ -82,7 +85,7 @@ export function reportSections(report: Report, members: MemberRef[]): TextSectio
 /** The report as Markdown: for copying, pasting into a message, or saving as a file. */
 export function reportToMarkdown(report: Report, members: MemberRef[], monthTitle: string): string {
   const out: string[] = [`# Life Planner report: ${monthTitle}${report.range.partial ? ' (so far)' : ''}`]
-  for (const s of reportSections(report, members)) out.push('', `## ${s.title}`, ...(s.lines.length > 0 ? s.lines : [s.emptyText]).map((l) => `- ${l}`))
   if (report.focus.length > 0) out.push('', `## Focus for ${monthTitle.split(' ')[0]}`, ...report.focus.map((g) => `- [${g.done ? 'x' : ' '}] ${g.text}`))
+  for (const s of reportSections(report, members)) out.push('', `## ${s.title}`, ...(s.lines.length > 0 ? s.lines : [s.emptyText]).map((l) => `- ${l}`))
   return out.join('\n') + '\n'
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useHousehold } from '../data/household'
 import { useSettings } from '../data/useSettings'
 import { focusKey, parseFocus, serializeFocus } from '../lib/focus'
@@ -17,6 +17,23 @@ export function FocusBox({ month, mode }: { month: string; mode: 'review' | 'pla
   const key = focusKey(mode === 'review' ? month : shiftMonthKey(month, 1))
   const goals = parseFocus(settings.get(key))
   const [edits, setEdits] = useState<Record<number, string>>({})
+
+  const save = async () => {
+    if (readOnly) return
+    const next = SLOTS.map((i) => (i in edits ? { text: edits[i], done: false } : { text: goals[i]?.text ?? '', done: goals[i]?.done ?? false }))
+    const value = serializeFocus(next)
+    const unchanged = value === serializeFocus(goals)
+    const nothingToKeep = settings.get(key) === undefined && parseFocus(value).length === 0
+    if (!unchanged && !nothingToKeep) await settings.set(key, value)
+    setEdits({})
+  }
+  // Typing then pausing saves too, so a goal is not lost if the app is put away before the box is left.
+  useEffect(() => {
+    if (mode !== 'plan' || readOnly || Object.keys(edits).length === 0) return
+    const timer = setTimeout(() => void save(), 1000)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [edits])
 
   if (mode === 'review') {
     if (goals.length === 0) return null
@@ -38,15 +55,6 @@ export function FocusBox({ month, mode }: { month: string; mode: 'review' | 'pla
     )
   }
 
-  const save = async () => {
-    if (readOnly) return
-    const next = SLOTS.map((i) => (i in edits ? { text: edits[i], done: false } : { text: goals[i]?.text ?? '', done: goals[i]?.done ?? false }))
-    const value = serializeFocus(next)
-    const unchanged = value === serializeFocus(goals)
-    const nothingToKeep = settings.get(key) === undefined && parseFocus(value).length === 0
-    if (!unchanged && !nothingToKeep) await settings.set(key, value)
-    setEdits({})
-  }
   return (
     <section className="card report-focus" aria-labelledby="focus-plan">
       <h2 id="focus-plan">Next month's focus</h2>

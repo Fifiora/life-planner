@@ -3,7 +3,7 @@ import { calendarSection, financeSection, foodSection, healthSection, monthRange
 import type { FocusGoal, Report, ReportInput } from './reportTypes'
 
 /** Everything about one month, as plain numbers. The page and the text export both read this. */
-export function buildReport(month: string, input: ReportInput, extra: { game?: { level: number; bossesBeaten: number } | null; focus?: FocusGoal[] } = {}): Report {
+export function buildReport(month: string, input: ReportInput, extra: { game?: { levels: Record<string, number>; bossesBeaten: number } | null; focus?: FocusGoal[] } = {}): Report {
   const range = monthRange(month, input.today, input.planStart)
   const scorecard = scorecardSection(range, input)
   const routines = routinesSection(range, input)

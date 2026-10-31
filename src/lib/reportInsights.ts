@@ -1,4 +1,4 @@
-import { cap, money } from './format'
+import { cap, money, shortDate } from './format'
 import type { CalendarSection, FinanceSection, HealthSection, Insight, MemberRef, MonthRange, RoutineRow, Scorecard, StudySection, TravelSection } from './reportTypes'
 
 export interface InsightInput {
@@ -38,7 +38,7 @@ export function insightsFor(input: InsightInput): { wins: Insight[]; improve: In
     add(0, 'finance', `Savings reached ${money(finance.savedThisMonth)} against the ${money(finance.savingsTarget)} target.`)
   }
   routines
-    .filter((r) => r.pct !== null && r.expected > 0 && r.pct < 60)
+    .filter((r) => r.pct !== null && r.expected > 0 && r.pct < 60 && !(range.partial && r.cadence !== 'daily'))
     .sort((a, b) => (a.pct as number) - (b.pct as number) || a.name.localeCompare(b.name))
     .slice(0, 3)
     .forEach((r) => add(1, r.bucket, `${label(r.name, r.memberId)} was done ${r.pct}% of the time (${r.count} of ${r.expected}).`))
@@ -48,11 +48,11 @@ export function insightsFor(input: InsightInput): { wins: Insight[]; improve: In
   const anyWorkout = Object.values(health.byMember).some((m) => m.workouts > 0)
   if (anyWorkout && health.weeksWithoutWorkout.length > 0) {
     const n = health.weeksWithoutWorkout.length
-    add(2, 'health', `No workout was logged in ${n} ${plural(n, 'week', 'weeks')}, starting with the week of ${health.weeksWithoutWorkout[0]}.`)
+    add(2, 'health', `No workout was logged in ${n} ${plural(n, 'week', 'weeks')}, starting with the week of ${shortDate(health.weeksWithoutWorkout[0])}.`)
   }
   const done = Object.values(study.milestones).reduce((s, m) => s + m.done, 0)
   const total = Object.values(study.milestones).reduce((s, m) => s + m.total, 0)
-  if (total > 0 && done / total < 0.5) add(2, 'study', `Study milestones: ${done} of ${total} done.`)
+  if (finished && total > 0 && done / total < 0.5) add(2, 'study', `Study milestones: ${done} of ${total} done.`)
   if (finished && travel.planned - travel.done > 0) {
     const n = travel.planned - travel.done
     add(2, 'travel', `${n} planned ${plural(n, 'trip', 'trips')} not done.`)

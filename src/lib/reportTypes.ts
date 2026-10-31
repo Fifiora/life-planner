@@ -1,4 +1,4 @@
-import type { Activity, Bill, BillPayment, Bucket, Budget, CalEvent, Expense, Milestone, NightLog, Place, Routine, RoutineLog, SavingsEntry, TripPlan, TriviaAttempt } from '../types'
+import type { Activity, Bill, BillPayment, Bucket, Budget, CalEvent, Cadence, Expense, Milestone, NightLog, Place, Routine, RoutineLog, SavingsEntry, TripPlan, TriviaAttempt } from '../types'
 
 export interface MemberRef {
   id: string
@@ -59,6 +59,7 @@ export interface RoutineRow {
   id: string
   name: string
   bucket: Bucket
+  cadence: Cadence
   memberId: string | 'shared'
   count: number
   expected: number
@@ -135,7 +136,7 @@ export interface Report {
   food: FoodSection
   finance: FinanceSection
   calendar: CalendarSection
-  game: { level: number; bossesBeaten: number } | null
+  game: { levels: Record<string, number>; bossesBeaten: number } | null
   focus: FocusGoal[]
   insights: { wins: Insight[]; improve: Insight[] }
 }

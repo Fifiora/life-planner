@@ -1,10 +1,10 @@
 import type { Routine } from '../types'
 import { eventOccurrences } from './calendar'
 import { addDays, daysBetween, PLAN_START, shiftMonths, weekStart } from './dates'
-import { billsPaidSummary, flexView, normCategory } from './finance2'
+import { billsPaidSummary, flexView } from './finance2'
 import { shiftMonthKey } from './format'
 import { scorecard, timeStats } from './habits'
-import { budgetRows, monthActuals } from './ledger'
+import { budgetFor, budgetRows, monthActuals } from './ledger'
 import type { CalendarSection, FinanceSection, FoodSection, HealthSection, MonthRange, ReportInput, RoutineRow, Scorecard, StudySection, TravelSection } from './reportTypes'
 import { streakLengths } from './streak'
 import { memberTickDates, memberTicks, type GameData } from './xp'
@@ -37,7 +37,7 @@ export function routinesSection(r: MonthRange, input: ReportInput): RoutineRow[]
       let expected = s.expected
       // A month that began before the plan did only expects what falls from the start on (monthly routines keep their one).
       if (r.start > r.first && ['daily', 'weekly', 'biweekly'].includes(routine.cadence)) expected = Math.max(0, expected - scorecard(routine, [], addDays(r.start, -1)).expected)
-      rows.push({ id: routine.id, name: routine.name, bucket: routine.bucket, memberId: t.memberId, count: s.count, expected, pct: expected > 0 ? Math.min(100, Math.round((s.count / expected) * 100)) : null })
+      rows.push({ id: routine.id, name: routine.name, bucket: routine.bucket, cadence: routine.cadence, memberId: t.memberId, count: s.count, expected, pct: expected > 0 ? Math.min(100, Math.round((s.count / expected) * 100)) : null })
     }
   }
   return rows.sort((a, b) => (a.pct ?? 101) - (b.pct ?? 101) || a.name.localeCompare(b.name) || a.memberId.localeCompare(b.memberId))
@@ -93,8 +93,8 @@ export function healthSection(r: MonthRange, input: ReportInput): HealthSection 
   const weeksWithoutWorkout: string[] = []
   const monday = weekStart(r.start) === r.start ? r.start : addDays(weekStart(r.start), 7)
   for (let w = monday; w <= r.last; w = addDays(w, 7)) {
-    if (r.partial && addDays(w, 6) > r.last) break
     const end = addDays(w, 6)
+    if (end >= input.today) break // a week still in progress is not judged
     if (!input.activities.some((a) => a.date >= w && a.date <= end)) weeksWithoutWorkout.push(w)
   }
   return { byMember, timed, weeksWithoutWorkout }
@@ -128,7 +128,7 @@ export function foodSection(r: MonthRange, input: ReportInput): FoodSection {
   const grocery = routinesSection(r, input).filter((x) => x.bucket === 'food' && x.name.includes('rocery'))
   return {
     grocerySpent: flexView(0, input.expenses, r.month).groceries,
-    groceryBudget: input.bills.filter((b) => b.kind === 'recurring' && normCategory(b.category) === 'food').reduce((s, b) => s + b.amount, 0),
+    groceryBudget: budgetFor('food', input.bills, input.budgets),
     nightsByType,
     groceryRoutinePct: pctOf(grocery.reduce((s, x) => s + x.count, 0), grocery.reduce((s, x) => s + x.expected, 0)),
   }

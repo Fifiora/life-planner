@@ -151,6 +151,8 @@ export default function Today() {
 
       <Trophies />
 
+      <p className="muted small"><Link to="/report">Month-end report</Link></p>
+
       {backupDue && (
         <section className="card">
           <p>💾 Your planner is saved only on this phone. <Link to="/settings">Download a backup</Link> so it can't be lost.</p>

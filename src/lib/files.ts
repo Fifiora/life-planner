@@ -11,10 +11,16 @@ export function readFileText(file: Blob): Promise<string> {
 
 /** Save text as a file on this phone (a normal browser download). */
 export function downloadText(name: string, text: string, type = 'application/json'): void {
-  const url = URL.createObjectURL(new Blob([text], { type }))
   const a = document.createElement('a')
-  a.href = url
   a.download = name
-  a.click()
-  window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  if (typeof URL.createObjectURL === 'function') {
+    const url = URL.createObjectURL(new Blob([text], { type }))
+    a.href = url
+    a.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  } else {
+    // Very old browsers: the text itself is the link.
+    a.href = `data:${type};charset=utf-8,${encodeURIComponent(text)}`
+    a.click()
+  }
 }

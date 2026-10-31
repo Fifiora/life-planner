@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { bossesBeatenIn } from '../lib/boss'
 import { PLAN_START } from '../lib/dates'
+import { levelFor, memberXp } from '../lib/xp'
 import { cleanEvent } from '../lib/calendar'
 import { focusKey, parseFocus } from '../lib/focus'
 import { buildReport } from '../lib/report'
@@ -57,7 +58,7 @@ export function useReport(month: string, today?: string): Report {
           planStart: PLAN_START,
           today: day,
         },
-        { game: game.on ? { level: game.me.progress.level, bossesBeaten: bossesBeatenIn(month, game.data, game.memberIds) } : null, focus: parseFocus(focusRaw) },
+        { game: game.on ? { levels: Object.fromEntries(members.map((m) => [m.id, levelFor(memberXp(game.data, m.id).total)])), bossesBeaten: bossesBeatenIn(month, game.data, game.memberIds) } : null, focus: parseFocus(focusRaw) },
       ),
     [month, day, members, routines, logs, activities, milestones, attempts, trips, places, nights, events, finance.expenses.rows, finance.bills.rows, finance.payments.rows, finance.budgets.rows, finance.savings.rows, finance.totalIncome, finance.target, finance.savingsStart, game, focusRaw],
   )
