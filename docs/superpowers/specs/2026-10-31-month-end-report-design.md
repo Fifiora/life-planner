@@ -107,3 +107,13 @@ Each phase ends with CI green and a short check-in with Stone.
 ## Out of scope (YAGNI)
 
 Charts and trend graphs across many months (the existing month-versus-month tab covers money), XP gained in a month, emailing or scheduling reports, custom thresholds, per-routine notes, comparing against other households.
+
+## Deviations recorded during the build
+
+- **One section builder.** The page and the Markdown both read `reportSections(report, members)` in `reportText.ts`, so what you see and what you copy cannot disagree. The plan's separate per-section views were folded into it.
+- **Empty and partial months.** The savings line needs some money logged that month; "no workout in N weeks" needs at least one workout logged; "under budget" wins only for a finished month. These keep an empty or unfinished month from reading as failure or praise.
+- **Trivia line** appears only once somebody has answered a question.
+- **Page takes an optional `today`** (used by tests) and the Today card shows in both styles.
+- **Settings** holds a small "Reports" card linking to the page.
+- **CI:** the build job is pinned to `ubuntu-24.04` and keeps its install output, after the install step failed transiently three times.
+

@@ -72,6 +72,16 @@ Everything in the game layer is worked out from data that already syncs, so the 
 
 Level n needs `50 * n * (n - 1)` XP. Each area (Health, Study, Travel, Food, Finance) has its own level; you and the party have levels too. One empty day a week is forgiven in your streak. There are badges (Trophies card), a shared weekly boss, a monthly recap ("episode") and a daily cheer button. Cheers are the only new stored data (`cheers`), synced like everything else. Which celebrations you have already seen is kept on each phone only (`lp.seen`).
 
+## Month-end report
+
+Open it from the card on Today (first week of a month) or from Settings. Pick any finished month since the plan began, or the current month "so far". It is worked out from what is already saved, so nothing about it is stored except your focus goals.
+
+It covers: a scorecard (ticks per person against last month, completion, best streak, spending against last month), every routine ticked against what was expected (weakest first), health (workouts, bedtime and wake-up on time), study (milestones; trivia is all-time because answers carry no date), travel, food (groceries against the groceries bill, nights in), finance (income, spending, savings against the target, bills, payoffs, categories against budget and the biggest changes), the calendar, then **Wins** and **Improve next month**.
+
+Improvement lines appear for: a routine under 60%, a category more than 10% over budget, any unpaid monthly bill, savings under the target, bedtime or wake-up on time under 70% of logged days, weeks with no workout, study milestones under half done and planned trips not done (at most 7). Wins: routines at 90% or more, every bill paid, savings at target, a category more than 10% under budget, a cleared payoff, a streak of 7 days or more, and (Anime) a boss beaten (at most 5). While a month is still going, rules that need a whole month do not judge.
+
+Write up to three goals for next month at the bottom (saved and synced as a setting); next month's report opens by listing them with a tick box each. Get the report out with **Print or save as PDF**, **Copy as text** or **Download as file** (Markdown).
+
 ## Live sync (optional)
 
 Two phones (or a phone and a laptop) can share one planner, so what either of you adds shows up on the other within seconds. There are no logins: you pair once with a code.
