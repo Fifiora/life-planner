@@ -23,7 +23,7 @@ export function MonthGrid({
 }) {
   const weeks = monthGrid(month)
   return (
-    <div className="mgrid" role="group" aria-label="Month">
+    <div className="mgrid" role="group" aria-label="Days of the month">
       {HEAD.map((h) => <div key={h} className="mgrid-head" aria-hidden>{h}</div>)}
       {weeks.flat().map((date) => {
         const past = date < today && date >= PLAN_START
