@@ -6,6 +6,25 @@ import { Ring } from '../src/ui/Ring'
 import { EmptyState } from '../src/ui/EmptyState'
 import { TabBar } from '../src/ui/TabBar'
 
+describe('Ring look', () => {
+  it('does not use the class name of the styling tool\'s outline utility (it drew a square box round every ring)', () => {
+    const { container } = render(<Ring value={0.5} label="Health" color="#16a34a" />)
+    expect(container.querySelector('.ring')).toBeNull()
+    expect(container.querySelector('.prog-ring')).not.toBeNull()
+  })
+  it('can show an icon in the middle, text instead of a percent, and a caption underneath', () => {
+    render(<Ring value={0.4} label="Health" color="#16a34a" icon="💪" caption="2/5" />)
+    expect(screen.getByText('💪')).toBeInTheDocument()
+    expect(screen.getByText('2/5')).toBeInTheDocument()
+    expect(screen.queryByText('40%')).toBeNull()
+    expect(screen.getByRole('progressbar', { name: 'Health' })).toHaveAttribute('aria-valuenow', '40')
+  })
+  it('can show its own centre text', () => {
+    render(<Ring value={0.5} label="Done today" color="#000" centre="3/6" />)
+    expect(screen.getByText('3/6')).toBeInTheDocument()
+  })
+})
+
 describe('Ring', () => {
   it('exposes its progress to assistive tech', () => {
     render(<Ring value={0.5} label="Health" color="#16a34a" />)

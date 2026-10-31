@@ -77,6 +77,42 @@ describe('Today progress headline', () => {
   })
 })
 
+describe('Today hero card', () => {
+  it('has a big ring for today and one ring per area, each with an icon, a count and a link', async () => {
+    renderScreen(<Today />)
+    await screen.findByRole('navigation', { name: 'This week' })
+    expect(screen.getByRole('progressbar', { name: 'Done today' })).toBeInTheDocument()
+    const areas: [string, string, string][] = [['Health', '💪', '/health'], ['Study', '📚', '/study'], ['Travel', '🧭', '/travel'], ['Food', '🍲', '/food'], ['Finance', '💰', '/finance']]
+    for (const [name, icon, href] of areas) {
+      const link = screen.getByRole('link', { name: new RegExp(`^${name}`) })
+      expect(link).toHaveAttribute('href', href)
+      expect(link).toHaveTextContent(icon)
+      expect(within(link).getByRole('progressbar', { name })).toBeInTheDocument()
+    }
+  })
+
+  it('shows what is done today in the big ring, matching the headline', async () => {
+    const t = todayCT()
+    localStorage.setItem('lp.data.routine_logs', JSON.stringify([log('h1', 'r1', t)]))
+    renderScreen(<Today />)
+    const headline = await screen.findByText(/^\d+ of \d+ done today$/)
+    const [, done, total] = /^(\d+) of (\d+) done today$/.exec(headline.textContent ?? '')!.map(Number)
+    expect(screen.getByRole('progressbar', { name: 'Done today' })).toHaveAttribute('aria-valuenow', String(Math.round((done / total) * 100)))
+    expect(within(screen.getByRole('progressbar', { name: 'Done today' })).getByText(`${done}/${total}`)).toBeInTheDocument()
+  })
+
+  it('says something encouraging that matches the day', async () => {
+    renderScreen(<Today />)
+    expect(await screen.findByText(/A fresh day|Keep going|All done today/)).toBeInTheDocument()
+  })
+
+  it('tints the card for the time of day', async () => {
+    renderScreen(<Today />)
+    const card = (await screen.findByRole('progressbar', { name: 'Done today' })).closest('section')!
+    expect(card.className).toMatch(/hero-(morning|afternoon|evening)/)
+  })
+})
+
 describe('Today quick add', () => {
   it('records an expense', async () => {
     renderScreen(<Today />)
