@@ -29,10 +29,10 @@ export function levelProgress(xp: number): { level: number; into: number; needed
 }
 
 /** One person's ticks that still belong to a routine, once per routine per day, in log order. */
-export function memberTicks(data: GameData, memberId: string): { date: string; bucket: Bucket }[] {
+export function memberTicks(data: GameData, memberId: string): { date: string; bucket: Bucket; routine: string }[] {
   const byId = new Map(data.routines.map((r) => [r.id, r]))
   const seen = new Set<string>()
-  const out: { date: string; bucket: Bucket }[] = []
+  const out: { date: string; bucket: Bucket; routine: string }[] = []
   for (const l of data.logs) {
     if (!l.done || l.member_id !== memberId) continue
     const routine = byId.get(l.routine_id)
@@ -40,7 +40,7 @@ export function memberTicks(data: GameData, memberId: string): { date: string; b
     const key = `${l.routine_id}|${l.date}`
     if (seen.has(key)) continue
     seen.add(key)
-    out.push({ date: l.date, bucket: routine.bucket })
+    out.push({ date: l.date, bucket: routine.bucket, routine: routine.id })
   }
   return out
 }
@@ -53,14 +53,14 @@ export function memberXp(data: GameData, memberId: string): { total: number; byB
 
   const ticks = memberTicks(data, memberId)
   const lengths = streakLengths(ticks.map((t) => t.date))
-  const bonusGiven = new Set<string>()
+  // The day's streak bonus goes to the area of the routine with the smallest id, so two phones that saved rows in a different order still agree.
+  const bonusFor = new Map<string, { routine: string; bucket: Bucket }>()
   for (const t of ticks) {
     byBucket[t.bucket] += 10
-    if (!bonusGiven.has(t.date)) {
-      bonusGiven.add(t.date)
-      byBucket[t.bucket] += Math.min(20, 2 * lengths[t.date])
-    }
+    const cur = bonusFor.get(t.date)
+    if (!cur || t.routine < cur.routine) bonusFor.set(t.date, { routine: t.routine, bucket: t.bucket })
   }
+  for (const [date, { bucket }] of bonusFor) byBucket[bucket] += Math.min(20, 2 * lengths[date])
 
   const activityIds = new Set<string>()
   for (const a of data.activities) {
@@ -71,12 +71,10 @@ export function memberXp(data: GameData, memberId: string): { total: number; byB
 
   for (const m of data.milestones) if (m.member_id === memberId && m.done) byBucket.study += 15
 
-  const answered = new Set<string>()
-  for (const a of data.attempts) {
-    if (a.member_id !== memberId || answered.has(a.question_id)) continue
-    answered.add(a.question_id)
-    byBucket.study += a.correct ? 8 : 3
-  }
+  // Each question pays once: 8 if any attempt was right, otherwise 3. Attempts carry no date, so this must not depend on row order.
+  const rightOn = new Map<string, boolean>()
+  for (const a of data.attempts) if (a.member_id === memberId) rightOn.set(a.question_id, (rightOn.get(a.question_id) ?? false) || a.correct)
+  for (const right of rightOn.values()) byBucket.study += right ? 8 : 3
 
   for (const p of data.payments) if (p.member_id === memberId) byBucket.finance += 20
 

@@ -28,7 +28,7 @@ export interface HeroXp {
 }
 
 /** The top card of Today: how today is going, the five areas, and a tint for the time of day. */
-export function TodayHero({ rings, done, total, streak, part, host, xp, restUsed }: { rings: HeroRing[]; done: number; total: number; streak: number; part: Daypart; host?: string; xp?: HeroXp; restUsed?: boolean }) {
+export function TodayHero({ rings, done, total, streak, part, host, xp, restUsed, mascot = true }: { rings: HeroRing[]; done: number; total: number; streak: number; part: Daypart; host?: string; xp?: HeroXp; restUsed?: boolean; mascot?: boolean }) {
   const style = useStyleChoice()
   return (
     <section className={`card hero hero-${part}`} aria-label="Progress">
@@ -44,7 +44,7 @@ export function TodayHero({ rings, done, total, streak, part, host, xp, restUsed
           <p className="muted">{heroLine(style, done, total)}</p>
           {restUsed && <p className="muted small">{restUsedLine}</p>}
         </div>
-        {style === 'anime' && <Pip mood={pipMood({ done, total, streak, part })} />}
+        {style === 'anime' && mascot && <Pip mood={pipMood({ done, total, streak, part })} />}
       </div>
       {xp && (
         <div className="xp-row">

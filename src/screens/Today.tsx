@@ -123,7 +123,7 @@ export default function Today() {
 
       <WeekStrip today={data.today} events={events.events} />
 
-      <TodayHero rings={rings} done={doneToday} total={todayItems.length} streak={game.on ? ds.days : bestStreak} restUsed={game.on && ds.restUsed} xp={xp} part={daypart(new Date().getHours())} host={host?.display_name} />
+      <TodayHero rings={rings} done={doneToday} total={todayItems.length} streak={game.on ? ds.days : bestStreak} restUsed={game.on && ds.restUsed} mascot={!readOnly} xp={xp} part={daypart(new Date().getHours())} host={host?.display_name} />
 
       <CheerCard />
 

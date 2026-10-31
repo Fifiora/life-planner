@@ -10,7 +10,7 @@ import { useToast } from './Toast'
 
 const nameOf = (id: string) => BADGES.find((b) => b.id === id)?.name ?? id
 
-/** Cheers for a new level or badge, once per phone. Quiet on a first load and when a lot arrives at once (an import or a first sync). */
+/** Cheers for a new level or badge, once per phone. Quiet on a first load; a lot arriving at once is summed up in one toast. */
 export function Celebrations() {
   const game = useGame()
   const { readOnly } = useHousehold()
@@ -27,16 +27,35 @@ export function Celebrations() {
 
   useEffect(() => {
     if (!on || readOnly) return
-    const items: { key: string; line: string }[] = []
-    for (let n = 2; n <= level; n++) items.push({ key: `level:${meId}:${n}`, line: levelUpLine(n) })
-    for (let n = 2; n <= partyLevel; n++) items.push({ key: `party:${n}`, line: partyLevelLine(n) })
-    for (const id of badges ? badges.split(',') : []) items.push({ key: `badge:${meId}:${id}`, line: badgeLine(nameOf(id)) })
-    if (bossDown) items.push({ key: `boss:${bossWeek}`, line: bossLine(bossName) })
+    const keys: string[] = []
+    const lines: string[] = []
+    const bossKey = `boss:${bossWeek}`
+    if (bossDown) {
+      keys.push(bossKey)
+      if (!hasSeen(bossKey)) lines.push(bossLine(bossName))
+    }
+    // Only the highest new level is announced, however many were crossed.
+    let newest = 0
+    for (let n = 2; n <= level; n++) {
+      keys.push(`level:${meId}:${n}`)
+      if (!hasSeen(`level:${meId}:${n}`)) newest = n
+    }
+    if (newest) lines.push(levelUpLine(newest))
+    let newestParty = 0
+    for (let n = 2; n <= partyLevel; n++) {
+      keys.push(`party:${n}`)
+      if (!hasSeen(`party:${n}`)) newestParty = n
+    }
+    if (newestParty) lines.push(partyLevelLine(newestParty))
+    for (const id of badges ? badges.split(',') : []) {
+      keys.push(`badge:${meId}:${id}`)
+      if (!hasSeen(`badge:${meId}:${id}`)) lines.push(badgeLine(nameOf(id)))
+    }
     const first = isFirstRun()
-    const fresh = items.filter((i) => !hasSeen(i.key))
-    markSeen(...fresh.map((i) => i.key))
-    if (first || fresh.length === 0 || fresh.length > 3) return
-    toast(fresh.map((i) => i.line).join(' '))
+    markSeen(...keys)
+    if (first || lines.length === 0) return
+    // Three lines fit in a toast; beyond that the rest are summed up, never dropped silently.
+    toast((lines.length > 3 ? [...lines.slice(0, 2), `and ${lines.length - 2} more!`] : lines).join(' '))
     setCount((c) => c + 1)
   }, [on, readOnly, meId, level, partyLevel, badges, bossWeek, bossName, bossDown, toast])
 

@@ -10,7 +10,7 @@ export function BucketLevel({ bucket }: { bucket: Bucket }) {
   const p = levelProgress(game.me.byBucket[bucket])
   const pct = Math.round((p.into / p.needed) * 100)
   return (
-    <span className="bucket-lv" aria-label={`${cap(bucket)} level ${p.level}`}>
+    <span className="bucket-lv" role="img" aria-label={`${cap(bucket)} level ${p.level}`}>
       <span aria-hidden>{`Lv ${p.level}`}</span>
       <span className="bucket-lv-bar" aria-hidden><span style={{ width: `${pct}%` }} /></span>
     </span>

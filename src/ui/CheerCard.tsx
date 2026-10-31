@@ -15,12 +15,12 @@ export function CheerCard() {
   const today = useToday()
   const [busy, setBusy] = useState(false)
   const partner = members.find((m) => m.id !== me.id)
-  if (!on || !partner) return null
+  if (!on || readOnly || !partner) return null
 
   const fromIds = [...new Set(cheers.rows.filter((c) => c.to_member === me.id && c.date === today).map((c) => c.from_member))]
   const sent = cheers.rows.some((c) => c.from_member === me.id && c.to_member === partner.id && c.date === today)
   const partnerTicked = logs.rows.some((l) => l.done && l.member_id === partner.id && l.date === today)
-  const canSend = !readOnly && partnerTicked && !sent
+  const canSend = partnerTicked && !sent
   if (fromIds.length === 0 && !canSend && !sent) return null
 
   async function send() {
