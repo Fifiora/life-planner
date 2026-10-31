@@ -379,3 +379,5 @@ html[data-theme="dark"] { color-scheme: dark; }
 @media (min-width: 46rem) {
   .donut-layout.has-detail { grid-template-columns: 1fr 1fr; align-items: start; }
 }
+.receipt-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 0.6rem; border: 1px solid var(--line); }
+.block-text { display: block; }

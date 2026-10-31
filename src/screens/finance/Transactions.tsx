@@ -5,6 +5,7 @@ import { todayCT } from '../../lib/dates'
 import { defaultExpenseDate, normCategory } from '../../lib/finance2'
 import { newBankRows, parseBankCsv } from '../../lib/bankCsv'
 import { readFileText } from '../../lib/files'
+import { receiptStore } from '../../lib/receipts'
 import { cap, money } from '../../lib/format'
 import { filterLedger, ledgerRows, type LedgerFilter, type LedgerKind } from '../../lib/ledger'
 
@@ -192,7 +193,7 @@ export function Transactions({ f, month }: { f: FinanceData; month: string }) {
                       )}
                     </td>
                     <td style={{ color: r.amount > 0 ? 'var(--ok)' : undefined, fontWeight: 600 }}>{r.amount > 0 ? '+' : ''}{money(r.amount)}</td>
-                    <td>{r.editable && !readOnly && <button type="button" className="icon-btn" aria-label={`Delete ${r.description}`} onClick={() => void f.expenses.remove(r.id)}>✕</button>}</td>
+                    <td>{r.editable && !readOnly && <button type="button" className="icon-btn" aria-label={`Delete ${r.description}`} onClick={() => { const photo = f.expenses.rows.find((x) => x.id === r.id)?.receipt_id; void f.expenses.remove(r.id); if (photo) void receiptStore.remove(photo) }}>✕</button>}</td>
                   </tr>
                 ))}
               </tbody>

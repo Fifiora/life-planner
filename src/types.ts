@@ -147,6 +147,7 @@ export interface Expense {
   member_id: string
   kind?: 'expense' | 'income' | 'transfer' // missing means expense
   source?: 'manual' | 'bank'
+  receipt_id?: string // a receipt photo kept on this phone
 }
 
 export interface Activity {

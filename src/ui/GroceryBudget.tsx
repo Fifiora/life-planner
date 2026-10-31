@@ -24,7 +24,7 @@ export function GroceryBudget() {
           <p className="bar-text">{money(spent)} spent of {money(budget)} · <strong>{spent > budget ? `${money(spent - budget)} over` : `${money(budget - spent)} left`}</strong></p>
         </>
       )}
-      <p className="muted small">Log receipts in Finance → Spending (category Groceries).</p>
+      <p className="muted small">Log receipts above, or in Finance → Transactions (category Groceries). Both count here and in Finance.</p>
     </section>
   )
 }

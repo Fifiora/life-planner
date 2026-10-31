@@ -4,6 +4,7 @@ import { monthKeyCT } from '../lib/dates'
 import { countByType } from '../lib/shopping'
 import type { NightLog } from '../types'
 import { GroceryBudget } from '../ui/GroceryBudget'
+import { ReceiptLogger } from '../ui/ReceiptLogger'
 import { ShoppingList } from '../ui/ShoppingList'
 import { PageHead } from '../ui/PageHead'
 import { RoutineList } from '../ui/RoutineList'
@@ -26,6 +27,7 @@ export default function Food() {
         emptyHint="Add your grocery run, meat purchase and farmers market days."
       />
       <ShoppingList />
+      <ReceiptLogger />
       <GroceryBudget />
       <section className="card">
         <h2>Eating out</h2>
