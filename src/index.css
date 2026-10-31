@@ -290,3 +290,27 @@ code { background: var(--line); padding: 0.1rem 0.35rem; border-radius: 0.4rem; 
 .status-pill.watch { background: color-mix(in srgb, var(--food) 20%, transparent); color: var(--food); }
 .status-pill.over { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
 @media (min-width: 30rem) { .donut-row { grid-template-columns: 11rem 1fr; align-items: center; } .filter-row { grid-template-columns: 1.4fr 1fr 1fr; } }
+
+/* ---------- Calendar ---------- */
+.cal-head { display: flex; align-items: center; justify-content: space-between; }
+.cal-head h2 { margin: 0; font-size: 1.15rem; }
+.cal-tools { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.4rem 0 0.7rem; }
+.mini-select.year { width: 5rem; }
+.seg-group { display: flex; gap: 0.2rem; margin-left: auto; background: var(--bg); border-radius: 0.9rem; padding: 0.15rem; }
+.seg-group .seg { flex: none; }
+.mgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.2rem; }
+.mgrid-head { text-align: center; font-size: 0.68rem; font-weight: 700; color: var(--muted); padding-bottom: 0.2rem; }
+.mcell { position: relative; min-height: 48px; border-radius: 0.8rem; border: 1px solid transparent; background: var(--bg); color: var(--ink); font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0.3rem 0 0.2rem; gap: 0.15rem; cursor: pointer; }
+.mcell.outside { opacity: 0.45; }
+.mcell[data-before-start="true"] { opacity: 0.35; background: transparent; }
+.mcell.today { border-color: var(--brand); font-weight: 800; }
+.mcell[aria-pressed="true"] { background: color-mix(in srgb, var(--brand) 18%, transparent); }
+.mcell.done.all { background: color-mix(in srgb, var(--ok) 22%, transparent); }
+.mcell.done.some { background: color-mix(in srgb, var(--food) 18%, transparent); }
+.mcell.done.none { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.mcell-num { font-size: 0.85rem; }
+.mcell-dots { display: flex; gap: 2px; min-height: 6px; }
+.mdot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.agenda { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+.agenda-day { border: 0; background: transparent; color: var(--ink); font: inherit; font-weight: 750; padding: 0.2rem 0; cursor: pointer; }
+.view-only .actions .btn-primary { display: none; }

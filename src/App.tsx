@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { HouseholdProvider, useHousehold } from './data/household'
 import { removeSharedCopy, type BootResult } from './data/startup'
+import Calendar from './screens/Calendar'
 import Finance from './screens/Finance'
 import Food from './screens/Food'
 import Health from './screens/Health'
@@ -35,6 +36,7 @@ function Shell({ boot }: { boot: BootResult }) {
         {readOnly && <ViewBanner createdAt={boot.createdAt} />}
         <Routes>
           <Route path="/" element={<Today />} />
+          <Route path="/calendar" element={<Calendar />} />
           <Route path="/health" element={<Health />} />
           <Route path="/study" element={<Study />} />
           <Route path="/travel" element={<Travel />} />
