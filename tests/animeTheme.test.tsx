@@ -1,8 +1,14 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import { render } from '@testing-library/react'
 import { waitFor } from '@testing-library/react'
 import { Confetti } from '../src/ui/Confetti'
-import css from '../src/index.css?raw'
+
+let css = ''
+beforeAll(async () => {
+  // A computed module name keeps the typechecker from needing Node's type definitions.
+  const fs = await import(/* @vite-ignore */ ['node', 'fs'].join(':'))
+  css = fs.readFileSync('src/index.css', 'utf8') as string
+})
 
 /** The custom properties declared inside the first rule whose selector is exactly `selector`. */
 function tokens(selector: string): Record<string, string> {
@@ -30,11 +36,12 @@ const PALETTES = {
 const PAIRS: [string, string][] = [['--ink', '--bg'], ['--ink', '--card-solid'], ['--muted', '--bg'], ['--muted', '--card-solid'], ['--brand-ink', '--brand']]
 
 describe.each(Object.entries(PALETTES))('anime palette (%s)', (_name, { selector, want }) => {
-  const t = tokens(selector)
   it('declares the agreed colours', () => {
+    const t = tokens(selector)
     for (const [k, v] of Object.entries(want)) expect(t[k], k).toBe(v)
   })
   it.each(PAIRS)('keeps %s readable on %s (WCAG AA, 4.5:1)', (fg, bg) => {
+    const t = tokens(selector)
     expect(contrast(t[fg], t[bg])).toBeGreaterThanOrEqual(4.5)
   })
 })
