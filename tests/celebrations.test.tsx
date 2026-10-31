@@ -6,6 +6,7 @@ import { HouseholdProvider } from '../src/data/household'
 import { insertRow, refresh } from '../src/data/tableStore'
 import { useGame } from '../src/data/useGame'
 import { addDays, todayCT, weekStart } from '../src/lib/dates'
+import { setStyleChoice } from '../src/lib/style'
 import { Celebrations } from '../src/ui/Celebrations'
 import { ToastProvider } from '../src/ui/Toast'
 import { renderScreen, seedPlanner } from './seed'
@@ -96,6 +97,17 @@ describe('Celebrations', () => {
     })
     expect(await screen.findByText(/and \d+ more!/)).toBeInTheDocument()
     expect(localStorage.getItem('lp.seen')).toContain('badge:a:streak-7')
+  })
+
+  it('does not announce old progress after a stretch in Classic', async () => {
+    renderScreen(<Celebrations />)
+    await ready()
+    act(() => setStyleChoice('classic'))
+    await addRuns(8)
+    await act(async () => setStyleChoice('anime'))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(screen.queryByText(/LEVEL UP|Badge unlocked/)).toBeNull()
+    expect(localStorage.getItem('lp.seen')).toContain('level:a:2')
   })
 
   it('says nothing in Classic', async () => {

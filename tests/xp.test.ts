@@ -27,6 +27,10 @@ describe('memberXp', () => {
     expect(x.byBucket.health).toBe(12)
     expect(x.total).toBe(12)
   })
+  it('gives the streak bonus once a day, however many routines were ticked', () => {
+    const d = { ...empty(), routines: [routine('r1'), routine('r2')], logs: [tick('l1', 'r1', 'a', '2026-11-04'), tick('l2', 'r2', 'a', '2026-11-04')] }
+    expect(memberXp(d, 'a').total).toBe(22)
+  })
   it('counts the same member, routine and day once', () => {
     const d = { ...empty(), routines: [routine('r1')], logs: [tick('l1', 'r1', 'a', '2026-11-04'), tick('l2', 'r1', 'a', '2026-11-04')] }
     expect(memberXp(d, 'a').total).toBe(12)

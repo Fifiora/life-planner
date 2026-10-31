@@ -33,6 +33,13 @@ describe('CheerCard', () => {
     expect(screen.queryByRole('button', { name: 'Cheer Ben' })).toBeNull()
   })
 
+  it('does not count a tick whose routine was deleted', async () => {
+    setLogs([{ id: 'p1', routine_id: 'gone', member_id: 'b', date: todayCT(), done: true, value: null }])
+    renderScreen(<CheerCard />)
+    await new Promise((r) => setTimeout(r, 50))
+    expect(screen.queryByRole('button', { name: 'Cheer Ben' })).toBeNull()
+  })
+
   it('shows a cheer sent to me today', async () => {
     localStorage.setItem('lp.data.cheers', JSON.stringify([{ id: 'c1', from_member: 'b', to_member: 'a', date: todayCT() }]))
     renderScreen(<CheerCard />)

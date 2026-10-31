@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { dayStreak, streakLengths } from '../src/lib/streak'
+import { addDays } from '../src/lib/dates'
 
 describe('dayStreak (today is Wednesday 2026-11-04)', () => {
   const today = '2026-11-04'
@@ -17,6 +18,10 @@ describe('dayStreak (today is Wednesday 2026-11-04)', () => {
   })
   it('keeps the streak alive while today is still open', () => {
     expect(dayStreak(['2026-11-02', '2026-11-03'], today)).toEqual({ days: 2, restUsed: false })
+  })
+  it('only mentions a rest day that was used in the last week', () => {
+    const run = Array.from({ length: 32 }, (_, i) => addDays('2026-10-04', i)) // 10-04 to 11-04, after a bridged 10-03
+    expect(dayStreak(['2026-10-01', '2026-10-02', ...run], today)).toEqual({ days: 34, restUsed: false })
   })
   it('is zero with nothing ticked', () => {
     expect(dayStreak([], today)).toEqual({ days: 0, restUsed: false })

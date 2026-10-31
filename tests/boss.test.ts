@@ -64,6 +64,11 @@ describe('bossProgress', () => {
     expect(bossProgress(boss('sphinx'), WEEK, d, ['a']).value).toBe(1)
   })
 
+  it('twins: one person alone cannot beat them', () => {
+    const d = { ...empty(), logs: Array.from({ length: 5 }, (_, i) => tick(`s${i}`, 'r1', 'a', addDays(WEEK, i))) }
+    expect(bossProgress(boss('twins'), WEEK, d, ['a']).value).toBe(0)
+  })
+
   it('twins: a day counts only when both people ticked something', () => {
     const d = { ...empty(), logs: [tick('1', 'r1', 'a', '2026-11-02'), tick('2', 'r1', 'b', '2026-11-02'), tick('3', 'r1', 'a', '2026-11-03'), tick('4', 'r1', 'b', '2026-11-04')] }
     expect(bossProgress(boss('twins'), WEEK, d, ['a', 'b']).value).toBe(1)
