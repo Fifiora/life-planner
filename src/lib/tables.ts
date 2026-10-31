@@ -21,4 +21,6 @@ export const TABLES = [
   'activities',
   'night_log',
   'shopping',
+  'budgets',
+  'checklist',
 ] as const

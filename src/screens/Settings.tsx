@@ -5,6 +5,7 @@ import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
 import { DEFAULT_ANCHOR, todayCT } from '../lib/dates'
 import { createPinRecord, isPinRecord, isValidPin } from '../lib/pin'
+import { readFileText } from '../lib/files'
 import { eraseThisPhone, logOut, reloadApp } from '../lib/session'
 import { buildExport, parseImport } from '../lib/export'
 import { shareOrCopy } from '../lib/share'
@@ -44,6 +45,7 @@ export default function Settings() {
       return false
     }
   })
+  const [lockAfter, setLockAfter] = useState(() => localStorage.getItem('lp.lockAfter') ?? '1')
   const [pin1, setPin1] = useState('')
   const [pin2, setPin2] = useState('')
   const [pinError, setPinError] = useState<string | null>(null)
@@ -81,7 +83,7 @@ export default function Settings() {
   async function chooseFile(file: File | undefined) {
     if (!file) return
     try {
-      setPending(parseImport(await file.text()))
+      setPending(parseImport(await readFileText(file)))
       setImportError(null)
     } catch (err) {
       setPending(null)
@@ -195,10 +197,19 @@ export default function Settings() {
         <h2>App PIN</h2>
         <p className="muted small">An optional lock that asks for a PIN each time the app is opened. It keeps casual eyes out; it doesn't encrypt the data stored on this phone.</p>
         {pinOn ? (
-          <div className="actions">
-            <button type="button" className="btn" onClick={() => { sessionStorage.removeItem('lp.unlocked'); reloadApp() }}>Lock now</button>
-            <button type="button" className="btn btn-danger" onClick={() => { localStorage.removeItem('lp.pin'); setPinOn(false) }}>Remove PIN</button>
-          </div>
+          <>
+            <div className="actions">
+              <button type="button" className="btn" onClick={() => { sessionStorage.removeItem('lp.unlocked'); reloadApp() }}>Lock now</button>
+              <button type="button" className="btn btn-danger" onClick={() => { localStorage.removeItem('lp.pin'); setPinOn(false) }}>Remove PIN</button>
+            </div>
+            <label className="label" htmlFor="lock-after">Lock when away</label>
+            <select id="lock-after" className="input" value={lockAfter} onChange={(e) => { localStorage.setItem('lp.lockAfter', e.target.value); setLockAfter(e.target.value) }}>
+              <option value="0">As soon as I leave the app</option>
+              <option value="1">After 1 minute away</option>
+              <option value="5">After 5 minutes away</option>
+              <option value="15">After 15 minutes away</option>
+              <option value="-1">Only when I close the app</option>
+            </select>
         ) : (
           <>
             <div className="row2">

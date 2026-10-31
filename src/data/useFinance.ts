@@ -1,6 +1,7 @@
 import { monthView } from '../lib/finance'
 import { flexView, projectedSavings, trackingStart } from '../lib/finance2'
-import type { Bill, BillPayment, Expense, Income, SavingsEntry } from '../types'
+import { monthActuals } from '../lib/ledger'
+import type { Bill, BillPayment, Budget, ChecklistItem, Expense, Income, SavingsEntry } from '../types'
 import { useSettings } from './useSettings'
 import { useTable } from './useTable'
 
@@ -13,6 +14,8 @@ export function useFinance(month: string) {
   const payments = useTable<BillPayment>('bill_payments')
   const expenses = useTable<Expense>('expenses')
   const savings = useTable<SavingsEntry>('savings')
+  const budgets = useTable<Budget>('budgets')
+  const checklist = useTable<ChecklistItem>('checklist')
   const settings = useSettings()
 
   const target = Number(settings.get('savings_target') ?? 10000)
@@ -29,7 +32,12 @@ export function useFinance(month: string) {
     payments,
     expenses,
     savings,
+    budgets,
+    checklist,
     settings,
+    goalTax: Number(settings.get('goal_tax') ?? 0),
+    goalTithe: Number(settings.get('goal_tithe') ?? 0),
+    actualsFor: (m: string) => monthActuals(bills.rows, payments.rows, expenses.rows, m),
     target,
     flexBudget,
     savingsStart,

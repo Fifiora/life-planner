@@ -1,4 +1,5 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { shouldLock } from '../lib/lockPolicy'
 import { isPinRecord, verifyPin, type PinRecord } from '../lib/pin'
 import { eraseThisPhone, reloadApp } from '../lib/session'
 
@@ -21,16 +22,45 @@ export function PinGate({
   children,
   verify = verifyPin,
   onErase = eraseAndReload,
+  now = Date.now,
 }: {
   children: ReactNode
   verify?: (pin: string, record: PinRecord) => Promise<boolean>
   onErase?: () => void
+  now?: () => number
 }) {
   const [record] = useState(readRecord)
   const [unlocked, setUnlocked] = useState(() => !record || sessionStorage.getItem('lp.unlocked') === '1')
   const [pin, setPin] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [forgot, setForgot] = useState(false)
+
+  // Lock again when the app has been left for longer than the chosen time (default: one minute).
+  useEffect(() => {
+    if (!record) return
+    let hiddenAt: number | null = null
+    const lockAfter = () => {
+      const saved = localStorage.getItem('lp.lockAfter')
+      return saved === null ? 1 : Number(saved)
+    }
+    const lock = () => {
+      sessionStorage.removeItem('lp.unlocked')
+      setUnlocked(false)
+      setPin('')
+      setError(null)
+    }
+    const onChange = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = now()
+        if (lockAfter() === 0) lock()
+      } else if (hiddenAt !== null) {
+        if (shouldLock(hiddenAt, now(), lockAfter())) lock()
+        hiddenAt = null
+      }
+    }
+    document.addEventListener('visibilitychange', onChange)
+    return () => document.removeEventListener('visibilitychange', onChange)
+  }, [record, now])
 
   if (unlocked || !record) return <>{children}</>
 

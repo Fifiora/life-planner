@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { readFileText } from '../lib/files'
 import { encodeSnapshot, parseSnapshotJson } from '../lib/snapshot'
 import type { Member } from '../types'
 import { removeSharedCopy } from './startup'
@@ -33,7 +34,7 @@ function OpenSharedFile() {
   async function open(file: File | undefined) {
     if (!file) return
     try {
-      const snap = parseSnapshotJson(await file.text())
+      const snap = parseSnapshotJson(await readFileText(file))
       localStorage.setItem('lp.snapshot', await encodeSnapshot(snap))
       window.location.reload()
     } catch (err) {

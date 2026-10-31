@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import {
   budgetRows,
+  buildLedgerInsights,
   cancelTracker,
   categoryTrend,
   filterLedger,
   ledgerRows,
   monthActuals,
+  monthCallouts,
   monthKpis,
   monthSeries,
   monthWindow,
@@ -117,8 +119,8 @@ describe('budgetRows', () => {
     expect(dining.status.label).toBe('OVER BUDGET')
   })
   it('lets a saved budget replace the one worked out from bills', () => {
-    const rows = budgetRows({ bills, budgets: [{ id: 'b', category: 'housing', amount: 2500 }], months, actuals })
-    expect(rows.find((r) => r.category === 'housing')).toMatchObject({ budget: 2500 })
+    const rows = budgetRows({ bills, budgets: [{ id: 'b', category: 'housing', amount: 2800 }], months, actuals })
+    expect(rows.find((r) => r.category === 'housing')).toMatchObject({ budget: 2800 })
     expect(rows.find((r) => r.category === 'housing')!.status.label).toBe('CRUSHED IT')
   })
   it('has no status for a category with no budget', () => {
@@ -194,5 +196,48 @@ describe('ledger rows', () => {
     const byAmount = filterLedger(rows, { search: '', kind: 'all', category: 'all', sort: 'amount', dir: 'desc' })
     expect(byAmount[0].description).toBe('Paycheck')
     expect(byAmount.at(-1)!.description).toBe('Rent')
+  })
+})
+
+
+describe('monthCallouts', () => {
+  const shares = [{ category: 'housing', total: 2300, pct: 79 }, { category: 'dining', total: 600, pct: 21 }]
+  it('notes a positive month, the biggest line, over-budget categories and cancel potential', () => {
+    const out = monthCallouts({ kpis: { realIncome: 10000, spent: 2900, net: 7100, transferredOut: 0 }, shares, budgets: { housing: 2000, dining: 500 }, couldCancelMonthly: 40 })
+    expect(out.map((c) => c.tone)).toEqual(['good', 'neutral', 'warning', 'yellow'])
+    expect(out[0].text).toBe('Net positive: +$7,100 this month.')
+    expect(out[1].text).toBe('Biggest spending line this month: Housing at $2,300.')
+    expect(out[2].text).toBe('Over budget on: Housing, Dining.')
+    expect(out[3].text).toBe('Could cancel $40 a month - mark them in the Bills tab.')
+  })
+  it('flags a negative month and stays quiet when nothing stands out', () => {
+    const out = monthCallouts({ kpis: { realIncome: 100, spent: 150, net: -50, transferredOut: 0 }, shares: [], budgets: {}, couldCancelMonthly: 0 })
+    expect(out).toEqual([{ tone: 'bad', text: 'Net negative: -$50 this month.' }])
+  })
+})
+
+describe('buildLedgerInsights', () => {
+  const series = [
+    { month: '2026-10', income: 10000, spent: 2000, planned: 2140, net: 8000, hasData: true },
+    { month: '2026-11', income: 10000, spent: 2600, planned: 3440, net: 7400, hasData: true },
+    { month: '2026-12', income: 10000, spent: 0, planned: 3440, net: 10000, hasData: false },
+  ]
+  const spikes = [{ category: 'dining', month: '2026-11', value: 400, avg: 200, pctOver: 100 }]
+  it('writes the big picture, category callouts, trends and wins in sections', () => {
+    const sections = buildLedgerInsights({ series, spikes, cancel: { couldCancel: 10, cancelled: 30, annualPotential: 120, annualSaved: 360, couldCount: 1, cancelledCount: 1 }, giving: { monthly: 625, pctOfIncome: 6.3 } })
+    expect(sections.map((s) => s.title)).toEqual(['Big picture', 'Category callouts', 'Trends to watch', 'Big wins / big losses'])
+    const text = sections.flatMap((s) => s.items.map((i) => i.text))
+    expect(text).toContain('You netted +$15,400 across 2 months. Average $7,700/month kept.')
+    expect(text).toContain('Your real save rate is 77%.')
+    expect(text).toContain('Dining in November 2026 hit $400 — about 100% over your usual $200.')
+    expect(text).toContain("$10 a month ($120 a year) is marked 'could cancel'.")
+    expect(text).toContain('Already cancelled: $30 a month ($360 a year) saved.')
+    expect(text).toContain('You give $625 a month (6.3% of income).')
+    expect(text).toContain('October 2026 was your best month: +$8,000 net.')
+  })
+  it('says there is nothing to show yet when no month has data', () => {
+    const sections = buildLedgerInsights({ series: [series[2]], spikes: [], cancel: { couldCancel: 0, cancelled: 0, annualPotential: 0, annualSaved: 0, couldCount: 0, cancelledCount: 0 } })
+    expect(sections[0].items[0].text).toMatch(/nothing tracked yet/i)
+    expect(sections[1].items[0].text).toMatch(/no major category spikes/i)
   })
 })

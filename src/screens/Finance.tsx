@@ -1,16 +1,21 @@
 import { useState } from 'react'
 import { useFinance } from '../data/useFinance'
 import { monthKeyCT } from '../lib/dates'
-import { monthLabel, shiftMonthKey } from '../lib/format'
+import { monthWindow } from '../lib/ledger'
+import { MonthPills } from '../ui/MonthPills'
 import { PageHead } from '../ui/PageHead'
 import { Bills } from './finance/Bills'
+import { Budget } from './finance/Budget'
+import { Insights } from './finance/Insights'
+import { MonthVsMonth } from './finance/MonthVsMonth'
 import { Overview } from './finance/Overview'
 import { Plan } from './finance/Plan'
 import { Savings } from './finance/Savings'
-import { Spending } from './finance/Spending'
+import { Transactions } from './finance/Transactions'
 
-const TABS = ['Overview', 'Bills', 'Spending', 'Savings', 'Plan'] as const
+const TABS = ['Overview', 'Transactions', 'Month vs Month', 'Budget', 'Bills', 'Savings', 'Plan', 'Insights'] as const
 type Tab = (typeof TABS)[number]
+const BY_MONTH: Tab[] = ['Overview', 'Transactions', 'Bills', 'Savings']
 
 export default function Finance() {
   const [month, setMonth] = useState(monthKeyCT())
@@ -27,19 +32,16 @@ export default function Finance() {
         ))}
       </div>
 
-      {tab !== 'Plan' && (
-        <div className="card month-nav">
-          <button type="button" className="icon-btn" aria-label="Previous month" onClick={() => setMonth(shiftMonthKey(month, -1))}>‹</button>
-          <h2>{monthLabel(month)}</h2>
-          <button type="button" className="icon-btn" aria-label="Next month" onClick={() => setMonth(shiftMonthKey(month, 1))}>›</button>
-        </div>
-      )}
+      {BY_MONTH.includes(tab) && <MonthPills months={monthWindow(monthKeyCT(), 3, 4)} value={month} onChange={setMonth} />}
 
-      {tab === 'Overview' && <Overview f={f} />}
+      {tab === 'Overview' && <Overview f={f} month={month} />}
+      {tab === 'Transactions' && <Transactions f={f} month={month} />}
+      {tab === 'Month vs Month' && <MonthVsMonth f={f} />}
+      {tab === 'Budget' && <Budget f={f} />}
       {tab === 'Bills' && <Bills f={f} month={month} />}
-      {tab === 'Spending' && <Spending f={f} month={month} />}
       {tab === 'Savings' && <Savings f={f} month={month} />}
       {tab === 'Plan' && <Plan f={f} />}
+      {tab === 'Insights' && <Insights f={f} />}
     </div>
   )
 }

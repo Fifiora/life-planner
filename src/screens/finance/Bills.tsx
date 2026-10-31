@@ -90,6 +90,17 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
                   onChange={() => void togglePaid(b)}
                 />
                 <button type="button" className="plain-btn grow" onClick={() => setEditing(b)}>{b.name}</button>
+                <select
+                  className="mini-select"
+                  aria-label={`Cancel status for ${b.name}`}
+                  value={b.cancel_status ?? ''}
+                  disabled={readOnly}
+                  onChange={(e) => void f.bills.update(b.id, { cancel_status: e.target.value as Bill['cancel_status'] })}
+                >
+                  <option value="">Keep</option>
+                  <option value="could">Could cancel</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
                 <span style={{ fontWeight: 600, opacity: paidIds.has(b.id) ? 0.55 : 1 }}>{money(b.amount)}</span>
               </li>
             ))}

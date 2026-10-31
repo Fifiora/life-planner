@@ -41,6 +41,7 @@ export interface Bill {
   kind: 'recurring' | 'one_time'
   due_month: string | null // YYYY-MM, required for one_time
   paid: boolean
+  cancel_status?: '' | 'could' | 'cancelled' // marking a subscription as one you could cancel / did cancel
 }
 
 export interface Income {
@@ -144,6 +145,8 @@ export interface Expense {
   category: string
   note: string
   member_id: string
+  kind?: 'expense' | 'income' | 'transfer' // missing means expense
+  source?: 'manual' | 'bank'
 }
 
 export interface Activity {
@@ -169,4 +172,17 @@ export interface ShoppingItem {
   store: string
   done: boolean
   added_by: string
+}
+
+export interface Budget {
+  id: string
+  category: string
+  amount: number
+}
+
+export interface ChecklistItem {
+  id: string
+  month: string
+  key: string
+  done: boolean
 }
