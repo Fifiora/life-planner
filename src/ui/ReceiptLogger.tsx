@@ -92,7 +92,7 @@ export function ReceiptLogger({ store = receiptStore, compress = compressImage }
               <input id="rc-total" className="input" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </div>
             <div>
-              <label className="label" htmlFor="rc-store">Store</label>
+              <label className="label" htmlFor="rc-store">Shop</label>
               <select id="rc-store" className="input" value={shop} onChange={(e) => setShop(e.target.value)}>
                 {STORES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>

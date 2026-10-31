@@ -34,7 +34,7 @@ describe('ReceiptLogger', () => {
     const store = fakeStore()
     renderScreen(<ReceiptLogger store={store} compress={noCompress} />)
     await userEvent.type(screen.getByLabelText('Receipt total'), '84.5')
-    await userEvent.selectOptions(screen.getByLabelText('Store'), 'African store')
+    await userEvent.selectOptions(screen.getByLabelText('Shop'), 'African store')
     await userEvent.click(screen.getByRole('button', { name: 'Save receipt' }))
     await waitFor(() => expect(saved('expenses')[0]).toMatchObject({ amount: 84.5, category: 'groceries', date: todayCT(), kind: 'expense', source: 'manual', member_id: 'a' }))
     expect(saved('expenses')[0].note).toContain('African store')
