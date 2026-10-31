@@ -28,7 +28,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
+      - name: Install
+        run: set -o pipefail; npm install 2>&1 | tee install.log
       - name: Test
         run: set -o pipefail; npm test 2>&1 | tee test.log
       - name: Build
@@ -37,6 +38,7 @@ jobs:
         if: failure()
         run: |
           emit() { m="$(tail -c 3500 "$1" 2>/dev/null)"; m="${m//'%'/'%25'}"; m="${m//$'\r'/}"; m="${m//$'\n'/'%0A'}"; echo "::error title=$2::$m"; }
+          emit install.log install-output
           emit test.log test-output
           emit build.log build-output
       - uses: actions/upload-pages-artifact@v3
