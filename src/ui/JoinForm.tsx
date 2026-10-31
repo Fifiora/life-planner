@@ -20,7 +20,8 @@ export function JoinForm({ onJoined = reloadApp, onCancel, warning = REPLACE_WAR
     setBusy(true)
     setError(null)
     try {
-      await joinWithCode(typed, pin ? { pin } : undefined)
+      if (pin) await joinWithCode(typed, { pin })
+      else await joinWithCode(typed)
       localStorage.removeItem('lp.pin') // the shared planner's PIN (if any) now applies; this phone's own is forgotten
       onJoined()
     } catch (err) {
