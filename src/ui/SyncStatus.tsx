@@ -33,7 +33,7 @@ export function SyncStatus() {
   }, [])
   if (readOnly || !status) return null
   return (
-    <span role="status" aria-label="Sync status" className={`sync-chip ${status.state}`} title={status.message}>
+    <span role="status" aria-label="Sync status" aria-live={status.state === 'offline' || status.state === 'error' ? 'polite' : 'off'} className={`sync-chip ${status.state}`} title={status.message}>
       <span className="sync-dot" aria-hidden />
       {describeSync(status, Date.now())}
     </span>

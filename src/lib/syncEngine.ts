@@ -63,6 +63,7 @@ type Meta = Record<string, Record<string, MetaEntry>>
 const BATCH = 200
 const PAGE = 1000 // the most rows the server returns in one pull
 const MAX_PAYLOAD = 32_768 // matches the server's limit
+const MAX_PUSH_BYTES = 900_000 // the server refuses a push larger than about 1.5 MB
 const MAX_ID = 80
 const MAX_TABLE = 40
 const MAX_AHEAD = 30 * 24 * 3600 * 1000 * 1000 // a remote change time more than 30 days ahead of this phone's clock is not believed
@@ -77,6 +78,13 @@ function fingerprint(json: string): number {
     h = Math.imul(h, 0x01000193)
   }
   return h >>> 0
+}
+
+/** One row per id (the last one wins), in first-seen order: two rows with the same id would otherwise fight over one note forever. */
+function uniqueById(rows: Row[]): Row[] {
+  const byId = new Map<string, Row>()
+  for (const r of rows) byId.set(r.id, r)
+  return [...byId.values()]
 }
 
 function readJson<T>(kv: KV, key: string, fallback: T): T {
@@ -166,7 +174,7 @@ export class SyncEngine {
 
   /** Mark every row this phone holds as waiting to upload (the first phone, when sharing starts). */
   markAllDirty(): void {
-    for (const [table, rows] of Object.entries(this.opts.local.getAll())) for (const r of rows) this.mark(table, r.id, false, JSON.stringify(r))
+    for (const [table, rows] of Object.entries(this.opts.local.getAll())) for (const r of uniqueById(rows)) this.mark(table, r.id, false, JSON.stringify(r))
     this.persist()
     this.publish()
   }
@@ -191,13 +199,17 @@ export class SyncEngine {
     let cursor = 0
     let clock = this.clock
     let pulled = 0
+    let unreadable = 0
     for (;;) {
       const page = await this.opts.transport.pull(this.opts.household, cursor)
       if (page.length === 0) break
       for (const r of page) {
         cursor = Math.max(cursor, r.seq ?? 0)
         const row = await this.open(r)
-        if (row === undefined) continue
+        if (row === undefined) {
+          unreadable++
+          continue
+        }
         clock = Math.max(clock, r.updated_at)
         const entry: MetaEntry = r.deleted ? { u: r.updated_at, d: 1 } : { u: r.updated_at, h: fingerprint(JSON.stringify(row)) }
         ;(meta[r.tbl] ??= {})[r.id] = entry
@@ -209,6 +221,9 @@ export class SyncEngine {
       if (page.length < PAGE) break
     }
     if (cursor === 0) throw new Error('No shared planner found for this code. Check the code, and make sure the first phone has been online.')
+    if (unreadable > 0) {
+      throw new Error(`${unreadable} item${unreadable === 1 ? '' : 's'} in the shared planner could not be read with this code. Nothing on this phone was changed. Check the code (and that the first phone's clock is right) and try again.`)
+    }
     if (this.stopped) return { pulled: 0 }
     this.opts.local.apply(tables)
     this.meta = meta
@@ -303,7 +318,7 @@ export class SyncEngine {
     for (const [table, rows] of Object.entries(this.opts.local.getAll())) {
       const known = this.meta[table] ?? {}
       const present = new Set<string>()
-      for (const r of rows) {
+      for (const r of uniqueById(rows)) {
         present.add(r.id)
         const json = JSON.stringify(r)
         const m = known[r.id]
@@ -329,8 +344,7 @@ export class SyncEngine {
     let pushError: unknown = null
     let pullError: unknown = null
     try {
-      this.reconcile()
-      this.persist()
+      if (this.reconcile()) this.persist()
     } catch (err) {
       pushError = err
     }
@@ -360,8 +374,10 @@ export class SyncEngine {
     } else if (this.notesError) {
       this.setStatus({ state: 'error', message: NOTES_FULL })
     } else {
-      const message = this.skipped > 0 ? `${this.skipped} item${this.skipped === 1 ? ' is' : 's are'} too large to sync` : undefined
-      this.setStatus({ state: 'idle', lastSyncedAt: this.now(), message })
+      const notes: string[] = []
+      if (this.skipped > 0) notes.push(`${this.skipped} item${this.skipped === 1 ? ' is' : 's are'} too large to sync`)
+      if (result.rejected > 0) notes.push(`${result.rejected} change${result.rejected === 1 ? '' : 's'} from the other phone could not be read`)
+      this.setStatus({ state: 'idle', lastSyncedAt: this.now(), message: notes.length > 0 ? notes.join('; ') : undefined })
     }
     return result
   }
@@ -384,9 +400,10 @@ export class SyncEngine {
       if (batch.length === 0) return pushed
       const all = this.opts.local.getAll()
       const rows: SyncRow[] = []
+      let bytes = 0
       for (const { tbl, id } of batch) {
         const m = this.meta[tbl]?.[id] ?? { u: this.stamp() }
-        const row = all[tbl]?.find((r) => r.id === id)
+        const row = uniqueById(all[tbl] ?? []).find((r) => r.id === id)
         const deleted = Boolean(m.d) || !row
         const usable = typeof id === 'string' && id.length > 0 && id.length <= MAX_ID && tbl.length <= MAX_TABLE
         const payload = usable ? await encryptRow(this.opts.key, tbl, deleted ? { id } : (row as Row), { updated_at: m.u, deleted }) : ''
@@ -398,6 +415,8 @@ export class SyncEngine {
           continue
         }
         rows.push({ tbl, id, payload, deleted, updated_at: m.u })
+        bytes += payload.length
+        if (bytes >= MAX_PUSH_BYTES) break // the rest waits for the next push: the server refuses very large pushes
       }
       if (rows.length > 0) await this.opts.transport.push(this.opts.household, rows)
       if (this.stopped) return pushed
@@ -455,7 +474,7 @@ export class SyncEngine {
     for (const { r, row } of opened) {
       const m = this.meta[r.tbl]?.[r.id]
       if (m && m.u >= r.updated_at) continue // what we have is newer, or is our own change coming back
-      const rows = changed.get(r.tbl) ?? [...(all[r.tbl] ?? [])]
+      const rows = changed.get(r.tbl) ?? uniqueById(all[r.tbl] ?? [])
       const at = rows.findIndex((x) => x.id === r.id)
       if (row === null) {
         if (at >= 0) rows.splice(at, 1)

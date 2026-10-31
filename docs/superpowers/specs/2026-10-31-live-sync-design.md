@@ -39,3 +39,6 @@ TDD through CI. Engine tests with two simulated phones and a fake server: first 
 
 ## Out of scope
 Receipt photos syncing, more than a few devices' presence indicators, per-field merging, end-to-end key rotation, and automatic merging of two phones that each already hold separate data.
+
+## Deviations recorded during the build
+Payload cap is 32 KB per row (not 64 KB); a server error shows "Sync problem" while only a network failure shows "Offline"; change stamps are ms x 1000 plus a per-phone 0-999 (so two phones never tie); a rejected row (unreadable, unknown table, change time more than 30 days ahead) is skipped and reported in the status message; joining is refused (and nothing changes) when the shared planner is empty or any of its rows cannot be read; a brand-new phone has to get past the starter-plan unlock and the names screen before it can reach Settings to join; a phone that is sharing counts as having its own planner at start-up.

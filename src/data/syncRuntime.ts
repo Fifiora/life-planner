@@ -88,24 +88,33 @@ function activate(engine: SyncEngine, household: string): Running {
   let stopped = false
 
   let inflight: Promise<void> | null = null
+  let rerun = false
   const attempt = async () => {
     if (stopped || d.isReadOnly()) return
     if (retry) clearTimeout(retry)
     retry = null
-    const result = await engine.syncNow()
-    if (stopped) return
+    let pushed = 0
+    do {
+      rerun = false
+      pushed += (await engine.syncNow()).pushed
+      if (stopped) return
+    } while (rerun && engine.status.state === 'idle') // something asked for a sync while this one was running
     const state = engine.status.state
     if (state === 'offline' || state === 'error') {
       retry = setTimeout(() => void run(), Math.min(BACKOFF_START_MS * 2 ** fails, BACKOFF_MAX_MS))
       fails++
     } else {
       fails = 0
-      if (result.pushed > 0) d.transport.notify?.(household)
+      if (pushed > 0) d.transport.notify?.(household)
     }
   }
   // One attempt at a time: several triggers at once share it (so backoff is counted once, with one retry timer).
   const run = (): Promise<void> => {
-    inflight ??= attempt().finally(() => {
+    if (inflight) {
+      rerun = true
+      return inflight
+    }
+    inflight = attempt().finally(() => {
       inflight = null
     })
     return inflight
@@ -126,9 +135,12 @@ function activate(engine: SyncEngine, household: string): Running {
   })
   const offNudges = d.transport.subscribe(household, now)
   const poll = setInterval(() => document.visibilityState === 'visible' && quiet(), POLL_MS)
-  const onVisible = () => document.visibilityState === 'visible' && now()
+  // Coming back: look for news. Leaving: send what is waiting now, before the phone may freeze the page.
+  const onVisibility = () => (document.visibilityState === 'visible' ? now() : void run())
+  const onHide = () => void run()
   window.addEventListener('online', now)
-  document.addEventListener('visibilitychange', onVisible)
+  window.addEventListener('pagehide', onHide)
+  document.addEventListener('visibilitychange', onVisibility)
 
   return {
     engine,
@@ -142,13 +154,18 @@ function activate(engine: SyncEngine, household: string): Running {
       offEdits()
       offNudges()
       window.removeEventListener('online', now)
-      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('pagehide', onHide)
+      document.removeEventListener('visibilitychange', onVisibility)
       engine.stop()
     },
   }
 }
 
-export const getCode = (): string | null => getDeps().kv.get('lp.sync.code')
+/** The saved pairing code, or null if there is none (or what is saved is not a code). */
+export function getCode(): string | null {
+  const saved = getDeps().kv.get('lp.sync.code')
+  return saved && isValidCode(saved) ? saved : null
+}
 
 function clearSyncKeys() {
   const d = getDeps()
@@ -167,6 +184,7 @@ export async function startSharing(): Promise<string> {
   running = activate(engine, household)
   engine.markAllDirty()
   await running.run()
+  if (mine !== generation) throw new Error('Superseded by a newer request.') // stopped (or replaced) while the first upload ran
   return code
 }
 
@@ -214,6 +232,7 @@ export function resumeSync(): void {
 
 /** Forget the code and the sync notes on this phone. The planner's rows stay. */
 export function stopSyncing(): void {
+  generation++ // a start or resume still in progress must not carry on
   teardown()
   clearSyncKeys()
   publish(null)

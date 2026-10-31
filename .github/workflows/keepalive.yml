@@ -1,10 +1,10 @@
 name: Keep sync project awake
 
-# The free Supabase plan pauses a project after about a week without activity. This pings it every Monday.
+# The free Supabase plan pauses a project after about a week without activity. This pings it twice a week (Monday and Thursday).
 # The URL and key below are the public "publishable" ones (they are also in the app's code); no secret is used.
 on:
   schedule:
-    - cron: '0 14 * * 1'
+    - cron: '0 14 * * 1,4'
   workflow_dispatch:
 
 jobs:

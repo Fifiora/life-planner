@@ -41,7 +41,7 @@ begin
   -- pulls "everything after number N" can never miss a row that commits late.
   perform pg_advisory_xact_lock(hashtextextended(p_household, 0));
 
-  if (select count(*) from public.sync_rows where household = p_household) > 20000 then
+  if (select count(*) from public.sync_rows where household = p_household) > 100000 then
     raise exception 'this shared planner is full';
   end if;
 
