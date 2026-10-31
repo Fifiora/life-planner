@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { readFileSync } from 'node:fs'
+import css from '../src/index.css?raw'
 import { applyTheme, getThemeChoice, setThemeChoice } from '../src/lib/theme'
 
 beforeEach(() => {
@@ -40,7 +40,6 @@ describe('theme choice', () => {
 
 describe('stylesheet', () => {
   it('has dark colours for a manual choice and for the phone setting', () => {
-    const css = readFileSync('src/index.css', 'utf8')
     expect(css).toContain('html[data-theme="dark"]')
     expect(css).toContain('prefers-color-scheme: dark')
   })
