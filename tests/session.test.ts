@@ -18,6 +18,10 @@ describe('logOut', () => {
     expect(localStorage.getItem('lp.data.bills')).toBe('[{"id":"1"}]')
     expect(localStorage.getItem('lp.pin')).toBe('{"v":1}')
   })
+  it('notes that this phone is logged out, so the start screen can say so', () => {
+    logOut()
+    expect(localStorage.getItem('lp.loggedout')).toBe('1')
+  })
 })
 
 describe('eraseThisPhone', () => {

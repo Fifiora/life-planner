@@ -214,10 +214,13 @@ describe('Today', () => {
 })
 
 describe('Settings', () => {
-  it('logs out: forgets who is using the phone and reloads', async () => {
+  it('logs out: forgets who is using the phone, goes back to the start page and reloads', async () => {
+    window.location.hash = '#/settings'
     renderScreen(<Settings />)
     await userEvent.click(await screen.findByRole('button', { name: 'Log out' }))
     expect(localStorage.getItem('lp.me')).toBeNull()
+    expect(localStorage.getItem('lp.loggedout')).toBe('1')
+    expect(window.location.hash).toBe('#/')
     expect(saved('bills').length).toBeGreaterThan(0)
     expect(reloadApp).toHaveBeenCalledTimes(1)
   })

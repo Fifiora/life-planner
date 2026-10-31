@@ -83,6 +83,23 @@ describe('HouseholdProvider', () => {
     expect(localStorage.getItem('lp.me')).toBe('m2')
   })
 
+  it('shows a logged-out screen after logging out, and picking a person goes back in', async () => {
+    localStorage.setItem('lp.data.members', JSON.stringify(two))
+    localStorage.setItem('lp.loggedout', '1')
+    renderIt()
+    expect(await screen.findByRole('heading', { name: "You're logged out" })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: "I'm Ben" }))
+    expect(await screen.findByText('Hello Ben of 2')).toBeInTheDocument()
+    expect(localStorage.getItem('lp.loggedout')).toBeNull()
+  })
+
+  it('asks plainly who is using this phone when it was not a log out', async () => {
+    localStorage.setItem('lp.data.members', JSON.stringify(two))
+    renderIt()
+    expect(await screen.findByRole('heading', { name: 'Who are you on this phone?' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: "You're logged out" })).toBeNull()
+  })
+
   it('opens a view-only copy without asking who anyone is', async () => {
     loadSnapshot({ members: two })
     renderIt()
