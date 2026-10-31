@@ -3,8 +3,11 @@ import { monthGrid, type Marker } from '../lib/calendar'
 
 const HEAD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-const label = (date: string) =>
-  new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })
+const label = (date: string, events: number) =>
+  new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) +
+  (events > 0 ? `, ${events} event${events === 1 ? '' : 's'}` : '')
+
+const markerColor = (m: Marker) => (m === 'other' ? 'var(--muted)' : m === 'night' ? 'var(--brand)' : `var(--${m})`)
 
 export function MonthGrid({
   month,
@@ -12,6 +15,7 @@ export function MonthGrid({
   selected,
   markersFor,
   completionFor,
+  eventCountFor,
   onSelect,
 }: {
   month: string
@@ -19,6 +23,7 @@ export function MonthGrid({
   selected: string | null
   markersFor: (date: string) => Marker[]
   completionFor: (date: string) => { done: number; total: number }
+  eventCountFor: (date: string) => number
   onSelect: (date: string) => void
 }) {
   const weeks = monthGrid(month)
@@ -35,7 +40,7 @@ export function MonthGrid({
             type="button"
             data-date={date}
             data-before-start={date < PLAN_START ? 'true' : undefined}
-            aria-label={label(date)}
+            aria-label={label(date, eventCountFor(date))}
             aria-current={date === today ? 'date' : undefined}
             aria-pressed={selected === date}
             className={`cal-cell${date.slice(0, 7) === month ? '' : ' outside'}${date === today ? ' today' : ''}${shade ? ` done${shade}` : ''}`}
@@ -43,7 +48,7 @@ export function MonthGrid({
           >
             <span className="cal-num">{Number(date.slice(8))}</span>
             <span className="cal-dots">
-              {markersFor(date).slice(0, 4).map((m) => <span key={m} className="mdot" data-marker={m} style={{ background: m === 'other' ? 'var(--muted)' : `var(--${m})` }} />)}
+              {markersFor(date).slice(0, 4).map((m) => <span key={m} className="mdot" data-marker={m} style={{ background: markerColor(m) }} />)}
             </span>
           </button>
         )

@@ -4,7 +4,7 @@ import type { EventValues, useEvents } from '../data/useEvents'
 import { useTable } from '../data/useTable'
 import { eventOccurrences, routinesOn } from '../lib/calendar'
 import { to12h } from '../lib/format'
-import type { CalEvent, NightOption } from '../types'
+import type { CalEvent, NightOption, Routine } from '../types'
 import { EventForm } from './EventForm'
 import { Sheet } from './Sheet'
 
@@ -19,11 +19,47 @@ export function DaySheet({ date, onClose, data, events }: { date: string; onClos
   const routines = routinesOn(date, data.routines, data.anchor)
   const todays = events.events.filter((e) => eventOccurrences(e, date, date).length > 0)
   const nightsIn = nights.rows.filter((n) => n.slot_date === date)
+  const periodRoutines = data.routines.filter((r) => r.cadence !== 'daily' && r.weekday == null)
+
+  const routineRow = (r: Routine) => {
+    const mine = data.logs.find((l) => l.routine_id === r.id && l.date === date && l.done && (r.shared || l.member_id === data.me.id))
+    const canTick = date === today && !readOnly && !r.time_rule
+    return (
+      <li key={r.id} className="list-row">
+        <span className="mdot" style={{ background: `var(--${r.bucket})` }} />
+        {canTick ? (
+          <label className="grow">
+            <input
+              type="checkbox"
+              className="tick"
+              checked={Boolean(data.myLogToday(r)?.done)}
+              onChange={() => void (data.myLogToday(r)?.done ? data.untick(r) : data.tick(r))}
+            />{' '}
+            <span>{r.name}</span>
+          </label>
+        ) : (
+          <>
+            <span className="grow">{r.name}</span>
+            {date === today && r.time_rule && !readOnly ? (
+              <span className="muted small">Log the time on Today</span>
+            ) : mine ? (
+              <span><span aria-hidden>✓</span><span className="sr-only">Done</span></span>
+            ) : null}
+          </>
+        )}
+      </li>
+    )
+  }
+
   const title = mode === 'view' ? 'Day details' : mode === 'add' ? 'Add event' : 'Edit event'
 
   async function save(v: EventValues) {
     if (mode === 'add') await events.add(v)
-    else if (mode !== 'view') await events.edit(mode.id, v)
+    else if (mode !== 'view') {
+      // If the event was deleted elsewhere while this form was open, keep the edit by saving it as a new event.
+      if (events.events.some((e) => e.id === mode.id)) await events.edit(mode.id, v)
+      else await events.add(v)
+    }
     setMode('view')
   }
 
@@ -46,33 +82,14 @@ export function DaySheet({ date, onClose, data, events }: { date: string; onClos
           {routines.length === 0 ? (
             <p className="muted small">No routines are pinned to this day.</p>
           ) : (
-            <ul className="list">
-              {routines.map((r) => {
-                const mine = data.logs.find((l) => l.routine_id === r.id && l.date === date && l.done && (r.shared || l.member_id === data.me.id))
-                const canTick = date === today && !readOnly && !r.time_rule
-                return (
-                  <li key={r.id} className="list-row">
-                    <span className="mdot" style={{ background: `var(--${r.bucket})` }} />
-                    {canTick ? (
-                      <label className="grow">
-                        <input
-                          type="checkbox"
-                          className="tick"
-                          checked={Boolean(data.myLogToday(r)?.done)}
-                          onChange={() => void (data.myLogToday(r)?.done ? data.untick(r) : data.tick(r))}
-                        />{' '}
-                        <span>{r.name}</span>
-                      </label>
-                    ) : (
-                      <>
-                        <span className="grow">{r.name}</span>
-                        {date === today && r.time_rule && !readOnly ? <span className="muted small">Log the time on Today</span> : mine ? <span aria-label="Done">✓</span> : null}
-                      </>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+            <ul className="list">{routines.map(routineRow)}</ul>
+          )}
+
+          {periodRoutines.length > 0 && (
+            <>
+              <div className="subheader">This period</div>
+              <ul className="list">{periodRoutines.map(routineRow)}</ul>
+            </>
           )}
 
           <div className="subheader">Events</div>

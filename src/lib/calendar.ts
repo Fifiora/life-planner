@@ -80,13 +80,14 @@ export function routinesOn(date: string, routines: Routine[], anchor: string): R
   })
 }
 
-export type Marker = Bucket | 'other'
+export type Marker = Bucket | 'other' | 'night'
 
 /** Distinct colour dots for a day: routines due plus events. */
-export function dayMarkers(date: string, input: { routines: Routine[]; events: CalEvent[]; anchor: string }): Marker[] {
+export function dayMarkers(date: string, input: { routines: Routine[]; events: CalEvent[]; anchor: string; nights?: string[] }): Marker[] {
   const set = new Set<Marker>()
   for (const r of routinesOn(date, input.routines, input.anchor)) set.add(r.bucket)
   for (const e of input.events) if (eventOccurrences(e, date, date).length > 0) set.add(e.category)
+  if (input.nights?.includes(date)) set.add('night')
   return [...set]
 }
 

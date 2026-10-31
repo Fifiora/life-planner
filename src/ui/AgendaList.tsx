@@ -28,7 +28,7 @@ export function AgendaList({
     }))
     .filter((d) => d.events.length > 0 || d.routines.length > 0)
 
-  if (rows.length === 0) return <p className="muted small">{`Nothing coming up in the next ${days} days.`}</p>
+  if (rows.length === 0) return <p className="muted small">{`Nothing coming up in the next ${days} days. Add an event from any day.`}</p>
   return (
     <ul className="agenda">
       {rows.map((d) => (

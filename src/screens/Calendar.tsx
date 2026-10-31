@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useEvents } from '../data/useEvents'
+import { useTable } from '../data/useTable'
 import { useRoutineData } from '../data/useRoutineData'
-import { dayCompletion, dayMarkers, isDate } from '../lib/calendar'
+import { dayCompletion, dayMarkers, eventOccurrences, isDate } from '../lib/calendar'
 import { todayCT } from '../lib/dates'
 import { monthLabel, shiftMonthKey } from '../lib/format'
 import { AgendaList } from '../ui/AgendaList'
 import { DaySheet } from '../ui/DaySheet'
 import { MonthGrid } from '../ui/MonthGrid'
 import { PageHead } from '../ui/PageHead'
+import type { NightOption } from '../types'
 
 // The 6-week grid of the last month reaches into the next year, so the range ends one year before 9999.
 const MIN_YEAR = 1000
@@ -19,6 +21,7 @@ const MONTH_NAMES = Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(2000,
 export default function Calendar({ initialDate }: { initialDate?: string }) {
   const data = useRoutineData()
   const events = useEvents()
+  const nights = useTable<NightOption>('night_options')
   const [params] = useSearchParams()
   const linked = params.get('date')
   const linkedDate = isDate(linked) ? linked : null
@@ -34,7 +37,8 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
 
   // Daily routines would put the same dots on every day, so dots show events and weekday-specific routines only.
   const dotRoutines = data.routines.filter((r) => r.cadence !== 'daily')
-  const markersFor = (date: string) => dayMarkers(date, { routines: dotRoutines, events: events.events, anchor: data.anchor })
+  const markersFor = (date: string) => dayMarkers(date, { routines: dotRoutines, events: events.events, anchor: data.anchor, nights: nights.rows.map((n) => n.slot_date) })
+  const eventCountFor = (date: string) => events.events.filter((e) => eventOccurrences(e, date, date).length > 0).length
   const completionFor = (date: string) => dayCompletion(date, data.routines, data.logs, data.me.id, data.anchor)
 
   return (
@@ -44,7 +48,7 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
       <section className="card">
         <div className="cal-head">
           <button type="button" className="icon-btn" aria-label="Previous month" disabled={month <= `${MIN_YEAR}-01`} onClick={() => goTo(shiftMonthKey(month, -1))}>‹</button>
-          <h2>{monthLabel(month)}</h2>
+          <h2 aria-live="polite">{monthLabel(month)}</h2>
           <button type="button" className="icon-btn" aria-label="Next month" disabled={month >= `${MAX_YEAR}-12`} onClick={() => goTo(shiftMonthKey(month, 1))}>›</button>
         </div>
 
@@ -72,7 +76,7 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
         </div>
 
         {view === 'month' ? (
-          <MonthGrid month={month} today={today} selected={selected} markersFor={markersFor} completionFor={completionFor} onSelect={setSelected} />
+          <MonthGrid month={month} today={today} selected={selected} markersFor={markersFor} completionFor={completionFor} eventCountFor={eventCountFor} onSelect={setSelected} />
         ) : (
           <>
             <AgendaList from={today} days={agendaDays} events={events.events} routines={data.routines} anchor={data.anchor} onSelect={setSelected} />
