@@ -31,6 +31,7 @@ describe('EventForm', () => {
     const onSave = vi.fn()
     render(<EventForm defaultDate="2026-11-03" members={members} onSave={onSave} />)
     await userEvent.type(screen.getByLabelText('Title'), 'Gym')
+    await userEvent.selectOptions(screen.getByLabelText('Repeat'), 'weekly')
     fireEvent.change(screen.getByLabelText('Repeat until'), { target: { value: '2026-11-01' } })
     await userEvent.click(screen.getByRole('button', { name: 'Save event' }))
     expect(screen.getByRole('alert')).toHaveTextContent('"Repeat until" must be on or after the date.')
