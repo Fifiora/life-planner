@@ -231,12 +231,12 @@ describe('SyncEngine: receiving and merging', () => {
 
   it('keeps pulling when a call returns a full page of 1000', async () => {
     const { backend, a, b } = await pair()
-    a.local.tables = { logs: Array.from({ length: 1500 }, (_, i) => row(`l${i}`)) }
+    a.local.tables = { routine_logs: Array.from({ length: 1500 }, (_, i) => row(`l${i}`)) }
     a.engine.markAllDirty()
     await a.engine.syncNow()
     const result = await b.engine.syncNow()
     expect(result.pulled).toBe(1500)
-    expect(b.local.rows('logs')).toHaveLength(1500)
+    expect(b.local.rows('routine_logs')).toHaveLength(1500)
     expect(backend.pulls.filter((p) => p === 0).length).toBeGreaterThanOrEqual(1)
     expect(backend.pulls.length).toBeGreaterThanOrEqual(3) // two for B, one for A's first sync
   })
