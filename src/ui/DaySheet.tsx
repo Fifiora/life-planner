@@ -66,6 +66,8 @@ export function DaySheet({ date, onClose, data, events }: { date: string; onClos
   return (
     <Sheet open onClose={onClose} title={title}>
       {mode !== 'view' ? (
+        <>
+        <button type="button" className="back-btn" onClick={() => setMode('view')}>← Back</button>
         <EventForm
           key={mode === 'add' ? 'new' : mode.id}
           initial={mode === 'add' ? undefined : mode}
@@ -74,8 +76,10 @@ export function DaySheet({ date, onClose, data, events }: { date: string; onClos
           onSave={save}
           onDelete={mode === 'add' ? undefined : async () => { await events.remove(mode.id); setMode('view') }}
         />
+        </>
       ) : (
         <>
+          <button type="button" className="back-btn" onClick={onClose}>← Back to calendar</button>
           <h3>{longDate(date)}</h3>
 
           <div className="subheader">Routines</div>
