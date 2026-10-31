@@ -17,22 +17,35 @@ function memoryStore(): ReceiptStore {
   }
 }
 
+let opened: Promise<IDBDatabase> | null = null
+
 function open(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  opened ??= new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1)
     req.onupgradeneeded = () => req.result.createObjectStore(STORE)
     req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
+    req.onerror = () => reject(req.error ?? new Error('The photo storage could not be opened.'))
+  }).catch((err) => {
+    opened = null
+    throw err
   })
+  return opened
 }
 
+/** Resolves only once the transaction has really been saved (a full phone aborts it after the request "succeeds"). */
 function run<T>(mode: IDBTransactionMode, work: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   return open().then(
     (db) =>
       new Promise<T>((resolve, reject) => {
-        const req = work(db.transaction(STORE, mode).objectStore(STORE))
-        req.onsuccess = () => resolve(req.result)
-        req.onerror = () => reject(req.error)
+        const tx = db.transaction(STORE, mode)
+        let result: T
+        const req = work(tx.objectStore(STORE))
+        req.onsuccess = () => {
+          result = req.result
+        }
+        tx.oncomplete = () => resolve(result)
+        tx.onabort = () => reject(tx.error ?? new Error('The photo could not be saved (is the phone full?).'))
+        tx.onerror = () => reject(tx.error ?? new Error('The photo could not be saved.'))
       }),
   )
 }

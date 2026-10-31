@@ -40,7 +40,7 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
 
   // Daily routines would put the same dots on every day, so dots show events and weekday-specific routines only.
   const dotRoutines = data.routines.filter((r) => r.cadence !== 'daily')
-  const markersFor = (date: string) => dayMarkers(date, { routines: dotRoutines, events: events.events, anchor: data.anchor, nights: nights.rows.map((n) => n.slot_date) })
+  const markersFor = (date: string) => dayMarkers(date, { routines: dotRoutines, events: events.events, anchor: data.anchor, nights: nights.rows.map((n) => n.slot_date), logs: data.logs, memberId: data.me.id })
   const eventCountFor = (date: string) => events.events.filter((e) => eventOccurrences(e, date, date).length > 0).length
   const completionFor = (date: string) => dayCompletion(date, data.routines, data.logs, data.me.id, data.anchor)
 
@@ -98,7 +98,7 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
           <MonthGrid month={month} today={today} selected={selected} markersFor={markersFor} completionFor={completionFor} eventCountFor={eventCountFor} onSelect={setSelected} />
         ) : (
           <>
-            <AgendaList from={today} days={agendaDays} events={events.events} routines={data.routines} anchor={data.anchor} onSelect={setSelected} />
+            <AgendaList from={today} days={agendaDays} events={events.events} routines={data.routines} anchor={data.anchor} logs={data.logs} memberId={data.me.id} onSelect={setSelected} />
             <div className="actions">
               <button type="button" className="btn" onClick={() => setAgendaDays((n) => n + 14)}>Show more</button>
             </div>

@@ -1,9 +1,13 @@
 import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
-/** Bottom sheet used for add/edit forms. */
+/**
+ * Bottom sheet used for add/edit forms. It is drawn on the page itself (not inside the card that opened it), so
+ * frosted-glass cards cannot trap it and it always covers the whole screen.
+ */
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   if (!open) return null
-  return (
+  return createPortal(
     <div className="backdrop" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={title} className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-head">
@@ -12,6 +16,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

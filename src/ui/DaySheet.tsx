@@ -16,7 +16,7 @@ export function DaySheet({ date, onClose, data, events }: { date: string; onClos
   const [mode, setMode] = useState<'view' | 'add' | CalEvent>('view')
   const { readOnly, today } = data
 
-  const routines = routinesOn(date, data.routines, data.anchor)
+  const routines = routinesOn(date, data.routines, data.anchor, { logs: data.logs, memberId: data.me.id })
   const todays = events.events.filter((e) => eventOccurrences(e, date, date).length > 0)
   const nightsIn = nights.rows.filter((n) => n.slot_date === date)
   const periodRoutines = data.routines.filter((r) => r.cadence !== 'daily' && r.weekday == null)

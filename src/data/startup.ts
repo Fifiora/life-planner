@@ -1,6 +1,6 @@
 import { isPreloadFile, type PreloadFile } from '../lib/preload'
 import { decodeSnapshot } from '../lib/snapshot'
-import { hasOwnData, hasPlanData, loadSnapshot } from './tableStore'
+import { hasPlanData, loadSnapshot } from './tableStore'
 
 export interface BootResult {
   mode: 'own' | 'view' | 'locked'
@@ -54,7 +54,7 @@ export async function startup(hash: string): Promise<BootResult> {
   }
 
   const remembered = localStorage.getItem(SNAPSHOT_KEY)
-  if (remembered && !hasOwnData()) {
+  if (remembered && !hasPlanData()) {
     try {
       const snap = await decodeSnapshot(remembered)
       loadSnapshot(snap.tables)

@@ -140,26 +140,42 @@ export async function insertIfEmpty(table: string, rows: Record<string, unknown>
 /** What identifies "the same thing" when merging a plan in, besides its id: a name (or a key for settings). */
 const SAME_THING: Record<string, string> = { routines: 'name', bills: 'name', income: 'name', places: 'name', settings: 'key' }
 const norm = (v: unknown) => String(v ?? '').trim().toLowerCase()
+/** A monthly bill and a one-time payoff may share a name, so bills are also told apart by kind and month. */
+const sameKey = (table: string, r: Row): string | null => {
+  const field = SAME_THING[table]
+  if (!field) return null
+  return table === 'bills' ? `${norm(r.name)}|${norm(r.kind)}|${norm(r.due_month)}` : norm(r[field])
+}
 
 /**
  * Adds rows from a plan that this phone does not have yet, never changing or removing anything it has.
  * A row counts as already here if its id matches, or it has the same name (key, for settings).
- * Names entered on this phone are kept. Returns how many rows were added per table.
+ * Names entered on this phone are kept; plan rows that point at a person this phone does not have are made
+ * shared by both. Returns how many rows were added per table.
  */
 export async function mergeMissing(tables: Record<string, Row[]>): Promise<Record<string, number>> {
   if (snapshot) throw new Error(VIEW_ONLY_ERROR)
   const next: Record<string, Row[]> = {}
   const added: Record<string, number> = {}
+  const haveMembers = entry('members').state.rows
+  const people = new Set((haveMembers.length > 0 ? haveMembers : (Array.isArray(tables.members) ? tables.members : [])).map((m) => m.id))
+  const fixPeople = (table: string, r: Row): Row => {
+    if (table === 'routines' && r.applies_to !== 'both' && !people.has(String(r.applies_to))) return { ...r, applies_to: 'both' }
+    if (table === 'turns' && r.current_member_id && !people.has(String(r.current_member_id))) return { ...r, current_member_id: null }
+    return r
+  }
   for (const [table, rows] of Object.entries(tables)) {
     if (!(TABLES as readonly string[]).includes(table) || !Array.isArray(rows)) continue
     const have = entry(table).state.rows
     if (table === 'members' && have.length > 0) continue
-    const field = SAME_THING[table]
     const ids = new Set(have.map((r) => r.id))
-    const names = new Set(field ? have.map((r) => norm(r[field])) : [])
-    const fresh = rows.filter((r) => !ids.has(r.id) && !(field && names.has(norm(r[field]))))
+    const keys = new Set(have.map((r) => sameKey(table, r)).filter((k): k is string => k !== null))
+    const fresh = rows.filter((r) => {
+      const key = sameKey(table, r)
+      return !ids.has(r.id) && !(key !== null && keys.has(key))
+    })
     if (fresh.length > 0) {
-      next[table] = [...have, ...fresh]
+      next[table] = [...have, ...fresh.map((r) => fixPeople(table, r))]
       added[table] = fresh.length
     }
   }

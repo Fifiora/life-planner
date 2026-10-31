@@ -9,7 +9,7 @@ export function Plan({ f }: { f: FinanceData }) {
   const insights = buildInsights({ rows, categories, payoff: payoffProgress(f.bills.rows, todayCT(), f.deadline), target: f.target })
   return (
     <>
-      <section className="card">
+      <section className="card wide">
         <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Next 8 months</h2></div></div>
         <p className="muted small">What you can put aside each month after bills and scheduled payoffs, against your savings target. Figures are before any extra spending you log. Change a payoff's due month under Bills to see it move.</p>
         <ForecastTable rows={rows} target={f.target} />

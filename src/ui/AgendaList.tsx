@@ -1,7 +1,7 @@
 import { eventOccurrences, routinesOn } from '../lib/calendar'
 import { addDays } from '../lib/dates'
 import { dueLabel, to12h } from '../lib/format'
-import type { CalEvent, Routine } from '../types'
+import type { CalEvent, Routine, RoutineLog } from '../types'
 
 /** The next `days` days that have something on them: events plus weekday-specific routines. */
 export function AgendaList({
@@ -10,6 +10,8 @@ export function AgendaList({
   events,
   routines,
   anchor,
+  logs,
+  memberId,
   onSelect,
 }: {
   from: string
@@ -17,6 +19,8 @@ export function AgendaList({
   events: CalEvent[]
   routines: Routine[]
   anchor: string
+  logs?: RoutineLog[]
+  memberId?: string
   onSelect: (date: string) => void
 }) {
   const special = routines.filter((r) => r.cadence !== 'daily')
@@ -24,7 +28,7 @@ export function AgendaList({
     .map((date) => ({
       date,
       events: events.filter((e) => eventOccurrences(e, date, date).length > 0),
-      routines: routinesOn(date, special, anchor),
+      routines: routinesOn(date, special, anchor, logs && memberId ? { logs, memberId } : undefined),
     }))
     .filter((d) => d.events.length > 0 || d.routines.length > 0)
 

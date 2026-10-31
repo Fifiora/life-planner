@@ -39,7 +39,7 @@ export function Budget({ f }: { f: FinanceData }) {
         <div className="tile bad"><span className="tile-label">Over budget</span><strong>{counts.over}</strong></div>
       </div>
 
-      <section className="card">
+      <section className="card wide">
         <div className="card-head">
           <div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Budget vs actual</h2></div>
           <span className="muted small">{readOnly ? '' : 'Budgets editable here'}</span>

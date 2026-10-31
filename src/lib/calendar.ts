@@ -1,4 +1,5 @@
 import type { Bucket, CalEvent, Repeat, Routine, RoutineLog } from '../types'
+import { periodKey } from './cadence'
 import { addDays, daysBetween, DEFAULT_ANCHOR, weekStart } from './dates'
 
 /** True for a real calendar date written YYYY-MM-DD. */
@@ -67,7 +68,7 @@ export function eventOccurrences(event: CalEvent, from: string, to: string): str
 }
 
 /** Routines that belong on this specific day. Monthly/quarterly ones without a weekday belong to the period, not a day. */
-export function routinesOn(date: string, routines: Routine[], anchor: string): Routine[] {
+export function routinesOn(date: string, routines: Routine[], anchor: string, opts?: { logs: RoutineLog[]; memberId: string }): Routine[] {
   const start = isDate(anchor) ? anchor : DEFAULT_ANCHOR
   const weekIndex = Math.floor(daysBetween(weekStart(start), weekStart(date)) / 7)
   const evenWeek = ((weekIndex % 2) + 2) % 2 === 0
@@ -75,6 +76,12 @@ export function routinesOn(date: string, routines: Routine[], anchor: string): R
     if (r.cadence === 'daily') return true
     if (r.weekday == null || r.weekday !== dow(date)) return false
     if (r.cadence === 'biweekly') return evenWeek
+    if (opts && (r.cadence === 'monthly' || r.cadence === 'quarterly')) {
+      // "A Tuesday in the month": once it was done this month/quarter it stops showing on the later Tuesdays.
+      const key = periodKey(r.cadence, date, start)
+      const doneBefore = opts.logs.some((l) => l.routine_id === r.id && l.done && l.date < date && (r.shared || l.member_id === opts.memberId) && periodKey(r.cadence, l.date, start) === key)
+      if (doneBefore) return false
+    }
     return true // weekly, or "a <weekday> in the month / quarter": shown on each such weekday
   })
 }
@@ -82,9 +89,10 @@ export function routinesOn(date: string, routines: Routine[], anchor: string): R
 export type Marker = Bucket | 'other' | 'night'
 
 /** Distinct colour dots for a day: routines due plus events. */
-export function dayMarkers(date: string, input: { routines: Routine[]; events: CalEvent[]; anchor: string; nights?: string[] }): Marker[] {
+export function dayMarkers(date: string, input: { routines: Routine[]; events: CalEvent[]; anchor: string; nights?: string[]; logs?: RoutineLog[]; memberId?: string }): Marker[] {
   const set = new Set<Marker>()
-  for (const r of routinesOn(date, input.routines, input.anchor)) set.add(r.bucket)
+  const opts = input.logs && input.memberId ? { logs: input.logs, memberId: input.memberId } : undefined
+  for (const r of routinesOn(date, input.routines, input.anchor, opts)) set.add(r.bucket)
   for (const e of input.events) if (eventOccurrences(e, date, date).length > 0) set.add(e.category)
   if (input.nights?.includes(date)) set.add('night')
   return [...set]
@@ -92,7 +100,7 @@ export function dayMarkers(date: string, input: { routines: Routine[]; events: C
 
 /** How much of a day's routines got ticked, by one person (shared routines count either partner). */
 export function dayCompletion(date: string, routines: Routine[], logs: RoutineLog[], memberId: string, anchor: string): { done: number; total: number } {
-  const due = routinesOn(date, routines, anchor)
+  const due = routinesOn(date, routines, anchor, { logs, memberId })
   const done = due.filter((r) => logs.some((l) => l.routine_id === r.id && l.date === date && l.done && (r.shared || l.member_id === memberId))).length
   return { done, total: due.length }
 }

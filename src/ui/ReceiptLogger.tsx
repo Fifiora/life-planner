@@ -109,7 +109,7 @@ export function ReceiptLogger({ store = receiptStore, compress = compressImage }
             </div>
           </div>
           <label className="label" htmlFor="rc-photo">Snap receipt</label>
-          <input id="rc-photo" className="input" type="file" accept="image/*" capture="environment" onChange={(e) => { setPhoto(e.target.files?.[0] ?? null); e.target.value = '' }} />
+          <input id="rc-photo" className="input" type="file" accept="image/*" onChange={(e) => { setPhoto(e.target.files?.[0] ?? null); e.target.value = '' }} />
           {photo && (
             <p className="muted small">
               Photo attached ✓ {photo.name} <button type="button" className="plain-btn" onClick={() => setPhoto(null)}>Remove photo</button>

@@ -14,10 +14,10 @@
   --edge: rgba(255, 255, 255, 0.75);
   --gloss: rgba(255, 255, 255, 0.78);
   --brand: #4f5bd5;
-  --brand-2: #14b8a6;
+  --brand-2: #0f766e;
   --brand-ink: #ffffff;
   --danger: #dc3a4b;
-  --ok: #12a06a;
+  --ok: #0b7f53;
   --health: #12a06a;
   --study: #8b5cf6;
   --travel: #0ea5e9;
@@ -460,8 +460,8 @@ html[data-theme="dark"] { color-scheme: dark; }
   .side-brand { display: block; padding: 0.4rem 0.9rem 1.2rem; font-size: 1.15rem; font-weight: 750; letter-spacing: -0.01em; }
   .tab { flex: none; flex-direction: row; justify-content: flex-start; gap: 0.75rem; padding: 0.55rem 0.9rem; font-size: 0.95rem; border-radius: 0.9rem; }
   .tab-icon { font-size: 1.25rem; }
-  .app { max-width: none; margin: 0 0 0 14.5rem; padding: 1.5rem clamp(1.5rem, 3vw, 3rem) 2.5rem; }
-  .app > * { max-width: 82rem; margin-inline: auto; }
+  body:has(.tabbar) .app { max-width: none; margin: 0 0 0 14.5rem; padding: 1.5rem clamp(1.5rem, 3vw, 3rem) 2.5rem; }
+  body:has(.tabbar) .app > * { max-width: 82rem; margin-inline: auto; }
   .stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); gap: 1rem; align-items: start; }
   .stack > * + * { margin-top: 0; }
   .stack > .page-head, .stack > .tabs, .stack > .weekstrip, .stack > .kpi-row, .stack > .tiles,
@@ -475,8 +475,9 @@ html[data-theme="dark"] { color-scheme: dark; }
   .fab { bottom: 1.5rem; right: 1.5rem; }
   .backdrop { align-items: center; }
   .sheet { max-width: 36rem; border-radius: 1.5rem; padding-bottom: 1.2rem; }
-  .login, .app.login { margin-left: auto; margin-right: auto; max-width: 34rem; }
 }
 @media (min-width: 90rem) {
   .stack { grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr)); }
 }
+
+.streak-chip { color: color-mix(in srgb, var(--food) 62%, var(--ink)); }

@@ -152,7 +152,7 @@ export function Transactions({ f, month }: { f: FinanceData; month: string }) {
         )}
       </section>
 
-      <section className="card">
+      <section className="card wide">
         <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Transactions</h2></div><span className="muted small">{shown.length} shown · in {money(totalIn)} · out {money(-totalOut)}</span></div>
         <div className="filter-row">
           <input className="input" aria-label="Search transactions" placeholder="Search…" value={filter.search} onChange={(e) => setFilter({ ...filter, search: e.target.value })} />
