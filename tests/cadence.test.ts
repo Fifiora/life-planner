@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { periodKey, periodProgress, streak, meetsTimeRule, scopedLogs } from '../src/lib/cadence'
+import { periodKey, periodProgress, streak, meetsTimeRule, scopedLogs, nextDue } from '../src/lib/cadence'
 import type { Routine, RoutineLog } from '../src/types'
 
 const ANCHOR = '2026-01-05'
@@ -116,5 +116,42 @@ describe('scopedLogs', () => {
   })
   it('treats a routine with no shared flag as personal', () => {
     expect(scopedLogs(routine(), logs, 'm2').map((l) => l.member_id)).toEqual(['m2'])
+  })
+})
+
+describe('nextDue', () => {
+  const A = '2026-11-02' // a Monday
+  const today = '2026-11-04' // Wednesday
+
+  it('is today for a daily routine not yet done, tomorrow once done', () => {
+    const r = routine()
+    expect(nextDue(r, [], today, A)).toBe('2026-11-04')
+    expect(nextDue(r, [log('2026-11-04')], today, A)).toBe('2026-11-05')
+  })
+  it('finds the next matching weekday for a weekly routine', () => {
+    const tue = routine({ cadence: 'weekly', weekday: 2 })
+    expect(nextDue(tue, [], '2026-11-02', A)).toBe('2026-11-03') // Monday -> this Tuesday
+    expect(nextDue(tue, [], today, A)).toBe('2026-11-10') // Tuesday already passed
+    expect(nextDue(tue, [log('2026-11-03')], today, A)).toBe('2026-11-10') // done this week
+  })
+  it('treats Sunday as the last day of the week', () => {
+    const sun = routine({ cadence: 'weekly', weekday: 0 })
+    expect(nextDue(sun, [], today, A)).toBe('2026-11-08')
+    expect(nextDue(sun, [log('2026-11-01')], '2026-11-01', A)).toBe('2026-11-08')
+  })
+  it('is the start of next week for a weekly routine with no weekday, once done', () => {
+    expect(nextDue(routine({ cadence: 'weekly' }), [log('2026-11-03')], today, A)).toBe('2026-11-09')
+  })
+  it('is the first of next month for a monthly routine, once done', () => {
+    const m = routine({ cadence: 'monthly' })
+    expect(nextDue(m, [], today, A)).toBe('2026-11-04')
+    expect(nextDue(m, [log('2026-11-03')], today, A)).toBe('2026-12-01')
+  })
+  it('is two weeks on for a biweekly routine, counted from the start date', () => {
+    const b = routine({ cadence: 'biweekly' })
+    expect(nextDue(b, [log('2026-11-03')], today, A)).toBe('2026-11-16')
+  })
+  it('is the first of the next quarter, once done', () => {
+    expect(nextDue(routine({ cadence: 'quarterly' }), [log('2026-11-03')], today, A)).toBe('2027-01-01')
   })
 })
