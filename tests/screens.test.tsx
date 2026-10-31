@@ -294,3 +294,14 @@ describe('Settings lock timing', () => {
     expect(localStorage.getItem('lp.lockAfter')).toBe('5')
   })
 })
+
+describe('Settings appearance', () => {
+  it('lets you choose light, dark or the phone setting', async () => {
+    renderScreen(<Settings />)
+    const select = await screen.findByLabelText('Appearance')
+    expect(within(select).getAllByRole('option').map((o) => o.textContent)).toEqual(['Match my phone', 'Light', 'Dark'])
+    await userEvent.selectOptions(select, 'dark')
+    expect(localStorage.getItem('lp.theme')).toBe('dark')
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+  })
+})
