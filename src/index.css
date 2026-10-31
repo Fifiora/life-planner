@@ -524,8 +524,13 @@ html[data-theme="dark"] { color-scheme: dark; }
 .ring-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .theme-btn { font-size: 1.15rem; }
 .side-theme { display: none; }
+.pip { flex: none; margin-left: auto; filter: drop-shadow(0 3px 6px rgba(40, 20, 80, 0.25)); }
+.pip-hyped { animation: pip-bob 1.1s ease-in-out infinite; }
+@keyframes pip-bob { 50% { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .pip-hyped { animation: none; } }
 @media (min-width: 48rem) {
   .side-theme { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.2rem; margin-top: auto; padding: 0.25rem; border-radius: 0.9rem; background: color-mix(in srgb, var(--card-solid) 45%, transparent); border: 1px solid var(--line); }
+  .side-style { grid-template-columns: repeat(2, 1fr); margin-top: 0.4rem; }
   .side-theme-btn { min-height: 36px; border: 0; border-radius: 0.7rem; background: transparent; color: var(--muted); font: inherit; font-size: 0.72rem; font-weight: 650; cursor: pointer; }
   .side-theme-btn[aria-pressed="true"] { background: var(--card-solid); color: var(--ink); box-shadow: 0 2px 8px rgba(30, 40, 100, 0.12); }
   .hero-top .prog-pct { font-size: 1.5rem; }

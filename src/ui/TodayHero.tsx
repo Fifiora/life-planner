@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom'
 import type { Daypart } from '../lib/daypart'
+import { heroLine } from '../lib/voice'
+import { pipMood } from '../lib/pip'
+import { Pip } from './Pip'
 import { Ring } from './Ring'
+import { useStyleChoice } from './StyleSwitch'
 
 export interface HeroRing {
   key: string
@@ -12,15 +16,9 @@ export interface HeroRing {
   to: string
 }
 
-function encouragement(done: number, total: number): string {
-  if (total === 0) return 'Nothing is scheduled today.'
-  if (done >= total) return 'All done today. Nice work!'
-  if (done > 0) return 'Keep going, you are on a roll.'
-  return 'A fresh day. Start with one thing.'
-}
-
 /** The top card of Today: how today is going, the five areas, and a tint for the time of day. */
 export function TodayHero({ rings, done, total, streak, part, host }: { rings: HeroRing[]; done: number; total: number; streak: number; part: Daypart; host?: string }) {
+  const style = useStyleChoice()
   return (
     <section className={`card hero hero-${part}`} aria-label="Progress">
       <div className="hero-top">
@@ -32,8 +30,9 @@ export function TodayHero({ rings, done, total, streak, part, host }: { rings: H
               {streak >= 2 && <span className="streak-chip">{`🔥 ${streak}-day streak`}</span>}
             </p>
           )}
-          <p className="muted">{encouragement(done, total)}</p>
+          <p className="muted">{heroLine(style, done, total)}</p>
         </div>
+        {style === 'anime' && <Pip mood={pipMood({ done, total, streak, part })} />}
       </div>
       <div className="rings">
         {rings.map((r) => (

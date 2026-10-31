@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { StyleSwitch } from './StyleSwitch'
 import { ThemeSwitch } from './ThemeToggle'
 
 const TABS = [
@@ -22,6 +23,7 @@ export function TabBar() {
         </NavLink>
       ))}
       <ThemeSwitch />
+      <StyleSwitch />
     </nav>
   )
 }

@@ -19,6 +19,8 @@ import { SharedCopyNotice } from '../ui/SharedCopyNotice'
 import { SyncCard } from '../ui/SyncCard'
 import { StarterPlanLoader } from '../ui/StarterPlanLoader'
 import { useThemeChoice } from '../ui/ThemeToggle'
+import { useStyleChoice } from '../ui/StyleSwitch'
+import { setStyleChoice, type StyleChoice } from '../lib/style'
 import { useToast } from '../ui/Toast'
 
 
@@ -44,6 +46,7 @@ export default function Settings() {
     }
   })
   const theme = useThemeChoice()
+  const style = useStyleChoice()
   const [lockAfter, setLockAfter] = useState(() => localStorage.getItem('lp.lockAfter') ?? '1')
   const [pin1, setPin1] = useState('')
   const [pin2, setPin2] = useState('')
@@ -209,6 +212,11 @@ export default function Settings() {
           <option value="system">Match my phone</option>
           <option value="light">Light</option>
           <option value="dark">Dark</option>
+        </select>
+        <label className="label" htmlFor="style-choice">Style</label>
+        <select id="style-choice" className="input" value={style} onChange={(e) => setStyleChoice(e.target.value as StyleChoice)}>
+          <option value="anime">Anime</option>
+          <option value="classic">Classic</option>
         </select>
       </section>
 
