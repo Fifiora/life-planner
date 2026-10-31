@@ -20,6 +20,7 @@ import { SyncCard } from '../ui/SyncCard'
 import { StarterPlanLoader } from '../ui/StarterPlanLoader'
 import { useThemeChoice } from '../ui/ThemeToggle'
 import { useStyleChoice } from '../ui/StyleSwitch'
+import { Trophies } from '../ui/Trophies'
 import { setStyleChoice, type StyleChoice } from '../lib/style'
 import { useToast } from '../ui/Toast'
 
@@ -204,6 +205,8 @@ export default function Settings() {
         <p className="muted small">Our routines, monthly bills, one-time payoffs and targets come with the site, locked with the passphrase. Load them any time: only what is missing is added, and nothing you changed is touched.</p>
         <StarterPlanLoader />
       </section>
+
+      <Trophies />
 
       <section className="card">
         <h2>Appearance</h2>

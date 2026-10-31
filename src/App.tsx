@@ -10,6 +10,7 @@ import Settings from './screens/Settings'
 import Study from './screens/Study'
 import Today from './screens/Today'
 import Travel from './screens/Travel'
+import { Celebrations } from './ui/Celebrations'
 import { ErrorBoundary } from './ui/ErrorBoundary'
 import { PinGate } from './ui/PinGate'
 import { TabBar } from './ui/TabBar'
@@ -47,6 +48,7 @@ function Shell({ boot }: { boot: BootResult }) {
         </Routes>
       </main>
       <TabBar />
+      <Celebrations />
     </>
   )
 }

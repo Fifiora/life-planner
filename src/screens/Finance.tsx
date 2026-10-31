@@ -24,7 +24,7 @@ export default function Finance() {
 
   return (
     <div className="stack">
-      <PageHead title="Finance" sub="Plan the month, clear the debts, hit the savings goal." />
+      <PageHead title="Finance" bucket="finance" sub="Plan the month, clear the debts, hit the savings goal." />
 
       <div role="tablist" aria-label="Finance sections" className="tabs">
         {TABS.map((t) => (

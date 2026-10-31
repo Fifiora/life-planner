@@ -84,7 +84,7 @@ export default function Study() {
 
   return (
     <div className="stack">
-      <PageHead title="Study" sub="Sunday plans and trivia for each other." />
+      <PageHead title="Study" bucket="study" sub="Sunday plans and trivia for each other." />
 
       <section className="card">
         <div className="card-head">

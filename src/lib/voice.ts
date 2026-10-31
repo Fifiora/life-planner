@@ -26,3 +26,9 @@ export function heroLine(style: StyleChoice, done: number, total: number): strin
   if (done > 0) return say(style, 'encourage.some')
   return say(style, 'encourage.fresh')
 }
+
+// Lines for the game layer. Classic never shows it, so these have no plain twin.
+export const levelUpLine = (n: number): string => `LEVEL UP! You reached level ${n}!`
+export const partyLevelLine = (n: number): string => `Party level ${n}! Together you are unstoppable.`
+export const badgeLine = (name: string): string => `Badge unlocked: ${name}`
+export const restUsedLine = 'Rest day used. The streak lives on.'
