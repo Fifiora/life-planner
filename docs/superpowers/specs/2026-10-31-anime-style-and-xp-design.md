@@ -132,4 +132,4 @@ Sound, avatar customisation, a shop or currency, losing XP or HP for missed days
 - **Game layer hidden in view-only copies** as well as in Classic.
 - **Streak bonus area.** The day's streak bonus goes to the area of the routine with the smallest id, so two phones always agree.
 - **Brand pink** in light anime is `#c2255c` (AA as text on the page background).
-- **Gaps against the first draft, kept for later:** the episode title is chosen by month only (not "by the top stat"); the recap shows spending without "versus budget"; a cheer has no `routine_id`; the voice dictionary covers the hero lines, with the newer lines (level-up, badge, boss, cheer) written straight into `voice.ts` as anime-only functions.
+- **Gaps against the first draft, decided to leave as they are:** the episode title is chosen by month only (not "by the top stat"); the recap shows spending without "versus budget"; a cheer has no `routine_id`; the voice dictionary covers the hero lines, with the newer lines (level-up, badge, boss, cheer) written straight into `voice.ts` as anime-only functions.
