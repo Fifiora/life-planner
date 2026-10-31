@@ -36,6 +36,17 @@ describe('Today up next', () => {
     expect(within(card).getByText('Dinner out')).toBeInTheDocument()
     expect(within(card).queryByText('Past thing')).toBeNull()
   })
+  it('leaves out events already ticked off', async () => {
+    const t = todayCT()
+    localStorage.setItem('lp.data.events', JSON.stringify([
+      evRow({ id: 'u1', title: 'Done already', date: t, done_on: [t] }),
+      evRow({ id: 'u2', title: 'Still to do', date: t }),
+    ]))
+    renderScreen(<Today />)
+    const card = (await screen.findByRole('heading', { name: 'Up next' })).closest('section')!
+    expect(within(card).getByText('Still to do')).toBeInTheDocument()
+    expect(within(card).queryByText('Done already')).toBeNull()
+  })
   it('stays out of the way when nothing is planned', async () => {
     renderScreen(<Today />)
     await screen.findByRole('navigation', { name: 'This week' })
