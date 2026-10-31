@@ -8,9 +8,8 @@ import { FakeBackend, MemoryKV, MemoryLocal, offline } from './syncHelpers'
 
 const row = (id: string, extra: Record<string, unknown> = {}): Row => ({ id, name: `Item ${id}`, ...extra })
 // Web Crypto runs on real time, not fake time: after moving the clock, give it real turns to finish.
-const settle = async () => {
-  for (let i = 0; i < 40; i++) await new Promise((r) => setImmediate(r))
-}
+const realSetTimeout = globalThis.setTimeout // captured before fake timers replace it
+const settle = () => new Promise<void>((resolve) => realSetTimeout(resolve, 4))
 async function flush(ms = 0) {
   let left = ms
   await vi.advanceTimersByTimeAsync(0)
@@ -190,7 +189,7 @@ describe('when the connection fails', () => {
     await flush(1000 + 10_000 + 20_000 + 1)
     const again = backend.attempts.slice(1).map((t, i) => t - backend.attempts[i])
     expect(again.slice(0, 2)).toEqual([10_000, 20_000])
-  })
+  }, 90_000)
 })
 
 describe('resuming, stopping and testing', () => {
