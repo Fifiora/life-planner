@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { readFileSync } from 'node:fs'
 import { render } from '@testing-library/react'
 import { waitFor } from '@testing-library/react'
 import { Confetti } from '../src/ui/Confetti'
-
-const css = readFileSync('src/index.css', 'utf8')
+import css from '../src/index.css?raw'
 
 /** The custom properties declared inside the first rule whose selector is exactly `selector`. */
 function tokens(selector: string): Record<string, string> {
