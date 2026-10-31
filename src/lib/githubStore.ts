@@ -81,15 +81,28 @@ const tableUrl = (cfg: StoreConfig, table: string) => `${API}/repos/${cfg.owner}
 /** Thrown when the file changed on GitHub between our read and our write. */
 export class ConflictError extends Error {}
 
-async function apiError(res: Response): Promise<Error> {
-  let detail = ''
+/** The "message" GitHub sent with an error (reads a copy, so the response can still be used). */
+async function detailOf(res: Response): Promise<string> {
   try {
-    detail = ((await res.json()) as { message?: string }).message ?? ''
+    return ((await res.clone().json()) as { message?: string }).message ?? ''
   } catch {
-    /* no JSON body */
+    return ''
   }
+}
+
+const isRateLimited = (res: Response, detail: string) =>
+  res.status === 429 ||
+  res.headers.get('x-ratelimit-remaining') === '0' ||
+  res.headers.has('retry-after') ||
+  /rate limit/i.test(detail)
+
+async function apiError(res: Response): Promise<Error> {
+  const detail = await detailOf(res)
   if (res.status === 401) return new Error("GitHub didn't accept the access token. It may have expired — reconnect with a new one.")
-  if (res.status === 403) return new Error(`GitHub refused this (${detail || 'forbidden'}). The token may be missing write access.`)
+  if (res.status === 403 || res.status === 429) {
+    if (isRateLimited(res, detail)) return new Error('GitHub says we are going too fast (rate limit). Wait a minute and try again.')
+    return new Error(`GitHub refused this (${detail || 'forbidden'}). The token may be missing write access.`)
+  }
   return new Error(`GitHub: ${detail || `error ${res.status}`}`)
 }
 
@@ -106,8 +119,20 @@ export async function readTable(
   if (res.status === 304) return 'unchanged'
   if (res.status === 404) return { rows: [], sha: null, etag: null }
   if (!res.ok) throw await apiError(res)
-  const body = (await res.json()) as { content: string; sha: string }
-  const rows = JSON.parse(decodeBase64(body.content))
+  const body = (await res.json()) as { content: string; sha: string; encoding?: string }
+  let text: string
+  if (body.encoding === 'none') {
+    // Files over 1 MB come back without content; the raw media type returns the text itself.
+    const raw = await fetchImpl(tableUrl(cfg, table), {
+      headers: { ...authHeaders(cfg), Accept: 'application/vnd.github.raw+json' },
+      cache: 'no-store',
+    })
+    if (!raw.ok) throw await apiError(raw)
+    text = await raw.text()
+  } else {
+    text = decodeBase64(body.content)
+  }
+  const rows = JSON.parse(text)
   if (!Array.isArray(rows)) throw new Error(`data/${table}.json should be a list`)
   return { rows: rows as Row[], sha: body.sha, etag: res.headers.get('etag') }
 }
@@ -121,7 +146,7 @@ async function writeTable(
 ): Promise<{ sha: string }> {
   const body: Record<string, unknown> = {
     message: `Update ${table}`,
-    content: encodeBase64(JSON.stringify(rows, null, 1)),
+    content: encodeBase64(serialize(rows)),
   }
   if (sha) body.sha = sha
   const res = await fetchImpl(tableUrl(cfg, table), {
@@ -130,10 +155,16 @@ async function writeTable(
     body: JSON.stringify(body),
     cache: 'no-store',
   })
-  if (res.status === 409 || res.status === 422) throw new ConflictError()
+  if (res.status === 409) throw new ConflictError()
+  if (res.status === 422 && /sha/i.test(await detailOf(res))) throw new ConflictError()
   if (!res.ok) throw await apiError(res)
   const data = (await res.json()) as { content: { sha: string } }
   return { sha: data.content.sha }
+}
+
+/** One row per line: compact (keeps the file small) but still readable in GitHub. */
+function serialize(rows: Row[]): string {
+  return rows.length === 0 ? '[]' : `[\n${rows.map((r) => JSON.stringify(r)).join(',\n')}\n]`
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -148,13 +179,14 @@ export async function mutate(
   change: (rows: Row[]) => Row[],
   opts: { tries?: number; delayMs?: number; fetchImpl?: Fetch } = {},
 ): Promise<{ rows: Row[]; sha: string }> {
-  const tries = opts.tries ?? 4
-  const delayMs = opts.delayMs ?? 250
+  const tries = opts.tries ?? 5
+  const delayMs = opts.delayMs ?? 400
   const fetchImpl = opts.fetchImpl ?? globalFetch
   for (let attempt = 1; ; attempt++) {
     const file = await readTable(cfg, table, null, fetchImpl)
     if (file === 'unchanged') throw new Error('Unexpected "unchanged" answer')
     const next = change(file.rows)
+    if (next === file.rows) return { rows: next, sha: file.sha ?? '' } // nothing to change
     try {
       const { sha } = await writeTable(cfg, table, next, file.sha, fetchImpl)
       return { rows: next, sha }

@@ -83,7 +83,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
           <p className="error">{members.error}</p>
           <div className="actions">
             <button type="button" className="btn" onClick={() => members.refetch()}>Try again</button>
-            <button type="button" className="btn btn-danger" onClick={() => { clearConfig(); window.location.reload() }}>Reconnect</button>
+            <button type="button" className="btn btn-danger" onClick={() => { clearConfig(); localStorage.removeItem(ME_KEY); window.location.reload() }}>Reconnect</button>
           </div>
         </div>
       </div>
@@ -94,7 +94,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
     return (
       <Onboarding
         onSave={(names) => {
-          names.forEach((display_name, i) => void members.insert({ display_name, color: COLORS[i], user_id: '' }))
+          void members.seedIfEmpty(names.map((display_name, i) => ({ display_name, color: COLORS[i], user_id: '' })))
         }}
       />
     )

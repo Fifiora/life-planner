@@ -1,6 +1,6 @@
 import { useCallback, useState, useSyncExternalStore } from 'react'
 import { useToast } from '../ui/Toast'
-import { getState, insertRow, refresh, removeRow, subscribe, updateRow } from './tableStore'
+import { getState, insertIfEmpty, insertRow, refresh, removeRow, subscribe, updateRow } from './tableStore'
 
 /**
  * Rows of one list stored in the data repo, shared by every screen that uses it.
@@ -29,6 +29,7 @@ export function useTable<T extends { id: string }>(table: string) {
   const insert = useCallback((row: Partial<T>) => run(() => insertRow(table, row as Record<string, unknown>)), [table, run])
   const update = useCallback((id: string, patch: Partial<T>) => run(() => updateRow(table, id, patch as Record<string, unknown>)), [table, run])
   const remove = useCallback((id: string) => run(() => removeRow(table, id)), [table, run])
+  const seedIfEmpty = useCallback((rows: Partial<T>[]) => run(() => insertIfEmpty(table, rows as Record<string, unknown>[])), [table, run])
   const refetch = useCallback(() => refresh(table), [table])
 
   return {
@@ -38,6 +39,7 @@ export function useTable<T extends { id: string }>(table: string) {
     insert,
     update,
     remove,
+    seedIfEmpty,
     refetch,
   }
 }

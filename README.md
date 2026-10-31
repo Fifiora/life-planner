@@ -21,7 +21,7 @@ Live site (after setup): `https://<your-github-username>.github.io/life-planner/
 3. **Turn on Pages:** this repo → Settings → Pages → Build and deployment → Source: **GitHub Actions**. Then Actions → *Test, build and deploy* → *Run workflow*.
 4. **Open the site** on each phone, enter the data repo (`owner/name`) and paste the token. Use the same token on both phones and share it privately.
 5. **First phone only:** enter both of your names, then pick who you are. On the second phone just pick who you are.
-6. **Load the starter plan:** Settings → *Import data from a file* → choose `starter-data.json` → *Replace my data*.
+6. **Load the starter plan:** get your private `starter-data.json` onto the phone (it is deliberately *not* in this repo — send it to yourself by AirDrop, email or a private chat), then Settings → *Import data from a file* → choose it → *Replace my data*.
 
 When the token expires, create a new one the same way and use *Settings → Disconnect this phone*, then reconnect. To lock a lost phone out, delete the token on GitHub.
 

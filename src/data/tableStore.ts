@@ -11,7 +11,8 @@ export interface TableState {
 interface Entry {
   state: TableState
   etag: string | null
-  version: number // bumped on every local change, so a slow older load can be discarded
+  version: number // bumped when a local change starts or finishes, so a slow older load can be discarded
+  pending: number // saves not finished yet
   listeners: Set<() => void>
   timer: ReturnType<typeof setInterval> | null
   onVisible: (() => void) | null
@@ -25,7 +26,7 @@ const entries = new Map<string, Entry>()
 function entry(table: string): Entry {
   let e = entries.get(table)
   if (!e) {
-    e = { state: EMPTY, etag: null, version: 0, listeners: new Set(), timer: null, onVisible: null, queue: Promise.resolve() }
+    e = { state: EMPTY, etag: null, version: 0, pending: 0, listeners: new Set(), timer: null, onVisible: null, queue: Promise.resolve() }
     entries.set(table, e)
   }
   return e
@@ -60,7 +61,7 @@ export async function refresh(table: string): Promise<void> {
       if (!e.state.loaded) setState(e, { loaded: true })
       return
     }
-    if (e.version !== startVersion) return
+    if (e.version !== startVersion || e.pending > 0) return // our own edits are newer than this answer
     e.etag = res.etag
     setState(e, { rows: res.rows, loaded: true, error: null })
   } catch (err) {
@@ -100,13 +101,21 @@ function enqueue<T>(e: Entry, work: () => Promise<T>): Promise<T> {
 }
 
 async function save(table: string, e: Entry, change: (rows: Row[]) => Row[]) {
-  await enqueue(e, async () => {
-    await mutate(config(), table, change)
-    e.etag = null // our own write changed the file; the next check must re-download it
-  })
+  e.pending++
+  try {
+    await enqueue(e, async () => {
+      await mutate(config(), table, change)
+      e.etag = null // our own write changed the file; the next check must re-download it
+    })
+  } finally {
+    e.pending--
+    e.version++ // any load that started before this save finished may hold older rows
+  }
 }
 
+/** After a failed save: wait for other saves to finish, then show what GitHub really has. */
 async function resync(table: string, e: Entry) {
+  await e.queue
   e.etag = null
   e.version++
   await refresh(table)
@@ -124,6 +133,24 @@ export async function insertRow(table: string, row: Record<string, unknown>): Pr
     setState(e, { rows: e.state.rows.filter((r) => r.id !== full.id) })
     throw err
   }
+}
+
+/**
+ * Adds `rows` only if the table is empty when the save happens (first-time setup when both
+ * phones might do it at once), then shows whatever GitHub ended up with.
+ */
+export async function insertIfEmpty(table: string, rows: Record<string, unknown>[]): Promise<void> {
+  const e = entry(table)
+  const full = rows.map((r) => ({ ...r, id: newId() }) as Row)
+  e.version++
+  if (e.state.rows.length === 0) setState(e, { rows: full, loaded: true })
+  try {
+    await save(table, e, (current) => (current.length > 0 ? current : full))
+  } catch (err) {
+    await resync(table, e)
+    throw err
+  }
+  await resync(table, e)
 }
 
 export async function updateRow(table: string, id: string, patch: Record<string, unknown>): Promise<void> {
