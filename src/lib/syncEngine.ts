@@ -1,5 +1,6 @@
 import type { Row } from '../types'
-import { encryptRow } from './syncCrypto'
+import { decryptRow, encryptRow } from './syncCrypto'
+import { TABLES } from './tables'
 
 /** One row as the server holds it: scrambled `payload`, or a tombstone (`deleted`) with none. */
 export interface SyncRow {
@@ -58,7 +59,8 @@ export interface SyncResult {
 type Meta = Record<string, Record<string, { u: number; d?: 1 }>>
 
 const BATCH = 200
-const KEYS = { meta: 'lp.sync.meta', cursor: 'lp.sync.cursor', dirty: 'lp.sync.dirty', clock: 'lp.sync.clock' }
+const PAGE = 1000 // the most rows the server returns in one pull
+const KEYS = { meta: 'lp.sync.meta', cursor: 'lp.sync.cursor', dirty: 'lp.sync.dirty', clock: 'lp.sync.clock', device: 'lp.sync.device' }
 
 function readJson<T>(kv: KV, key: string, fallback: T): T {
   try {
@@ -76,6 +78,8 @@ export interface SyncEngineOptions {
   transport: Transport
   kv: KV
   now?: () => number
+  /** 0-999, different on each phone, so two phones never stamp a change with the same time. Chosen once and remembered if left out. */
+  device?: number
 }
 
 /**
@@ -87,6 +91,7 @@ export class SyncEngine {
   private dirty = new Map<string, Set<string>>()
   private clock: number
   private cursor: number
+  private device: number
   private off: (() => void) | null = null
   private listeners = new Set<(s: SyncStatus) => void>()
   private current: SyncStatus
@@ -98,6 +103,9 @@ export class SyncEngine {
     for (const [table, ids] of Object.entries(readJson<Record<string, string[]>>(opts.kv, KEYS.dirty, {}))) this.dirty.set(table, new Set(ids))
     this.clock = Number(opts.kv.get(KEYS.clock)) || 0
     this.cursor = Number(opts.kv.get(KEYS.cursor)) || 0
+    const saved = opts.kv.get(KEYS.device)
+    this.device = opts.device ?? (saved !== null ? Number(saved) : Math.floor(Math.random() * 1000))
+    if (saved === null || opts.device !== undefined) opts.kv.set(KEYS.device, String(this.device))
     this.current = { state: 'idle', lastSyncedAt: null, pending: this.pendingCount() }
   }
 
@@ -127,7 +135,7 @@ export class SyncEngine {
     this.publish()
   }
 
-  /** Upload what changed here, then (Task 4) fetch what changed elsewhere. Never throws; the outcome is in `status`. */
+  /** Upload what changed here, then fetch what changed elsewhere. Never throws; the outcome is in `status`. */
   syncNow(): Promise<SyncResult> {
     if (this.inflight) {
       this.again = true
@@ -145,10 +153,16 @@ export class SyncEngine {
     return (this.opts.now ?? Date.now)()
   }
 
-  /** Later than anything issued or seen so far, even if this phone's clock is behind. */
+  /**
+   * A change time: microseconds-ish (ms x 1000 plus this phone's own 0-999), later than anything issued or seen so
+   * far even if this phone's clock is behind, and never equal to another phone's stamp.
+   */
   private stamp(): number {
-    this.clock = Math.max(this.now(), this.clock + 1)
-    return this.clock
+    const base = Math.max(this.now() * 1000, this.clock + 1)
+    let u = base - (base % 1000) + this.device
+    if (u <= this.clock) u += 1000
+    this.clock = u
+    return u
   }
 
   private pendingCount(): number {
@@ -211,6 +225,7 @@ export class SyncEngine {
       do {
         this.again = false
         result.pushed += await this.pushAll()
+        await this.pullAll(result)
       } while (this.again)
       this.setStatus({ state: 'idle', lastSyncedAt: this.now(), message: undefined })
     } catch (err) {
@@ -256,5 +271,88 @@ export class SyncEngine {
       this.publish()
       pushed += rows.length
     }
+  }
+
+  private async pullAll(result: SyncResult): Promise<void> {
+    for (;;) {
+      const page = await this.opts.transport.pull(this.opts.household, this.cursor)
+      if (page.length === 0) return
+      await this.applyPage(page, result)
+      if (page.length < PAGE) return
+    }
+  }
+
+  /** Merge one page of remote rows. Nothing is recorded (cursor included) unless the phone saved them. */
+  private async applyPage(page: SyncRow[], result: SyncResult): Promise<void> {
+    const all = this.opts.local.getAll()
+    const changed = new Map<string, Row[]>()
+    const seen: { tbl: string; id: string; u: number; d: boolean }[] = []
+    let maxSeq = this.cursor
+    for (const r of page) {
+      maxSeq = Math.max(maxSeq, r.seq ?? 0)
+      const m = this.meta[r.tbl]?.[r.id]
+      if (m && m.u >= r.updated_at) continue // what we have is newer, or is our own change coming back
+      let decoded: Row | null = null
+      if (!r.deleted) {
+        try {
+          decoded = await decryptRow(this.opts.key, r.tbl, r.id, r.payload ?? '')
+        } catch {
+          result.rejected++
+          continue
+        }
+      }
+      const rows = changed.get(r.tbl) ?? [...(all[r.tbl] ?? [])]
+      const at = rows.findIndex((x) => x.id === r.id)
+      if (decoded === null) {
+        if (at >= 0) rows.splice(at, 1)
+      } else if (at >= 0) rows[at] = decoded
+      else rows.push(decoded)
+      changed.set(r.tbl, rows)
+      seen.push({ tbl: r.tbl, id: r.id, u: r.updated_at, d: r.deleted })
+      result.pulled++
+    }
+    if (changed.size > 0) this.opts.local.apply(Object.fromEntries(changed)) // throws if the phone cannot save: nothing below runs
+    for (const s of seen) {
+      ;(this.meta[s.tbl] ??= {})[s.id] = s.d ? { u: s.u, d: 1 } : { u: s.u }
+      this.clock = Math.max(this.clock, s.u)
+      this.dirty.get(s.tbl)?.delete(s.id) // an older local change is replaced by the newer remote one
+    }
+    this.cursor = maxSeq
+    this.persist()
+    this.publish()
+  }
+
+  /** Make this phone match the shared copy exactly (joining a household). Anything held here is replaced. */
+  async replaceFromRemote(): Promise<{ pulled: number }> {
+    const tables: Record<string, Row[]> = Object.fromEntries(TABLES.map((t) => [t, [] as Row[]]))
+    const meta: Meta = {}
+    let cursor = 0
+    let clock = this.clock
+    let pulled = 0
+    for (;;) {
+      const page = await this.opts.transport.pull(this.opts.household, cursor)
+      if (page.length === 0) break
+      for (const r of page) {
+        cursor = Math.max(cursor, r.seq ?? 0)
+        clock = Math.max(clock, r.updated_at)
+        ;(meta[r.tbl] ??= {})[r.id] = r.deleted ? { u: r.updated_at, d: 1 } : { u: r.updated_at }
+        if (r.deleted || !(r.tbl in tables)) continue
+        try {
+          tables[r.tbl].push(await decryptRow(this.opts.key, r.tbl, r.id, r.payload ?? ''))
+          pulled++
+        } catch {
+          /* a row this code cannot open is left out */
+        }
+      }
+      if (page.length < PAGE) break
+    }
+    this.opts.local.apply(tables)
+    this.meta = meta
+    this.dirty.clear()
+    this.cursor = cursor
+    this.clock = clock
+    this.persist()
+    this.setStatus({ state: 'idle', lastSyncedAt: this.now(), message: undefined })
+    return { pulled }
   }
 }

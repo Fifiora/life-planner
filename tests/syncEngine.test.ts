@@ -8,11 +8,11 @@ import { FakeBackend, MemoryKV, MemoryLocal, offline, serverError } from './sync
 const HOUSEHOLD = 'a'.repeat(64)
 const row = (id: string, extra: Record<string, unknown> = {}): Row => ({ id, name: `Item ${id}`, ...extra })
 
-async function phone(code: string, backend: FakeBackend, opts: { kv?: MemoryKV; local?: MemoryLocal; now?: () => number } = {}) {
+async function phone(code: string, backend: FakeBackend, opts: { kv?: MemoryKV; local?: MemoryLocal; now?: () => number; device?: number } = {}) {
   const key = await deriveKey(code)
   const kv = opts.kv ?? new MemoryKV()
   const local = opts.local ?? new MemoryLocal()
-  const engine = new SyncEngine({ household: HOUSEHOLD, key, local, transport: backend, kv, now: opts.now })
+  const engine = new SyncEngine({ household: HOUSEHOLD, key, local, transport: backend, kv, now: opts.now, device: opts.device ?? 7 })
   engine.start()
   return { engine, kv, local, key }
 }
@@ -112,12 +112,12 @@ describe('SyncEngine: tracking and pushing local changes', () => {
 
   it('keeps a slow clock from losing: new edits are later than anything already seen', async () => {
     const kv = new MemoryKV()
-    kv.set('lp.sync.clock', '5000') // this phone has already seen a change stamped 5000
+    kv.set('lp.sync.clock', '5000000') // this phone has already seen a change stamped 5,000,000
     const backend = new FakeBackend()
     const { engine, local } = await phone(generateCode(), backend, { kv, now: () => 1000 })
     local.put('bills', row('b1'))
     await engine.syncNow()
-    expect(backend.pushes[0][0].updated_at).toBeGreaterThan(5000)
+    expect(backend.pushes[0][0].updated_at).toBeGreaterThan(5_000_000)
   })
 
   it('records the time of the last good sync', async () => {
@@ -132,8 +132,8 @@ describe('SyncEngine: tracking and pushing local changes', () => {
 async function pair(opts: { aNow?: () => number; bNow?: () => number } = {}) {
   const code = generateCode()
   const backend = new FakeBackend()
-  const a = await phone(code, backend, { now: opts.aNow })
-  const b = await phone(code, backend, { now: opts.bNow })
+  const a = await phone(code, backend, { now: opts.aNow, device: 1 })
+  const b = await phone(code, backend, { now: opts.bNow, device: 2 })
   return { code, backend, a, b }
 }
 
@@ -179,12 +179,15 @@ describe('SyncEngine: receiving and merging', () => {
   })
 
   it('removes a row on both phones when the delete is later than an offline edit, and never brings it back', async () => {
-    const { a, b } = await pair({ aNow: () => 5000, bNow: () => 4000 })
+    const t = { a: 1000, b: 1000 }
+    const { a, b } = await pair({ aNow: () => t.a, bNow: () => t.b })
     a.local.put('bills', row('b1'))
     await a.engine.syncNow()
     await b.engine.syncNow()
-    b.local.put('bills', row('b1', { edited: true })) // offline, stamped 4000+
-    a.local.remove('bills', 'b1') // stamped 5000+
+    t.b = 4000
+    b.local.put('bills', row('b1', { edited: true })) // offline, made at 4000
+    t.a = 9000
+    a.local.remove('bills', 'b1') // made later, at 9000
     await a.engine.syncNow()
     await b.engine.syncNow()
     await a.engine.syncNow()
@@ -194,12 +197,15 @@ describe('SyncEngine: receiving and merging', () => {
   })
 
   it('lets an edit that is later than a delete bring the row back', async () => {
-    const { a, b } = await pair({ aNow: () => 3000, bNow: () => 9000 })
+    const t = { a: 1000, b: 1000 }
+    const { a, b } = await pair({ aNow: () => t.a, bNow: () => t.b })
     a.local.put('bills', row('b1'))
     await a.engine.syncNow()
     await b.engine.syncNow()
-    a.local.remove('bills', 'b1')
-    b.local.put('bills', row('b1', { edited: true }))
+    t.a = 3000
+    a.local.remove('bills', 'b1') // made at 3000
+    t.b = 9000
+    b.local.put('bills', row('b1', { edited: true })) // made later, at 9000
     await a.engine.syncNow()
     await b.engine.syncNow()
     await a.engine.syncNow()
@@ -271,7 +277,7 @@ describe('SyncEngine: receiving and merging', () => {
     await b.engine.syncNow()
     await a.engine.syncNow()
     expect(a.local.rows('bills')[0].edited).toBe(true)
-    expect(backend.pushes.at(-1)![0].updated_at).toBeGreaterThan(50_000)
+    expect(backend.pushes.at(-1)![0].updated_at).toBeGreaterThan(50_000_000)
   })
 })
 
