@@ -128,6 +128,24 @@ describe('Calendar night-in dots', () => {
   })
 })
 
+describe('Calendar back buttons', () => {
+  it('goes back to the calendar from a day', async () => {
+    const { container } = renderScreen(<Calendar initialDate="2026-10-15" />)
+    await userEvent.click(cell(container, '2026-10-28'))
+    await userEvent.click(screen.getByRole('button', { name: 'Back to calendar' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+  it('goes back to the day from the event form without saving', async () => {
+    const { container } = renderScreen(<Calendar initialDate="2026-10-15" />)
+    await userEvent.click(cell(container, '2026-10-28'))
+    await userEvent.click(screen.getByRole('button', { name: 'Add event' }))
+    await userEvent.type(screen.getByLabelText('Title'), 'Never saved')
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(screen.getByRole('dialog', { name: 'Day details' })).toBeInTheDocument()
+    expect(saved('events')).toHaveLength(0)
+  })
+})
+
 describe('Calendar day sheet', () => {
   it('lists the routines due that weekday', async () => {
     const { container } = renderScreen(<Calendar initialDate="2026-10-15" />)
