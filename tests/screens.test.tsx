@@ -316,3 +316,13 @@ describe('Settings cycle start', () => {
     expect(stored?.value ?? '2026-11-02').toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 })
+
+describe('Finance overview chart', () => {
+  it('shows a breakdown of a category when it is chosen', async () => {
+    renderScreen(<Finance />)
+    await userEvent.click(await screen.findByRole('button', { name: /housing/i }))
+    const panel = screen.getByRole('complementary', { name: 'Breakdown for Housing' })
+    expect(within(panel).getByText('Rent')).toBeInTheDocument()
+    expect(within(panel).getAllByText('$1,700').length).toBeGreaterThan(0)
+  })
+})

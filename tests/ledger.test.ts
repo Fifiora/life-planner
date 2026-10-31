@@ -3,6 +3,7 @@ import {
   budgetRows,
   buildLedgerInsights,
   cancelTracker,
+  categoryBreakdown,
   categoryTrend,
   filterLedger,
   ledgerRows,
@@ -240,5 +241,50 @@ describe('buildLedgerInsights', () => {
     const sections = buildLedgerInsights({ series: [series[2]], spikes: [], cancel: { couldCancel: 0, cancelled: 0, annualPotential: 0, annualSaved: 0, couldCount: 0, cancelledCount: 0 } })
     expect(sections[0].items[0].text).toMatch(/nothing tracked yet/i)
     expect(sections[1].items[0].text).toMatch(/no major category spikes/i)
+  })
+})
+
+describe('categoryBreakdown', () => {
+  const b = (over: Partial<Bill>): Bill => ({ id: 'x', name: 'Item', amount: 10, category: 'other', kind: 'recurring', due_month: null, paid: false, ...over })
+  const exp = (over: Partial<Expense>): Expense => ({ id: 'e', date: '2026-11-03', amount: 10, category: 'dining', note: '', member_id: 'a', kind: 'expense', source: 'manual', ...over })
+
+  it('lists what was planned for the category when nothing was spent yet', () => {
+    const bills = [
+      b({ id: 'r', name: 'Rent', amount: 2000, category: 'housing' }),
+      b({ id: 'p1', name: 'Best Buy payoff', amount: 2200, category: 'debt', kind: 'one_time', due_month: '2026-11' }),
+      b({ id: 'p2', name: 'Later payoff', amount: 900, category: 'debt', kind: 'one_time', due_month: '2026-12' }),
+    ]
+    const d = categoryBreakdown({ category: 'debt', bills, payments: [], expenses: [], month: '2026-11', planned: true })
+    expect(d.rows).toEqual([{ label: 'Best Buy payoff', amount: 2200, kind: 'payoff' }])
+    expect(d.total).toBe(2200)
+    expect(categoryBreakdown({ category: 'housing', bills, payments: [], expenses: [], month: '2026-11', planned: true }).rows).toEqual([{ label: 'Rent', amount: 2000, kind: 'bill' }])
+  })
+
+  it('lists what actually happened, biggest first, with the change from last month', () => {
+    const bills = [b({ id: 'meal', name: 'Meal plan', amount: 50, category: 'dining' })]
+    const payments = [{ id: 'p', bill_id: 'meal', month: '2026-11', paid_on: '2026-11-02' }]
+    const expenses = [
+      exp({ id: 'e1', amount: 40, note: 'Dinner' }),
+      exp({ id: 'e2', amount: 60, note: '' }),
+      exp({ id: 'e3', amount: 500, kind: 'income', category: 'dining' }),
+      exp({ id: 'e4', amount: 30, date: '2026-10-05', note: 'Old' }),
+    ]
+    const d = categoryBreakdown({ category: 'dining', bills, payments, expenses, month: '2026-11', planned: false })
+    expect(d.rows).toEqual([
+      { label: 'Dining', amount: 60, kind: 'spent' },
+      { label: 'Meal plan', amount: 50, kind: 'bill' },
+      { label: 'Dinner', amount: 40, kind: 'spent' },
+    ])
+    expect(d.total).toBe(150)
+    expect(d.previousTotal).toBe(30)
+    expect(d.change).toBe(120)
+  })
+
+  it('does not count paid bills again once bank transactions exist', () => {
+    const bills = [b({ id: 'meal', name: 'Meal plan', amount: 50, category: 'dining' })]
+    const payments = [{ id: 'p', bill_id: 'meal', month: '2026-11', paid_on: '2026-11-02' }]
+    const expenses = [exp({ id: 'e1', amount: 40, note: 'Dinner', source: 'bank' })]
+    const d = categoryBreakdown({ category: 'dining', bills, payments, expenses, month: '2026-11', planned: false })
+    expect(d.rows.map((r) => r.label)).toEqual(['Dinner'])
   })
 })

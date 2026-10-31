@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { Donut } from '../src/ui/Donut'
 import { GroupedBars } from '../src/ui/GroupedBars'
 import { TrendBars } from '../src/ui/TrendBars'
@@ -15,6 +16,49 @@ describe('Donut', () => {
   it('says so when nothing was spent', () => {
     render(<Donut shares={[]} />)
     expect(screen.getByText(/no spending yet/i)).toBeInTheDocument()
+  })
+})
+
+describe('Donut selection', () => {
+  const shares = [{ category: 'housing', total: 750, pct: 75 }, { category: 'dining', total: 250, pct: 25 }]
+  const detail = (c: string) => <p>{`Details for ${c}`}</p>
+
+  it('shows a category breakdown when its row is chosen, dims the rest, and restores on a second choice', async () => {
+    render(<Donut shares={shares} detail={detail} />)
+    const housing = screen.getByRole('button', { name: /housing/i })
+    const dining = screen.getByRole('button', { name: /dining/i })
+    expect(housing).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(housing)
+    expect(housing).toHaveAttribute('aria-pressed', 'true')
+    expect(dining).toHaveAttribute('data-dimmed', 'true')
+    expect(within(screen.getByRole('complementary', { name: 'Breakdown for Housing' })).getByText('Details for housing')).toBeInTheDocument()
+    await userEvent.click(housing)
+    expect(housing).toHaveAttribute('aria-pressed', 'false')
+    expect(dining).not.toHaveAttribute('data-dimmed')
+    expect(screen.queryByRole('complementary')).toBeNull()
+  })
+
+  it('selects by clicking a slice and switches to another category', async () => {
+    const { container } = render(<Donut shares={shares} detail={detail} />)
+    await userEvent.click(container.querySelector('circle[data-category="dining"]')!)
+    expect(screen.getByRole('complementary', { name: 'Breakdown for Dining' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /housing/i }))
+    expect(screen.getByRole('complementary', { name: 'Breakdown for Housing' })).toBeInTheDocument()
+  })
+
+  it('restores everything with Show all or by clicking the empty chart area', async () => {
+    render(<Donut shares={shares} detail={detail} />)
+    await userEvent.click(screen.getByRole('button', { name: /housing/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Show all' }))
+    expect(screen.queryByRole('complementary')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: /housing/i }))
+    await userEvent.click(screen.getByRole('img', { name: /spending by category/i }))
+    expect(screen.queryByRole('complementary')).toBeNull()
+  })
+
+  it('gives each slice a tooltip with its amount', () => {
+    const { container } = render(<Donut shares={shares} detail={detail} />)
+    expect(container.querySelector('circle[data-category="housing"] title')).toHaveTextContent('Housing: $750 (75%)')
   })
 })
 
