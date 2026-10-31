@@ -93,6 +93,10 @@ describe('trimForSharing', () => {
     expect(out.routine_logs.map((l) => l.id)).toEqual(['edge', 'new'])
     expect(out.bills).toEqual([{ id: 'b' }])
   })
+  it('also trims old activity entries', () => {
+    const out = trimForSharing({ activities: [{ id: 'old', date: '2026-10-01' }, { id: 'new', date: '2026-11-20' }] }, '2026-11-30')
+    expect(out.activities.map((a) => a.id)).toEqual(['new'])
+  })
   it('does not change what it was given', () => {
     trimForSharing(tables, '2026-11-30')
     expect(tables.routine_logs).toHaveLength(3)
