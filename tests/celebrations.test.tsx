@@ -3,7 +3,7 @@ import { act, renderHook, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { HouseholdProvider } from '../src/data/household'
-import { insertRow } from '../src/data/tableStore'
+import { insertRow, refresh } from '../src/data/tableStore'
 import { useGame } from '../src/data/useGame'
 import { todayCT } from '../src/lib/dates'
 import { Celebrations } from '../src/ui/Celebrations'
@@ -46,9 +46,10 @@ describe('Celebrations', () => {
   it('celebrates a new level and a new badge once', async () => {
     const { unmount } = renderScreen(<Celebrations />)
     await ready()
-    await addRuns(8)
+    await addRuns(1)
+    expect(await screen.findByText(/Badge unlocked: First Sweat/)).toBeInTheDocument()
+    await addRuns(7)
     expect(await screen.findByText(/LEVEL UP! You reached level 2!/)).toBeInTheDocument()
-    expect(screen.getByText(/Badge unlocked: First Sweat/)).toBeInTheDocument()
     unmount()
     renderScreen(<Celebrations />)
     await new Promise((r) => setTimeout(r, 50))
@@ -58,7 +59,11 @@ describe('Celebrations', () => {
   it('stays silent when a lot arrives at once (an import or a first sync)', async () => {
     renderScreen(<Celebrations />)
     await ready()
-    await addRuns(30)
+    const rows = Array.from({ length: 30 }, (_, i) => ({ id: `bulk${i}`, date: todayCT(), member_id: 'a', type: 'run', minutes: 30 }))
+    localStorage.setItem('lp.data.activities', JSON.stringify(rows))
+    await act(async () => {
+      await refresh('activities')
+    })
     await new Promise((r) => setTimeout(r, 50))
     expect(screen.queryByText(/LEVEL UP|Badge unlocked/)).toBeNull()
     expect(localStorage.getItem('lp.seen')).toContain('level:a:3')
