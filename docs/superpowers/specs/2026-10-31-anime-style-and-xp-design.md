@@ -44,19 +44,23 @@ All of this is **derived** from data that already syncs (`routine_logs`, `activi
   | Bill payment recorded (`bill_payments`) | Finance | 20 |
 
   Plus a same-day streak bonus: +2 XP per streak day on that day's ticks, capped at +20.
-  Anti-gaming: trivia XP counts at most 10 answers per person per day, and a row only counts once (by its id). A tick and an activity for the same thing both count, which is fine for two people who trust each other.
+  Anti-gaming: trivia answers carry no date, so each question pays XP once per person (their first attempt); later attempts on the same question earn nothing. A row only counts once (by its id). A tick and an activity for the same thing both count, which is fine for two people who trust each other.
 - **Bucket levels**: every bucket has its own small level from its own XP, using the same formula as below (Health, Study, Travel, Food, Finance). They show on each bucket's screen header as a compact "Lv N" chip with a thin XP bar. The person level and the Party level use all XP together.
 - **Level**: `xpForLevel(n) = 50 * n * (n - 1)` (level 1 at 0 XP, level 2 at 100, level 3 at 300, level 4 at 600). A person's level is the highest n with `xpForLevel(n) <= xp`. Each person has a level; the **Party level** is computed from the sum of both people's XP.
 - **Streak**: a day counts if the person ticked at least one routine. **Rest token**: one empty day per calendar week is forgiven automatically (derived, nothing to spend or store). The Today hero shows the streak and, when a token saved it, a small "rest day used" note.
-- **Badges** (about 12, all original names): first tick, first workout logged, first milestone done, 10 correct trivia answers, 3/7/30-day streak, first bill paid, first one-time payoff cleared, week with every daily routine done, first month under grocery budget, party level 5 and 10, first cheer sent, first boss defeated. Each is a pure test over the data.
+- **Badges** (about 12, all original names): first tick, first workout logged, first milestone done, 10 correct trivia answers, 3/7/30-day streak, first bill paid, first one-time payoff cleared, a Monday-to-Sunday week with a tick on every one of the 7 days, party level 5 and 10, first cheer sent, first boss defeated. Each is a pure test over the data.
 - **Seen state** (so a badge or level-up celebrates once): `lp.seen` on that phone only, not synced. Worst case after clearing storage is a repeat celebration.
 - UI: XP bar and level in the Today hero; a "Trophies" card (badges, locked ones greyed with the hint) reachable from Today and Settings.
 
 ### Phase 3: Weekly boss, monthly recap, cheers
 
-- **Weekly boss**: one shared boss per ISO week, chosen from a small catalog by week number. Each boss has a measurable rule computed from data: for example "party ticks N routines this week", "log groceries under the weekly budget", "both of you tick every daily routine on 5 days". Boss HP is the target, damage is progress. Defeated state is derived. A progress card on Today.
+- **Weekly boss**: one shared boss per ISO week, chosen from a small catalog by week number. The four bosses and their rules (all from data that already syncs; no ledger needed): party ticks 60 routines this week; party logs 8 health activities this week; party marks 6 study milestones done for this week; both of you tick at least one routine on the same day, on 5 days of the week. They rotate by weeks since the plan start. Boss HP is the target, damage is progress. Defeated state is derived. A progress card on Today.
 - **Monthly recap "episode"**: for a finished month, a card with a themed title (from a list, picked by month and the top stat), ticks per person, best streak, bills paid, and spend versus budget from the existing ledger. Shown on Today during the first 7 days of the next month and always reachable from Settings.
-- **Cheers**: a "Cheer" button on your partner's finished routine on Today. New synced table `cheers` with fields `id, from_member, to_member, date, routine_id`. Add `cheers` to `TABLES` in `src/lib/tables.ts`. **No server change**: `sync_rows.tbl` is free text, and the engine only needs the table in `TABLES`. A cheer shows as a small banner for the receiver that day and counts for a badge.
+- **Cheers**: a "Cheer" button on Today, shown once your partner has ticked something that day (one cheer per sender per day). New synced table `cheers` with fields `id, from_member, to_member, date, routine_id`. Add `cheers` to `TABLES` in `src/lib/tables.ts`. **No server change**: `sync_rows.tbl` is free text, and the engine only needs the table in `TABLES`. A cheer shows as a small banner for the receiver that day and counts for a badge.
+
+## Classic style
+
+Classic shows the app exactly as it is today. Everything new is anime-style only: the mascot, XP bar, levels, bucket chips, trophies, boss, recap and cheer button. Cheers sent to a phone on Classic are stored and synced but not shown there.
 
 ## Components and boundaries
 
