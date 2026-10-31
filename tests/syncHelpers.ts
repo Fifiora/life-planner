@@ -9,6 +9,9 @@ export class MemoryKV implements KV {
   set(key: string, value: string) {
     this.m.set(key, value)
   }
+  remove(key: string) {
+    this.m.delete(key)
+  }
 }
 
 type Listener = (table: string, prev: Row[], next: Row[]) => void
@@ -56,11 +59,14 @@ export class FakeBackend implements Transport {
   pushes: SyncRow[][] = []
   pulls: number[] = []
   failNext: Error | null = null
+  failAlways: Error | null = null
+  attempts: number[] = []
   pageSize = 1000
   notified = 0
   onChanged = new Set<() => void>()
 
   private maybeFail() {
+    if (this.failAlways) throw this.failAlways
     if (this.failNext) {
       const e = this.failNext
       this.failNext = null
@@ -68,6 +74,7 @@ export class FakeBackend implements Transport {
     }
   }
   async push(household: string, rows: SyncRow[]) {
+    this.attempts.push(Date.now())
     this.maybeFail()
     this.pushes.push(rows)
     for (const r of rows) {
