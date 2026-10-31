@@ -149,3 +149,17 @@ describe('dayMarkers with nights in', () => {
     expect(dayMarkers('2026-10-30', base)).not.toContain('night')
   })
 })
+
+describe('routinesOn for "a weekday in the month"', () => {
+  const market = routine({ id: 'm', name: 'Farmers market', cadence: 'monthly', weekday: 2 })
+  it('shows on every Tuesday and no other day', () => {
+    expect(routinesOn('2026-11-03', [market], '2026-11-02')).toHaveLength(1)
+    expect(routinesOn('2026-11-10', [market], '2026-11-02')).toHaveLength(1)
+    expect(routinesOn('2026-11-04', [market], '2026-11-02')).toHaveLength(0)
+  })
+  it('works the same for every-3-months routines', () => {
+    const q = routine({ id: 'q', cadence: 'quarterly', weekday: 6 })
+    expect(routinesOn('2026-11-07', [q], '2026-11-02')).toHaveLength(1)
+    expect(routinesOn('2026-11-08', [q], '2026-11-02')).toHaveLength(0)
+  })
+})
