@@ -63,7 +63,7 @@ export function createReceiptStore(): ReceiptStore {
 export const receiptStore: ReceiptStore = createReceiptStore()
 
 /** After expenses were replaced (a restore), forget the photos whose expense no longer exists. */
-export async function removeOrphanPhotos(before: { receipt_id?: unknown }[], after: { receipt_id?: unknown }[], store: ReceiptStore = receiptStore): Promise<void> {
+export async function removeOrphanPhotos(before: Record<string, unknown>[], after: Record<string, unknown>[], store: ReceiptStore = receiptStore): Promise<void> {
   const keep = new Set(after.map((e) => e.receipt_id).filter((id): id is string => typeof id === 'string'))
   const gone = before.map((e) => e.receipt_id).filter((id): id is string => typeof id === 'string' && !keep.has(id))
   await Promise.all(gone.map((id) => store.remove(id).catch(() => undefined)))
