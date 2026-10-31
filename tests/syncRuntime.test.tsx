@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
-import { getCode, getSyncStatus, joinWithCode, resumeSync, setSyncDepsForTests, startSharing, stopSyncing, testConnection, useSyncStatus } from '../src/data/syncRuntime'
+import { PinRequiredError, getCode, getSyncStatus, joinWithCode, resumeSync, setSyncDepsForTests, startSharing, stopSyncing, testConnection, useSyncStatus } from '../src/data/syncRuntime'
+import { createPinRecord, type PinRecord } from '../src/lib/pin'
 import { deriveKey, householdId, isValidCode, generateCode } from '../src/lib/syncCrypto'
 import { SyncEngine } from '../src/lib/syncEngine'
 import type { Row } from '../src/types'
@@ -116,6 +117,56 @@ describe('joining', () => {
     expect(local.rows('routines')).toHaveLength(1)
     expect(getCode()).toBeNull()
     expect(getSyncStatus()).toBeNull()
+  })
+})
+
+describe('joining a planner that has a PIN', () => {
+  let record: PinRecord
+  beforeAll(async () => {
+    record = await createPinRecord('1234')
+  })
+  async function pinnedPlanner(withPin = true) {
+    local.tables = { bills: [row('b1')], ...(withPin ? { settings: [row('household_pin', { key: 'household_pin', value: JSON.stringify(record) })] } : {}) }
+    const code = await startSharing()
+    setSyncDepsForTests(null)
+    return code
+  }
+  const untouched = () => {
+    expect(local.rows('routines')).toHaveLength(1)
+    expect(getCode()).toBeNull()
+    expect(downloads).not.toHaveBeenCalled()
+  }
+
+  it('asks for the PIN when none is given, and changes nothing', async () => {
+    const code = await pinnedPlanner()
+    useDevice()
+    local.tables = { routines: [row('own')] }
+    await expect(joinWithCode(code)).rejects.toBeInstanceOf(PinRequiredError)
+    untouched()
+  })
+  it('refuses a wrong PIN and changes nothing', async () => {
+    const code = await pinnedPlanner()
+    useDevice()
+    local.tables = { routines: [row('own')] }
+    await expect(joinWithCode(code, { pin: '0000' })).rejects.toThrow(/PIN isn't right/)
+    untouched()
+  })
+  it('joins with the right PIN, taking the backup first', async () => {
+    const code = await pinnedPlanner()
+    useDevice()
+    local.tables = { routines: [row('own')] }
+    localStorage.setItem('lp.pin', 'old')
+    await joinWithCode(code, { pin: '1234' })
+    expect(downloads).toHaveBeenCalledTimes(1)
+    expect(local.rows('bills')).toHaveLength(1)
+    expect(getCode()).toBe(code)
+  })
+  it('needs no PIN when the planner has none', async () => {
+    const code = await pinnedPlanner(false)
+    useDevice()
+    local.tables = { routines: [row('own')] }
+    await joinWithCode(code)
+    expect(getCode()).toBe(code)
   })
 })
 

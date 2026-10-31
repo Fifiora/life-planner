@@ -555,3 +555,32 @@ describe('SyncEngine: big pushes', () => {
     for (const p of backend.pushes) expect(p.reduce((n, r) => n + (r.payload?.length ?? 0), 0)).toBeLessThanOrEqual(950_000)
   })
 })
+
+describe('SyncEngine: joining with a check before anything is replaced', () => {
+  it('hands the pulled tables to the check, and replaces only if the check allows it', async () => {
+    const code = generateCode()
+    const backend = new FakeBackend()
+    const a = await phone(code, backend)
+    a.local.put('bills', row('b1', { amount: 1 }))
+    await a.engine.syncNow()
+    const seen: string[] = []
+    const b = await phone(code, backend)
+    b.local.silentPut('routines', row('own'))
+    await b.engine.replaceFromRemote({ beforeApply: async (tables) => void seen.push(...tables.bills.map((r) => r.id)) })
+    expect(seen).toEqual(['b1'])
+    expect(b.local.rows('bills')).toHaveLength(1)
+    expect(b.local.rows('routines')).toEqual([])
+  })
+  it('leaves the phone untouched when the check refuses', async () => {
+    const code = generateCode()
+    const backend = new FakeBackend()
+    const a = await phone(code, backend)
+    a.local.put('bills', row('b1'))
+    await a.engine.syncNow()
+    const b = await phone(code, backend)
+    b.local.silentPut('routines', row('own'))
+    await expect(b.engine.replaceFromRemote({ beforeApply: async () => { throw new Error('No') } })).rejects.toThrow('No')
+    expect(b.local.rows('routines')).toHaveLength(1)
+    expect(b.local.rows('bills')).toEqual([])
+  })
+})

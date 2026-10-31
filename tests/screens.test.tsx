@@ -290,6 +290,35 @@ describe('view-only copy', () => {
   })
 })
 
+describe('Settings PIN across devices', () => {
+  const setPinFlow = async () => {
+    await userEvent.type(await screen.findByLabelText('New PIN'), '1234')
+    await userEvent.type(screen.getByLabelText('Repeat PIN'), '1234')
+    await userEvent.click(screen.getByRole('button', { name: 'Set PIN' }))
+  }
+  it('keeps the PIN on this phone when not sharing', async () => {
+    renderScreen(<Settings />)
+    await setPinFlow()
+    await vi.waitFor(() => expect(localStorage.getItem('lp.pin')).not.toBeNull())
+    expect(saved('settings').some((r) => r.key === 'household_pin')).toBe(false)
+  })
+  it('shares the PIN with the paired devices when sharing, and says so', async () => {
+    localStorage.setItem('lp.sync.code', 'ABCD')
+    renderScreen(<Settings />)
+    expect(await screen.findByText(/shared by all your paired devices/i)).toBeInTheDocument()
+    await setPinFlow()
+    await vi.waitFor(() => expect(saved('settings').some((r) => r.key === 'household_pin')).toBe(true))
+    expect(localStorage.getItem('lp.pin')).toBeNull()
+  })
+  it('removes the shared PIN for every device', async () => {
+    localStorage.setItem('lp.sync.code', 'ABCD')
+    localStorage.setItem('lp.data.settings', JSON.stringify([...saved('settings'), { id: 'household_pin', key: 'household_pin', value: JSON.stringify({ v: 1, salt: 'x', hash: 'y', iterations: 1 }) }]))
+    renderScreen(<Settings />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove PIN' }))
+    await vi.waitFor(() => expect(saved('settings').some((r) => r.key === 'household_pin')).toBe(false))
+  })
+})
+
 describe('Settings lock timing', () => {
   it('lets you choose how long the app may be away before it locks', async () => {
     localStorage.setItem('lp.pin', JSON.stringify({ v: 1, salt: 'x', hash: 'y', iterations: 1 }))

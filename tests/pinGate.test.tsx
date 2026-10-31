@@ -1,12 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { resetStore } from '../src/data/tableStore'
 import { PinGate } from '../src/ui/PinGate'
 
 const record = { v: 1, salt: 'x', hash: 'y', iterations: 1 }
 beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
+  resetStore()
 })
 
 const renderGate = (verify = vi.fn().mockResolvedValue(true), onErase = vi.fn()) => {
@@ -46,6 +48,24 @@ describe('PinGate', () => {
     expect(await screen.findByText('Inside')).toBeInTheDocument()
     expect(sessionStorage.getItem('lp.unlocked')).toBe('1')
     expect(verify).toHaveBeenLastCalledWith('2222', record)
+  })
+
+  it('uses the PIN shared through the paired planner', async () => {
+    localStorage.setItem('lp.data.settings', JSON.stringify([{ id: 'household_pin', key: 'household_pin', value: JSON.stringify(record) }]))
+    const { verify } = renderGate()
+    expect(screen.queryByText('Inside')).not.toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('PIN'), '1234')
+    await userEvent.click(screen.getByRole('button', { name: 'Unlock' }))
+    expect(await screen.findByText('Inside')).toBeInTheDocument()
+    expect(verify).toHaveBeenLastCalledWith('1234', record)
+  })
+
+  it('tells a paired phone that forgot the PIN to set a new one on another device', async () => {
+    localStorage.setItem('lp.data.settings', JSON.stringify([{ id: 'household_pin', key: 'household_pin', value: JSON.stringify(record) }]))
+    localStorage.setItem('lp.sync.code', 'ABCD')
+    renderGate()
+    await userEvent.click(screen.getByRole('button', { name: /forgot pin/i }))
+    expect(screen.getByText(/still logged in/i)).toBeInTheDocument()
   })
 
   it('offers a way out if the PIN is forgotten, after a confirmation', async () => {
