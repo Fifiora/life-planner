@@ -216,7 +216,7 @@ export async function joinWithCode(input: string, over?: { downloadBackup?: () =
     await engine.replaceFromRemote({
       beforeApply: async (tables) => {
         // If the planner has a PIN, this phone must know it before anything is replaced.
-        const record = recordFromSettingsRows((tables.settings ?? []) as { key?: unknown; value?: unknown }[])
+        const record = recordFromSettingsRows((tables.settings ?? []) as Record<string, unknown>[])
         if (record) {
           if (!over?.pin) throw new PinRequiredError()
           if (!(await verifyPin(over.pin, record))) throw new Error("That PIN isn't right.")

@@ -17,7 +17,7 @@ export function readLocalPin(): PinRecord | null {
 }
 
 /** The PIN stored in a list of settings rows, or null when there is none (or it is unreadable). */
-export function recordFromSettingsRows(rows: { key?: unknown; value?: unknown }[]): PinRecord | null {
+export function recordFromSettingsRows(rows: Record<string, unknown>[]): PinRecord | null {
   const row = rows.find((r) => r.key === SHARED_PIN_KEY)
   if (!row || typeof row.value !== 'string') return null
   try {
@@ -28,7 +28,7 @@ export function recordFromSettingsRows(rows: { key?: unknown; value?: unknown }[
   }
 }
 
-export const readSharedPin = (): PinRecord | null => recordFromSettingsRows(getState('settings').rows as { key?: unknown; value?: unknown }[])
+export const readSharedPin = (): PinRecord | null => recordFromSettingsRows(getState('settings').rows as Record<string, unknown>[])
 
 /** The PIN in force: the one shared with the paired devices, else this phone's own. */
 export const effectivePin = (): PinRecord | null => readSharedPin() ?? readLocalPin()
