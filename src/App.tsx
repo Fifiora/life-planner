@@ -11,6 +11,7 @@ import Today from './screens/Today'
 import Travel from './screens/Travel'
 import { ErrorBoundary } from './ui/ErrorBoundary'
 import { TabBar } from './ui/TabBar'
+import { UnlockPreload } from './ui/UnlockPreload'
 import { ToastProvider } from './ui/Toast'
 
 function ViewBanner({ createdAt }: { createdAt?: string }) {
@@ -63,6 +64,8 @@ export default function App({ boot }: { boot: BootResult }) {
       </div>
     )
   }
+
+  if (boot.mode === 'locked' && boot.preload) return <UnlockPreload preload={boot.preload} />
 
   return (
     <ToastProvider>

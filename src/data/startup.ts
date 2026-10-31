@@ -1,14 +1,29 @@
+import { isPreloadFile, type PreloadFile } from '../lib/preload'
 import { decodeSnapshot } from '../lib/snapshot'
 import { hasOwnData, loadSnapshot } from './tableStore'
 
 export interface BootResult {
-  mode: 'own' | 'view'
+  mode: 'own' | 'view' | 'locked'
   fromLink: boolean
   createdAt?: string
   error?: string
+  /** Set when mode is 'locked': the encrypted plan that shipped with the site. */
+  preload?: PreloadFile
 }
 
 const SNAPSHOT_KEY = 'lp.snapshot'
+
+/** The planner locked with a passphrase that is published alongside the site (if there is one). */
+async function fetchPreload(): Promise<PreloadFile | null> {
+  try {
+    const res = await fetch('./preload.enc.json', { cache: 'no-store' })
+    if (!res.ok) return null
+    const data: unknown = await res.json()
+    return isPreloadFile(data) ? data : null
+  } catch {
+    return null
+  }
+}
 
 /** Forget the shared copy on this phone and go back to the plain site address. */
 export function removeSharedCopy(): void {
@@ -47,6 +62,11 @@ export async function startup(hash: string): Promise<BootResult> {
     } catch {
       localStorage.removeItem(SNAPSHOT_KEY)
     }
+  }
+
+  if (!hasOwnData() && localStorage.getItem('lp.skipPreload') !== '1') {
+    const preload = await fetchPreload()
+    if (preload) return { mode: 'locked', fromLink: false, preload, ...(linkError ? { error: linkError } : {}) }
   }
   return { mode: 'own', fromLink: false, ...(linkError ? { error: linkError } : {}) }
 }
