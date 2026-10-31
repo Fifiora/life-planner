@@ -16,6 +16,7 @@ import { buildViewLink, encodeSnapshot, makeSnapshot, trimForSharing } from '../
 import type { Member, Row } from '../types'
 import { PageHead } from '../ui/PageHead'
 import { SharedCopyNotice } from '../ui/SharedCopyNotice'
+import { SyncCard } from '../ui/SyncCard'
 import { StarterPlanLoader } from '../ui/StarterPlanLoader'
 import { useToast } from '../ui/Toast'
 
@@ -191,6 +192,8 @@ export default function Settings() {
           </div>
         )}
       </section>
+
+      <SyncCard />
 
       <section className="card">
         <h2>Starter plan</h2>

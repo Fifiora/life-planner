@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useHousehold } from '../data/household'
+import { SyncStatus } from './SyncStatus'
 
 export function PageHead({ title, sub }: { title: string; sub?: string }) {
   const { me, members, readOnly, switchTo } = useHousehold()
@@ -12,6 +13,7 @@ export function PageHead({ title, sub }: { title: string; sub?: string }) {
       </div>
       <div className="head-actions">
         {readOnly && <span className="badge view-badge">👁 View-only</span>}
+        <SyncStatus />
         {other && (
           <button type="button" className="chip" aria-label={`Switch person (now ${me.display_name})`} onClick={() => switchTo(other.id)}>
             👤 {me.display_name}
