@@ -31,12 +31,24 @@ Stone and his wife are anime fans and want the planner to feel like it: the look
 
 ### Phase 2: XP, levels, streaks, badges
 
-All of this is **derived** from data that already syncs (`routine_logs`, `bill_payments`). Nothing new is stored, so the two phones can never disagree and editing or deleting a tick re-computes everything.
+All of this is **derived** from data that already syncs (`routine_logs`, `activities`, `milestones`, `trivia_attempts`, `bill_payments`). Nothing new is stored, so the two phones can never disagree and editing or deleting a tick re-computes everything.
 
-- **XP**: 10 per ticked routine per person per day, 20 per bill payment recorded. A same-day streak bonus: +2 XP per streak day on that day's ticks, capped at +20.
+- **XP sources** (each source belongs to a bucket, so Health and Study earn XP in their own right):
+
+  | Source (already synced) | Bucket | XP |
+  |---|---|---|
+  | Ticked routine (any bucket; uses the routine's `bucket`) | the routine's | 10 per person per day |
+  | Logged health activity (`activities`: run, walk, calisthenics, swim, weights, other) | Health | 15, plus 1 per 10 minutes logged, capped at +15 |
+  | Study milestone marked done (`milestones`) | Study | 15 |
+  | Trivia answer (`trivia_attempts`) | Study | 3 for an attempt, 8 if correct |
+  | Bill payment recorded (`bill_payments`) | Finance | 20 |
+
+  Plus a same-day streak bonus: +2 XP per streak day on that day's ticks, capped at +20.
+  Anti-gaming: trivia XP counts at most 10 answers per person per day, and a row only counts once (by its id). A tick and an activity for the same thing both count, which is fine for two people who trust each other.
+- **Bucket levels**: every bucket has its own small level from its own XP, using the same formula as below (Health, Study, Travel, Food, Finance). They show on each bucket's screen header as a compact "Lv N" chip with a thin XP bar. The person level and the Party level use all XP together.
 - **Level**: `xpForLevel(n) = 50 * n * (n - 1)` (level 1 at 0 XP, level 2 at 100, level 3 at 300, level 4 at 600). A person's level is the highest n with `xpForLevel(n) <= xp`. Each person has a level; the **Party level** is computed from the sum of both people's XP.
 - **Streak**: a day counts if the person ticked at least one routine. **Rest token**: one empty day per calendar week is forgiven automatically (derived, nothing to spend or store). The Today hero shows the streak and, when a token saved it, a small "rest day used" note.
-- **Badges** (about 12, all original names): first tick, 3/7/30-day streak, first bill paid, first one-time payoff cleared, week with every daily routine done, first month under grocery budget, party level 5 and 10, first cheer sent, first boss defeated. Each is a pure test over the data.
+- **Badges** (about 12, all original names): first tick, first workout logged, first milestone done, 10 correct trivia answers, 3/7/30-day streak, first bill paid, first one-time payoff cleared, week with every daily routine done, first month under grocery budget, party level 5 and 10, first cheer sent, first boss defeated. Each is a pure test over the data.
 - **Seen state** (so a badge or level-up celebrates once): `lp.seen` on that phone only, not synced. Worst case after clearing storage is a repeat celebration.
 - UI: XP bar and level in the Today hero; a "Trophies" card (badges, locked ones greyed with the hint) reachable from Today and Settings.
 
@@ -54,7 +66,7 @@ Each piece is small and testable alone.
 |---|---|---|
 | `src/lib/style.ts` | get/set/apply style, event for UI refresh (mirrors `theme.ts`) | localStorage, DOM |
 | `src/lib/voice.ts` | `say(key, vars)` for anime and classic | style |
-| `src/lib/xp.ts` | XP, level, party level (pure) | logs, payments |
+| `src/lib/xp.ts` | XP per source and bucket, level, bucket levels, party level (pure) | logs, activities, milestones, trivia, payments |
 | `src/lib/streak.ts` | streak with weekly rest token (pure) | logs, dates |
 | `src/lib/badges.ts` | badge catalog and earned set (pure) | xp, streak, data |
 | `src/lib/boss.ts` | boss catalog, progress (pure) | logs, ledger, week |
@@ -82,7 +94,7 @@ Logs and payments (already synced) go into the pure libs, which feed the views. 
 ## Testing
 
 - Test first, through CI as before.
-- Pure libs: unit tests with fixed dates (streak with and without a rest token, level boundaries, each badge, each boss, recap title selection).
+- Pure libs: unit tests with fixed dates (each XP source and its caps, bucket levels, streak with and without a rest token, level boundaries, each badge, each boss, recap title selection).
 - UI: RTL tests for the style switch (persists, applies `data-style`, works with each theme choice), voice in both styles, Today hero with mascot and XP, trophies, boss card, cheer button (writes a row; receiver sees it).
 - Contrast: a test reads the anime token colours and checks the AA ratio for each text-on-surface pair in light and dark.
 - Visuals: Playwright screenshots of mock pages built from the real CSS (phone, tablet, laptop; light and dark; both styles). I cannot test on real phones from here, so the final check on a real phone is Stone's.
@@ -103,5 +115,5 @@ Sound, avatar customisation, a shop or currency, losing XP or HP for missed days
 ## Open assumptions to confirm
 
 - Default style is `anime` for both phones from first load after the update; Classic is one tap away.
-- Bill payments earn XP; receipts and calendar events do not.
+- Health activities, Study milestones, trivia answers and bill payments earn XP; receipts and calendar events do not. The XP numbers in the table are starting values and are easy to tune.
 - Boss and recap are shared (same for both of you), while style is per phone.
