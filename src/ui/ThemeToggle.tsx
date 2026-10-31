@@ -4,6 +4,7 @@ import { getThemeChoice, setThemeChoice, THEME_EVENT, type ThemeChoice } from '.
 const ORDER: ThemeChoice[] = ['system', 'light', 'dark']
 const LABEL: Record<ThemeChoice, string> = { system: 'Match my phone', light: 'Light', dark: 'Dark' }
 const ICON: Record<ThemeChoice, string> = { system: '🌓', light: '☀️', dark: '🌙' }
+const SHORT: Record<ThemeChoice, string> = { system: 'Auto', light: 'Light', dark: 'Dark' }
 
 function subscribe(onChange: () => void) {
   window.addEventListener(THEME_EVENT, onChange)
@@ -36,7 +37,7 @@ export function ThemeSwitch() {
   return (
     <div className="side-theme" role="group" aria-label="Appearance">
       {ORDER.map((c) => (
-        <button key={c} type="button" className="side-theme-btn" aria-pressed={choice === c} onClick={() => setThemeChoice(c)}>{LABEL[c]}</button>
+        <button key={c} type="button" className="side-theme-btn" aria-label={LABEL[c]} aria-pressed={choice === c} onClick={() => setThemeChoice(c)}>{SHORT[c]}</button>
       ))}
     </div>
   )
