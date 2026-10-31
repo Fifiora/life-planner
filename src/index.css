@@ -535,3 +535,67 @@ html[data-theme="dark"] { color-scheme: dark; }
   .side-theme-btn[aria-pressed="true"] { background: var(--card-solid); color: var(--ink); box-shadow: 0 2px 8px rgba(30, 40, 100, 0.12); }
   .hero-top .prog-pct { font-size: 1.5rem; }
 }
+
+/* ---------- Anime style (Classic keeps everything above exactly as it was) ---------- */
+html[data-style="anime"] {
+  --bg: #fff1e6;
+  --bg-glow-1: rgba(255, 138, 101, 0.34);
+  --bg-glow-2: rgba(56, 189, 248, 0.28);
+  --bg-glow-3: rgba(244, 114, 182, 0.24);
+  --card: rgba(255, 255, 255, 0.86);
+  --card-solid: #ffffff;
+  --ink: #2b1a3a;
+  --muted: #6b5577;
+  --line: rgba(43, 26, 58, 0.22);
+  --edge: rgba(43, 26, 58, 0.78);
+  --gloss: rgba(255, 255, 255, 0.9);
+  --brand: #d6336c;
+  --brand-2: #0b7fa8;
+  --brand-ink: #ffffff;
+  --shadow: 0 10px 28px rgba(214, 51, 108, 0.16);
+}
+html[data-style="anime"][data-theme="dark"] {
+  --bg: #0d0b24;
+  --bg-glow-1: rgba(255, 111, 168, 0.30);
+  --bg-glow-2: rgba(63, 224, 255, 0.20);
+  --bg-glow-3: rgba(139, 92, 246, 0.26);
+  --card: rgba(26, 21, 64, 0.82);
+  --card-solid: #1a1540;
+  --ink: #f4f0ff;
+  --muted: #b3a8d9;
+  --line: rgba(244, 240, 255, 0.22);
+  --edge: rgba(255, 111, 168, 0.75);
+  --gloss: rgba(255, 255, 255, 0.10);
+  --brand: #ff6fa8;
+  --brand-2: #3fe0ff;
+  --brand-ink: #1a0b24;
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+/* Speed lines fan out behind the page, fading toward the middle. */
+html[data-style="anime"] body::before {
+  background:
+    repeating-conic-gradient(from 0deg at 50% 26%, color-mix(in srgb, var(--brand) 10%, transparent) 0deg 1.1deg, transparent 1.1deg 7deg),
+    radial-gradient(900px 520px at 8% -8%, var(--bg-glow-1), transparent 60%),
+    radial-gradient(800px 480px at 100% 0%, var(--bg-glow-2), transparent 60%),
+    radial-gradient(700px 500px at 50% 110%, var(--bg-glow-3), transparent 60%);
+}
+/* Cards become manga panels: a bold outline and an offset shadow. */
+html[data-style="anime"] :is(.card, .kpi-card, .wday, .tile, .payoffs) {
+  border: 2px solid var(--edge);
+  box-shadow: 4px 4px 0 color-mix(in srgb, var(--brand) 55%, transparent), var(--shadow);
+}
+html[data-style="anime"] :is(h1, .headline) { font-style: italic; font-weight: 800; letter-spacing: -0.02em; }
+html[data-style="anime"] :is(.kpi-value, .prog-pct) { font-style: italic; font-weight: 850; text-shadow: 2px 2px 0 color-mix(in srgb, var(--brand) 30%, transparent); }
+html[data-style="anime"] .btn-primary { box-shadow: 3px 3px 0 color-mix(in srgb, var(--ink) 80%, transparent); }
+/* Sparkles replace the confetti rectangles. */
+.confetti.spark span {
+  width: 11px;
+  height: 11px;
+  border-radius: 0;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: spark-fall 1.7s ease-out forwards;
+}
+@keyframes spark-fall { 0% { transform: translateY(0) rotate(0) scale(1); } 100% { transform: translateY(75vh) rotate(200deg) scale(0.3); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .confetti.spark span { animation: none; }
+}

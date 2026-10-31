@@ -11,7 +11,7 @@ import { Confetti } from '../../ui/Confetti'
 import { Sheet } from '../../ui/Sheet'
 
 export function Bills({ f, month }: { f: FinanceData; month: string }) {
-  const { readOnly } = useHousehold()
+  const { readOnly, me } = useHousehold()
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Bill | null>(null)
   const [celebrate, setCelebrate] = useState(false)
@@ -29,7 +29,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
   async function togglePaid(bill: Bill) {
     const existing = f.payments.rows.find((p) => p.bill_id === bill.id && p.month === month)
     if (existing) await f.payments.remove(existing.id)
-    else await f.payments.insert({ bill_id: bill.id, month, paid_on: todayCT() })
+    else await f.payments.insert({ bill_id: bill.id, month, paid_on: todayCT(), member_id: me.id })
   }
 
   async function markPayoff(b: Bill) {

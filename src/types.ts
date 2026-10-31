@@ -128,6 +128,7 @@ export interface BillPayment {
   bill_id: string
   month: string // YYYY-MM
   paid_on: string // YYYY-MM-DD
+  member_id?: string // who ticked it off (older rows have none)
 }
 
 export interface SavingsEntry {
