@@ -1,0 +1,71 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
+import Today from '../src/screens/Today'
+import Health from '../src/screens/Health'
+import Settings from '../src/screens/Settings'
+import { addDays, todayCT } from '../src/lib/dates'
+import { renderScreen, seedPlanner } from './seed'
+
+const log = (id: string, routine_id: string, date: string) => ({ id, routine_id, member_id: 'a', date, done: true, value: null })
+const setLogs = (rows: unknown[]) => localStorage.setItem('lp.data.routine_logs', JSON.stringify(rows))
+
+beforeEach(() => seedPlanner())
+
+describe('Today game layer (anime)', () => {
+  it('shows my level and the party level', async () => {
+    renderScreen(<Today />)
+    expect(await screen.findByText(/^Ada Lv \d+$/)).toBeInTheDocument()
+    expect(screen.getByText(/^Party Lv \d+$/)).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'Ada XP' })).toBeInTheDocument()
+  })
+
+  it('counts the streak by days with anything ticked, not by one routine', async () => {
+    const t = todayCT()
+    setLogs([log('x1', 'r1', t), log('x2', 'r2', addDays(t, -1)), log('x3', 'r1', addDays(t, -2))])
+    renderScreen(<Today />)
+    expect(await screen.findByText('🔥 3-day streak')).toBeInTheDocument()
+  })
+
+  it('notes when a rest day kept the streak alive', async () => {
+    const t = todayCT()
+    setLogs([log('x1', 'r1', t), log('x2', 'r1', addDays(t, -2))])
+    renderScreen(<Today />)
+    expect(await screen.findByText('Rest day used. The streak lives on.')).toBeInTheDocument()
+  })
+
+  it('lists trophies, earned and locked', async () => {
+    renderScreen(<Today />)
+    expect(await screen.findByRole('heading', { name: 'Trophies' })).toBeInTheDocument()
+    expect(screen.getByLabelText('First Spark, earned')).toBeInTheDocument()
+    expect(screen.getByLabelText('Week of Fire, locked: Keep a seven-day streak.')).toBeInTheDocument()
+  })
+})
+
+describe('Classic hides the game layer', () => {
+  beforeEach(() => localStorage.setItem('lp.style', 'classic'))
+  it('Today has no levels, no trophies, and the old streak', async () => {
+    const t = todayCT()
+    setLogs([log('x1', 'r1', t), log('x2', 'r2', addDays(t, -1)), log('x3', 'r1', addDays(t, -2))])
+    renderScreen(<Today />)
+    await screen.findByRole('progressbar', { name: 'Done today' })
+    expect(screen.queryByText(/Party Lv/)).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Trophies' })).toBeNull()
+    expect(screen.queryByText('🔥 3-day streak')).toBeNull()
+  })
+  it('bucket screens have no level chip', async () => {
+    renderScreen(<Health />)
+    await screen.findByRole('heading', { name: 'Health' })
+    expect(screen.queryByLabelText(/^Health level/)).toBeNull()
+  })
+})
+
+describe('Bucket levels and Settings', () => {
+  it('Health shows its own level', async () => {
+    renderScreen(<Health />)
+    expect(await screen.findByLabelText(/^Health level \d+/)).toHaveTextContent(/^Lv \d+/)
+  })
+  it('Settings has the trophies too', async () => {
+    renderScreen(<Settings />)
+    expect(await screen.findByRole('heading', { name: 'Trophies' })).toBeInTheDocument()
+  })
+})
