@@ -17,6 +17,7 @@ import {
   transfersToMake,
 } from '../src/lib/ledger'
 import type { Bill, BillPayment, Expense, SavingsEntry } from '../src/types'
+import type { MonthActuals } from '../src/lib/ledger'
 
 const rec = (id: string, name: string, amount: number, category: string, cancel_status: Bill['cancel_status'] = ''): Bill => ({ id, name, amount, category, kind: 'recurring', due_month: null, paid: false, cancel_status })
 const one = (id: string, name: string, amount: number, due_month: string, paid = false): Bill => ({ id, name, amount, category: 'debt', kind: 'one_time', due_month, paid })
@@ -105,7 +106,7 @@ describe('statusForRatio', () => {
 
 describe('budgetRows', () => {
   const months = ['2026-10', '2026-11']
-  const actuals = [
+  const actuals: MonthActuals[] = [
     { income: 0, spent: 0, transferOut: 0, hasBank: false, spentByCategory: {} },
     { income: 0, spent: 0, transferOut: 0, hasBank: false, spentByCategory: { housing: 2200, dining: 300 } },
   ]
