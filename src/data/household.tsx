@@ -95,9 +95,12 @@ function Onboarding({ onSave }: { onSave: (names: [string, string]) => void }) {
 }
 
 function WhoAreYou({ members, onPick }: { members: Member[]; onPick: (id: string) => void }) {
+  const loggedOut = localStorage.getItem('lp.loggedout') === '1'
   return (
     <div className="app">
-      <h1 style={{ textAlign: 'center', marginTop: '3rem' }}>Who are you on this phone?</h1>
+      <div className="login-hero" aria-hidden style={{ textAlign: 'center', marginTop: '2rem' }}>🌿</div>
+      <h1 style={{ textAlign: 'center' }}>{loggedOut ? "You're logged out" : 'Who are you on this phone?'}</h1>
+      {loggedOut && <p className="muted" style={{ textAlign: 'center' }}>Pick who you are to go back in.</p>}
       <div className="stack mt">
         {members.map((m) => (
           <button key={m.id} type="button" className="btn block" onClick={() => onPick(m.id)}>
@@ -157,6 +160,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         members={members.rows}
         onPick={(id) => {
           localStorage.setItem(ME_KEY, id)
+          localStorage.removeItem('lp.loggedout')
           setMeId(id)
         }}
       />

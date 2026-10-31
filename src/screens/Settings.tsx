@@ -292,9 +292,9 @@ export default function Settings() {
 
       <section className="card">
         <h2>This phone</h2>
-        <p className="muted small">Log out to forget who is using this phone; your data stays and you can pick a person again. Erasing removes the planner from this phone for good.</p>
+        <p className="muted small">Log out to go back to the start screen and forget who is using this phone; your data stays and you pick who you are again. Erasing removes the planner from this phone for good.</p>
         <div className="actions">
-          <button type="button" className="btn" onClick={() => { logOut(); reloadApp() }}>Log out</button>
+          <button type="button" className="btn" onClick={() => { logOut(); window.location.hash = '#/'; reloadApp() }}>Log out</button>
           {!confirmErase && <button type="button" className="btn btn-danger" onClick={() => setConfirmErase(true)}>Erase this phone</button>}
         </div>
         {confirmErase && (
