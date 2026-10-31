@@ -1,0 +1,102 @@
+import type { Row } from '../src/types'
+import { TransportError, type KV, type LocalStore, type SyncRow, type Transport } from '../src/lib/syncEngine'
+
+export class MemoryKV implements KV {
+  m = new Map<string, string>()
+  get(key: string) {
+    return this.m.get(key) ?? null
+  }
+  set(key: string, value: string) {
+    this.m.set(key, value)
+  }
+}
+
+type Listener = (table: string, prev: Row[], next: Row[]) => void
+
+/** A phone's saved rows. `put` and `remove` act like the user editing; `apply` acts like the sync writing (no change report). */
+export class MemoryLocal implements LocalStore {
+  tables: Record<string, Row[]> = {}
+  listeners = new Set<Listener>()
+  applyError: Error | null = null
+  applied: Record<string, Row[]>[] = []
+
+  getAll() {
+    return JSON.parse(JSON.stringify(this.tables)) as Record<string, Row[]>
+  }
+  apply(tables: Record<string, Row[]>) {
+    if (this.applyError) throw this.applyError
+    this.applied.push(tables)
+    for (const [t, rows] of Object.entries(tables)) this.tables[t] = JSON.parse(JSON.stringify(rows))
+  }
+  onLocalChange(cb: Listener) {
+    this.listeners.add(cb)
+    return () => void this.listeners.delete(cb)
+  }
+  rows(table: string): Row[] {
+    return this.tables[table] ?? []
+  }
+  private set(table: string, next: Row[]) {
+    const prev = this.rows(table)
+    this.tables[table] = next
+    this.listeners.forEach((l) => l(table, prev, next))
+  }
+  put(table: string, row: Row) {
+    const rows = this.rows(table)
+    this.set(table, rows.some((r) => r.id === row.id) ? rows.map((r) => (r.id === row.id ? row : r)) : [...rows, row])
+  }
+  remove(table: string, id: string) {
+    this.set(table, this.rows(table).filter((r) => r.id !== id))
+  }
+}
+
+/** A stand-in for the Supabase functions: last write wins by updated_at, rows come back in seq order. */
+export class FakeBackend implements Transport {
+  rows = new Map<string, SyncRow>()
+  seq = 0
+  pushes: SyncRow[][] = []
+  pulls: number[] = []
+  failNext: Error | null = null
+  pageSize = 1000
+  notified = 0
+  onChanged = new Set<() => void>()
+
+  private maybeFail() {
+    if (this.failNext) {
+      const e = this.failNext
+      this.failNext = null
+      throw e
+    }
+  }
+  async push(household: string, rows: SyncRow[]) {
+    this.maybeFail()
+    this.pushes.push(rows)
+    for (const r of rows) {
+      const key = `${household}|${r.tbl}|${r.id}`
+      const have = this.rows.get(key)
+      if (!have || have.updated_at < r.updated_at) this.rows.set(key, { ...r, seq: ++this.seq })
+    }
+  }
+  async pull(household: string, after: number) {
+    this.maybeFail()
+    this.pulls.push(after)
+    return [...this.rows.entries()]
+      .filter(([k, r]) => k.startsWith(`${household}|`) && (r.seq ?? 0) > after)
+      .map(([, r]) => r)
+      .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0))
+      .slice(0, this.pageSize)
+  }
+  async ping() {
+    this.maybeFail()
+  }
+  subscribe(_household: string, onChanged: () => void) {
+    this.onChanged.add(onChanged)
+    return () => void this.onChanged.delete(onChanged)
+  }
+  notify() {
+    this.notified++
+    this.onChanged.forEach((cb) => cb())
+  }
+}
+
+export const offline = () => new TransportError('offline', 'No connection')
+export const serverError = (message = 'Server said no') => new TransportError('server', message)
