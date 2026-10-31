@@ -10,8 +10,12 @@ export const deferred = (): Deferred => {
   return { promise, resolve }
 }
 
-const toB64 = (s: string) => Buffer.from(s, 'utf-8').toString('base64')
-const fromB64 = (s: string) => Buffer.from(s, 'base64').toString('utf-8')
+const toB64 = (s: string) => {
+  let binary = ''
+  new TextEncoder().encode(s).forEach((b) => (binary += String.fromCharCode(b)))
+  return btoa(binary)
+}
+const fromB64 = (s: string) => new TextDecoder().decode(Uint8Array.from(atob(s), (c) => c.charCodeAt(0)))
 
 function json(status: number, body: unknown, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...headers } })
