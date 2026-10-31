@@ -634,7 +634,7 @@ html[data-style="anime"] .btn-primary { box-shadow: 3px 3px 0 color-mix(in srgb,
   html, body { background: #fff !important; color: #000 !important; }
   body::before { display: none !important; }
   .tabbar, .report-actions, .toast-region, .page-head .head-actions { display: none !important; }
-  .app { max-width: none; padding: 0; margin: 0; }
+  .app { max-width: none !important; padding: 0 !important; margin: 0 !important; }
   .card { background: #fff !important; color: #000 !important; box-shadow: none !important; border: 1px solid #999 !important; border-radius: 0 !important; -webkit-backdrop-filter: none; backdrop-filter: none; break-inside: avoid; }
   .muted, .sub { color: #333 !important; }
   .page-head h1 { background: none !important; color: #000 !important; -webkit-text-fill-color: #000; font-style: normal; }
