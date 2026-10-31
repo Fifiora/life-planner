@@ -14,6 +14,7 @@ import { Trophies } from '../ui/Trophies'
 import { BossCard } from '../ui/BossCard'
 import { CheerCard } from '../ui/CheerCard'
 import { EpisodeCard } from '../ui/EpisodeCard'
+import { ReportCard } from '../ui/ReportCard'
 import { episodeMonthFor } from '../lib/episode'
 import { monthKeyCT, weekStart } from '../lib/dates'
 import { Confetti } from '../ui/Confetti'
@@ -124,6 +125,8 @@ export default function Today() {
       <WeekStrip today={data.today} events={events.events} />
 
       <TodayHero rings={rings} done={doneToday} total={todayItems.length} streak={game.on ? ds.days : bestStreak} restUsed={game.on && ds.restUsed} mascot={!readOnly} xp={xp} part={daypart(new Date().getHours())} host={host?.display_name} />
+
+      <ReportCard today={data.today} />
 
       <CheerCard />
 

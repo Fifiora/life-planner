@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { setThemeChoice, type ThemeChoice } from '../lib/theme'
 import { useState } from 'react'
 import { useHousehold } from '../data/household'
@@ -211,6 +212,12 @@ export default function Settings() {
         <h2>Starter plan</h2>
         <p className="muted small">Our routines, monthly bills, one-time payoffs and targets come with the site, locked with the passphrase. Load them any time: only what is missing is added, and nothing you changed is touched.</p>
         <StarterPlanLoader />
+      </section>
+
+      <section className="card">
+        <h2>Reports</h2>
+        <p className="muted small">Everything that happened in a month, what went well, and what to improve.</p>
+        <Link to="/report">Month-end report</Link>
       </section>
 
       <Trophies />
