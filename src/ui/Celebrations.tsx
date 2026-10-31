@@ -4,7 +4,7 @@ import { useHousehold } from '../data/household'
 import { useIncrease } from '../data/useIncrease'
 import { BADGES } from '../lib/badges'
 import { hasSeen, isFirstRun, markSeen } from '../lib/seen'
-import { badgeLine, levelUpLine, partyLevelLine } from '../lib/voice'
+import { badgeLine, bossLine, levelUpLine, partyLevelLine } from '../lib/voice'
 import { Confetti } from './Confetti'
 import { useToast } from './Toast'
 
@@ -21,6 +21,9 @@ export function Celebrations() {
   const level = game.me.level
   const partyLevel = game.party.level
   const badges = game.me.badges.join(',')
+  const bossWeek = game.boss.week
+  const bossName = game.boss.boss.name
+  const bossDown = game.boss.progress.defeated
 
   useEffect(() => {
     if (!on || readOnly) return
@@ -28,13 +31,14 @@ export function Celebrations() {
     for (let n = 2; n <= level; n++) items.push({ key: `level:${meId}:${n}`, line: levelUpLine(n) })
     for (let n = 2; n <= partyLevel; n++) items.push({ key: `party:${n}`, line: partyLevelLine(n) })
     for (const id of badges ? badges.split(',') : []) items.push({ key: `badge:${meId}:${id}`, line: badgeLine(nameOf(id)) })
+    if (bossDown) items.push({ key: `boss:${bossWeek}`, line: bossLine(bossName) })
     const first = isFirstRun()
     const fresh = items.filter((i) => !hasSeen(i.key))
     markSeen(...fresh.map((i) => i.key))
     if (first || fresh.length === 0 || fresh.length > 3) return
     toast(fresh.map((i) => i.line).join(' '))
     setCount((c) => c + 1)
-  }, [on, readOnly, meId, level, partyLevel, badges, toast])
+  }, [on, readOnly, meId, level, partyLevel, badges, bossWeek, bossName, bossDown, toast])
 
   return <Confetti fire={sparkle} />
 }

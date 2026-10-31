@@ -11,6 +11,10 @@ import { dayStreak } from '../lib/streak'
 import { memberTickDates } from '../lib/xp'
 import { useGame } from '../data/useGame'
 import { Trophies } from '../ui/Trophies'
+import { BossCard } from '../ui/BossCard'
+import { CheerCard } from '../ui/CheerCard'
+import { EpisodeCard } from '../ui/EpisodeCard'
+import { episodeMonthFor } from '../lib/episode'
 import { monthKeyCT, weekStart } from '../lib/dates'
 import { Confetti } from '../ui/Confetti'
 import { useIncrease } from '../data/useIncrease'
@@ -121,6 +125,10 @@ export default function Today() {
 
       <TodayHero rings={rings} done={doneToday} total={todayItems.length} streak={game.on ? ds.days : bestStreak} restUsed={game.on && ds.restUsed} xp={xp} part={daypart(new Date().getHours())} host={host?.display_name} />
 
+      <CheerCard />
+
+      <BossCard />
+
       <UpNext today={data.today} events={events.events} />
 
       <MoneyCard f={money} />
@@ -135,6 +143,8 @@ export default function Today() {
           </p>
         </section>
       )}
+
+      {game.on && episodeMonthFor(data.today) && <EpisodeCard month={episodeMonthFor(data.today)!} />}
 
       <Trophies />
 

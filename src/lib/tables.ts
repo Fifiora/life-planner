@@ -24,4 +24,5 @@ export const TABLES = [
   'budgets',
   'checklist',
   'events',
+  'cheers',
 ] as const

@@ -29,7 +29,7 @@ export function levelProgress(xp: number): { level: number; into: number; needed
 }
 
 /** One person's ticks that still belong to a routine, once per routine per day, in log order. */
-function validTicks(data: GameData, memberId: string): { date: string; bucket: Bucket }[] {
+export function memberTicks(data: GameData, memberId: string): { date: string; bucket: Bucket }[] {
   const byId = new Map(data.routines.map((r) => [r.id, r]))
   const seen = new Set<string>()
   const out: { date: string; bucket: Bucket }[] = []
@@ -46,12 +46,12 @@ function validTicks(data: GameData, memberId: string): { date: string; bucket: B
 }
 
 /** The days this person ticked something. */
-export const memberTickDates = (data: GameData, memberId: string): string[] => [...new Set(validTicks(data, memberId).map((t) => t.date))]
+export const memberTickDates = (data: GameData, memberId: string): string[] => [...new Set(memberTicks(data, memberId).map((t) => t.date))]
 
 export function memberXp(data: GameData, memberId: string): { total: number; byBucket: BucketXp } {
   const byBucket: BucketXp = { health: 0, study: 0, travel: 0, food: 0, finance: 0 }
 
-  const ticks = validTicks(data, memberId)
+  const ticks = memberTicks(data, memberId)
   const lengths = streakLengths(ticks.map((t) => t.date))
   const bonusGiven = new Set<string>()
   for (const t of ticks) {

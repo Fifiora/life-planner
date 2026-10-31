@@ -123,6 +123,14 @@ export interface TriviaAttempt {
 /** A stored row: always has an id, plus whatever fields its table uses. */
 export type Row = { id: string } & Record<string, unknown>
 
+/** A little cheer one partner sends the other for the day. */
+export interface Cheer {
+  id: string
+  from_member: string
+  to_member: string
+  date: string // YYYY-MM-DD (Chicago)
+}
+
 export interface BillPayment {
   id: string
   bill_id: string

@@ -31,4 +31,6 @@ export function heroLine(style: StyleChoice, done: number, total: number): strin
 export const levelUpLine = (n: number): string => `LEVEL UP! You reached level ${n}!`
 export const partyLevelLine = (n: number): string => `Party level ${n}! Together you are unstoppable.`
 export const badgeLine = (name: string): string => `Badge unlocked: ${name}`
+export const cheerLine = (name: string): string => `${name} cheered you on today!`
+export const bossLine = (name: string): string => `Boss defeated: ${name}!`
 export const restUsedLine = 'Rest day used. The streak lives on.'
