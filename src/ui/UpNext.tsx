@@ -7,7 +7,7 @@ import type { CalEvent } from '../types'
 /** The next few events (today onward). Renders nothing when nothing is planned. */
 export function UpNext({ today, events, limit = 3 }: { today: string; events: CalEvent[]; limit?: number }) {
   const coming = events
-    .flatMap((e) => eventOccurrences(e, today, addDays(today, 60)).map((date) => ({ e, date })))
+    .flatMap((e) => eventOccurrences(e, today, addDays(today, 60)).filter((date) => !e.done_on.includes(date)).map((date) => ({ e, date })))
     .sort((a, b) => a.date.localeCompare(b.date) || (a.e.time ?? '').localeCompare(b.e.time ?? ''))
     .slice(0, limit)
   if (coming.length === 0) return null

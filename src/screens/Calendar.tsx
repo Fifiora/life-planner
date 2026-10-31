@@ -10,6 +10,7 @@ import { DaySheet } from '../ui/DaySheet'
 import { MonthGrid } from '../ui/MonthGrid'
 import { PageHead } from '../ui/PageHead'
 
+const MIN_YEAR = 1000
 const MONTH_NAMES = Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(2000, i, 1)).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' }))
 
 export default function Calendar({ initialDate }: { initialDate?: string }) {
@@ -39,9 +40,9 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
 
       <section className="card">
         <div className="cal-head">
-          <button type="button" className="icon-btn" aria-label="Previous month" onClick={() => goTo(shiftMonthKey(month, -1))}>‹</button>
+          <button type="button" className="icon-btn" aria-label="Previous month" disabled={month <= `${MIN_YEAR}-01`} onClick={() => goTo(shiftMonthKey(month, -1))}>‹</button>
           <h2>{monthLabel(month)}</h2>
-          <button type="button" className="icon-btn" aria-label="Next month" onClick={() => goTo(shiftMonthKey(month, 1))}>›</button>
+          <button type="button" className="icon-btn" aria-label="Next month" disabled={month >= '9999-12'} onClick={() => goTo(shiftMonthKey(month, 1))}>›</button>
         </div>
 
         <div className="cal-tools">
@@ -55,8 +56,9 @@ export default function Calendar({ initialDate }: { initialDate?: string }) {
             aria-label="Year"
             value={yearDraft ?? year}
             onChange={(e) => {
+              if (e.target.value.length > 4) return
               setYearDraft(e.target.value)
-              if (/^\d{4}$/.test(e.target.value)) setMonth(`${e.target.value}-${mm}`)
+              if (/^\d{4}$/.test(e.target.value) && Number(e.target.value) >= MIN_YEAR) setMonth(`${e.target.value}-${mm}`)
             }}
             onBlur={() => setYearDraft(null)}
           />
