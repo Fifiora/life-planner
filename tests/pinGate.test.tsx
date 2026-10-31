@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PinGate } from '../src/ui/PinGate'
 
@@ -55,5 +55,60 @@ describe('PinGate', () => {
     expect(onErase).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: /erase this phone and start over/i }))
     expect(onErase).toHaveBeenCalledTimes(1)
+  })
+
+  describe('locking again after being away', () => {
+    const setVisibility = (state: 'hidden' | 'visible') =>
+      act(() => {
+        Object.defineProperty(document, 'visibilityState', { value: state, configurable: true })
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+
+    const openUnlocked = (now: () => number) => {
+      localStorage.setItem('lp.pin', JSON.stringify(record))
+      sessionStorage.setItem('lp.unlocked', '1')
+      render(
+        <PinGate verify={vi.fn()} now={now}>
+          <p>Inside</p>
+        </PinGate>,
+      )
+    }
+
+    it('locks after the chosen time away (one minute by default)', async () => {
+      let t = 0
+      openUnlocked(() => t)
+      setVisibility('hidden')
+      t = 2 * 60_000
+      setVisibility('visible')
+      expect(await screen.findByLabelText('PIN')).toBeInTheDocument()
+      expect(screen.queryByText('Inside')).not.toBeInTheDocument()
+      expect(sessionStorage.getItem('lp.unlocked')).toBeNull()
+    })
+
+    it('stays open for a quick switch away and back', () => {
+      let t = 0
+      openUnlocked(() => t)
+      setVisibility('hidden')
+      t = 20_000
+      setVisibility('visible')
+      expect(screen.getByText('Inside')).toBeInTheDocument()
+    })
+
+    it('can lock the moment the app is left', async () => {
+      localStorage.setItem('lp.lockAfter', '0')
+      openUnlocked(() => 0)
+      setVisibility('hidden')
+      expect(await screen.findByLabelText('PIN')).toBeInTheDocument()
+    })
+
+    it('can be set never to lock by time', () => {
+      localStorage.setItem('lp.lockAfter', '-1')
+      let t = 0
+      openUnlocked(() => t)
+      setVisibility('hidden')
+      t = 10 * 60 * 60_000
+      setVisibility('visible')
+      expect(screen.getByText('Inside')).toBeInTheDocument()
+    })
   })
 })

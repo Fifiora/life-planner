@@ -20,26 +20,46 @@ beforeEach(() => {
 })
 
 describe('Finance', () => {
-  it('overview shows the month, where the money goes and the debt payoff', async () => {
+  it('overview shows income, spend and net, where the money goes, transfers and the savings tracker', async () => {
     renderScreen(<Finance />)
-    expect(await screen.findByText('Left after bills')).toBeInTheDocument()
-    expect(screen.getByText('Where the money goes')).toBeInTheDocument()
+    expect(await screen.findByText('Real income')).toBeInTheDocument()
+    for (const label of ['Spent', 'Net', 'Moved to savings']) expect(screen.getAllByText(label).length).toBeGreaterThan(0)
+    expect(screen.getByText('Spending by category')).toBeInTheDocument()
+    expect(screen.getByText('Transfers to make')).toBeInTheDocument()
+    expect(screen.getByText('Savings tracker')).toBeInTheDocument()
+    expect(screen.getByText('Left after bills')).toBeInTheDocument()
     expect(screen.getByText('Debt payoff')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Overview', selected: true })).toBeInTheDocument()
   })
 
-  it('bills tab lets you tick off what has been paid this month', async () => {
+  it('has all eight sections', async () => {
+    renderScreen(<Finance />)
+    for (const name of ['Overview', 'Transactions', 'Month vs Month', 'Budget', 'Bills', 'Savings', 'Plan', 'Insights']) {
+      expect(await screen.findByRole('tab', { name })).toBeInTheDocument()
+    }
+  })
+
+  it('transfers can be ticked off and are remembered', async () => {
+    renderScreen(<Finance />)
+    await userEvent.click(await screen.findByRole('checkbox', { name: /move to savings/i }))
+    await vi.waitFor(() => expect(saved('checklist')).toHaveLength(1))
+    expect(saved('checklist')[0]).toMatchObject({ key: 'savings', done: true })
+  })
+
+  it('bills tab lets you tick off what has been paid this month and mark what could be cancelled', async () => {
     renderScreen(<Finance />)
     await userEvent.click(await screen.findByRole('tab', { name: 'Bills' }))
     expect(screen.getByText('Paid this month')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('checkbox', { name: /rent paid/i }))
     await vi.waitFor(() => expect(saved('bill_payments')).toHaveLength(1))
     expect(saved('bill_payments')[0]).toMatchObject({ bill_id: 'b1' })
+    await userEvent.selectOptions(screen.getByLabelText('Cancel status for Netflix'), 'could')
+    await vi.waitFor(() => expect(saved('bills').find((b) => b.id === 'b2').cancel_status).toBe('could'))
   })
 
-  it('spending tab records an extra expense', async () => {
+  it('transactions tab records an expense and shows it in the list', async () => {
     renderScreen(<Finance />)
-    await userEvent.click(await screen.findByRole('tab', { name: 'Spending' }))
+    await userEvent.click(await screen.findByRole('tab', { name: 'Transactions' }))
     expect(screen.getByText('Extra spending budget')).toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Amount'), '25')
     await userEvent.selectOptions(screen.getByLabelText('Category'), 'dining')
@@ -47,15 +67,72 @@ describe('Finance', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add expense' }))
     await vi.waitFor(() => expect(saved('expenses')).toHaveLength(1))
     expect(saved('expenses')[0]).toMatchObject({ amount: 25, category: 'dining', note: 'Dinner', member_id: 'a' })
-    expect(await screen.findByText('Dinner')).toBeInTheDocument()
+    expect(await screen.findByRole('cell', { name: 'Dinner' })).toBeInTheDocument()
   })
 
   it('refuses an expense with no amount', async () => {
     renderScreen(<Finance />)
-    await userEvent.click(await screen.findByRole('tab', { name: 'Spending' }))
+    await userEvent.click(await screen.findByRole('tab', { name: 'Transactions' }))
     await userEvent.click(screen.getByRole('button', { name: 'Add expense' }))
     expect(screen.getByRole('alert')).toHaveTextContent(/amount/i)
     expect(saved('expenses')).toHaveLength(0)
+  })
+
+  it('transactions can be searched', async () => {
+    const today = new Date().toISOString().slice(0, 10)
+    localStorage.setItem('lp.data.expenses', JSON.stringify([
+      { id: 'e1', date: today, amount: 20, category: 'dining', note: 'Tacos', member_id: 'a' },
+      { id: 'e2', date: today, amount: 30, category: 'car', note: 'Oil change', member_id: 'a' },
+    ]))
+    renderScreen(<Finance />)
+    await userEvent.click(await screen.findByRole('tab', { name: 'Transactions' }))
+    expect(screen.getByRole('cell', { name: 'Tacos' })).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Search transactions'), 'oil')
+    expect(screen.queryByRole('cell', { name: 'Tacos' })).not.toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: 'Oil change' })).toBeInTheDocument()
+  })
+
+  it('imports a bank file, categorising and skipping repeats', async () => {
+    renderScreen(<Finance />)
+    await userEvent.click(await screen.findByRole('tab', { name: 'Transactions' }))
+    const csv = 'Date,Description,Amount\n11/03/2026,HEB #123,-54.20\n11/04/2026,Payroll ACME,2500.00\n'
+    await userEvent.upload(screen.getByLabelText('Import bank CSV'), new File([csv], 'statement.csv', { type: 'text/csv' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Import 2 transactions' }))
+    await vi.waitFor(() => expect(saved('expenses')).toHaveLength(2))
+    expect(saved('expenses')).toEqual(expect.arrayContaining([
+      expect.objectContaining({ date: '2026-11-03', amount: 54.2, category: 'groceries', source: 'bank', kind: 'expense' }),
+      expect.objectContaining({ date: '2026-11-04', amount: 2500, category: 'income', source: 'bank', kind: 'income' }),
+    ]))
+  })
+
+  it('month vs month compares income and spend and trends a category', async () => {
+    renderScreen(<Finance />)
+    await userEvent.click(await screen.findByRole('tab', { name: 'Month vs Month' }))
+    expect(screen.getByText('Income vs spend')).toBeInTheDocument()
+    expect(screen.getByText('Net by month')).toBeInTheDocument()
+    expect(screen.getByText('Category trend')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Housing' }))
+    expect(screen.getByRole('img', { name: /housing by month/i })).toBeInTheDocument()
+  })
+
+  it('budget compares each category with its budget and lets you change it', async () => {
+    renderScreen(<Finance />)
+    await userEvent.click(await screen.findByRole('tab', { name: 'Budget' }))
+    expect(screen.getByText('Budget vs actual')).toBeInTheDocument()
+    for (const t of ['On track / under', 'Watch it', 'Over budget']) expect(screen.getAllByText(t).length).toBeGreaterThan(0)
+    const input = screen.getByLabelText('Budget for housing')
+    await userEvent.clear(input)
+    await userEvent.type(input, '1800')
+    await userEvent.tab()
+    await vi.waitFor(() => expect(saved('budgets')).toHaveLength(1))
+    expect(saved('budgets')[0]).toMatchObject({ category: 'housing', amount: 1800 })
+  })
+
+  it('insights tell the story in plain words', async () => {
+    renderScreen(<Finance />)
+    await userEvent.click(await screen.findByRole('tab', { name: 'Insights' }))
+    expect(screen.getByText('Big picture')).toBeInTheDocument()
+    expect(screen.getByText('Category callouts')).toBeInTheDocument()
   })
 
   it('savings tab records money put aside', async () => {
@@ -206,5 +283,14 @@ describe('view-only copy', () => {
     renderScreen(<Health />)
     const checks = await screen.findAllByRole('button', { name: /mark daily activity done|undo daily activity/i })
     expect(checks.every((c) => (c as HTMLButtonElement).disabled)).toBe(true)
+  })
+})
+
+describe('Settings lock timing', () => {
+  it('lets you choose how long the app may be away before it locks', async () => {
+    localStorage.setItem('lp.pin', JSON.stringify({ v: 1, salt: 'x', hash: 'y', iterations: 1 }))
+    renderScreen(<Settings />)
+    await userEvent.selectOptions(await screen.findByLabelText('Lock when away'), '5')
+    expect(localStorage.getItem('lp.lockAfter')).toBe('5')
   })
 })

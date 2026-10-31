@@ -1,0 +1,198 @@
+import { describe, it, expect } from 'vitest'
+import {
+  budgetRows,
+  cancelTracker,
+  categoryTrend,
+  filterLedger,
+  ledgerRows,
+  monthActuals,
+  monthKpis,
+  monthSeries,
+  monthWindow,
+  spendShares,
+  statusForRatio,
+  topSpikes,
+  transfersToMake,
+} from '../src/lib/ledger'
+import type { Bill, BillPayment, Expense, SavingsEntry } from '../src/types'
+
+const rec = (id: string, name: string, amount: number, category: string, cancel_status: Bill['cancel_status'] = ''): Bill => ({ id, name, amount, category, kind: 'recurring', due_month: null, paid: false, cancel_status })
+const one = (id: string, name: string, amount: number, due_month: string, paid = false): Bill => ({ id, name, amount, category: 'debt', kind: 'one_time', due_month, paid })
+const tx = (id: string, date: string, amount: number, category: string, over: Partial<Expense> = {}): Expense => ({ id, date, amount, category, note: id, member_id: 'a', ...over })
+const pay = (bill_id: string, month: string): BillPayment => ({ id: `${bill_id}${month}`, bill_id, month, paid_on: `${month}-02` })
+
+const bills: Bill[] = [
+  rec('r1', 'Rent', 2000, 'housing'),
+  rec('r2', 'Netflix', 10, 'subscriptions', 'could'),
+  rec('r3', 'Gym', 30, 'subscriptions', 'cancelled'),
+  rec('r4', 'Power', 100, 'utilities'),
+  one('o1', 'Card A', 500, '2026-11', true),
+  one('o2', 'Trip', 800, '2026-11', false),
+]
+
+describe('monthActuals', () => {
+  it('adds paid bills and logged expenses by category', () => {
+    const a = monthActuals(bills, [pay('r1', '2026-11'), pay('r4', '2026-11'), pay('r2', '2026-10')], [tx('e1', '2026-11-03', 120, 'dining'), tx('e2', '2026-10-30', 50, 'dining')], '2026-11')
+    expect(a.spentByCategory).toEqual({ housing: 2000, utilities: 100, dining: 120, debt: 500 })
+    expect(a.spent).toBe(2720)
+    expect(a.income).toBe(0)
+    expect(a.hasBank).toBe(false)
+  })
+  it('keeps income and transfers out of spending', () => {
+    const a = monthActuals([], [], [tx('i', '2026-11-01', 5000, 'income', { kind: 'income' }), tx('t', '2026-11-02', 900, 'transfer', { kind: 'transfer' }), tx('e', '2026-11-03', 40, 'Dining ')], '2026-11')
+    expect(a).toMatchObject({ income: 5000, transferOut: 900, spent: 40, spentByCategory: { dining: 40 } })
+  })
+  it('trusts imported bank transactions over ticked-off bills, so nothing is counted twice', () => {
+    const bank = tx('b1', '2026-11-01', 2000, 'housing', { source: 'bank' })
+    const a = monthActuals(bills, [pay('r1', '2026-11')], [bank], '2026-11')
+    expect(a.hasBank).toBe(true)
+    expect(a.spentByCategory).toEqual({ housing: 2000 })
+  })
+  it('ignores ticks for bills that no longer exist', () => {
+    expect(monthActuals(bills, [pay('gone', '2026-11')], [], '2026-11').spent).toBe(500)
+  })
+})
+
+describe('monthKpis', () => {
+  it('uses the configured income when none was logged', () => {
+    const a = monthActuals(bills, [pay('r1', '2026-11')], [], '2026-11')
+    expect(monthKpis(10000, a, 700)).toEqual({ realIncome: 10000, spent: 2500, net: 7500, transferredOut: 700 })
+  })
+  it('prefers logged income and adds transfers to what was put aside', () => {
+    const a = monthActuals([], [], [tx('i', '2026-11-01', 8000, 'income', { kind: 'income' }), tx('t', '2026-11-02', 300, 'transfer', { kind: 'transfer' })], '2026-11')
+    expect(monthKpis(10000, a, 200)).toEqual({ realIncome: 8000, spent: 0, net: 8000, transferredOut: 500 })
+  })
+})
+
+describe('spendShares', () => {
+  it('gives each category a share of the total, biggest first', () => {
+    expect(spendShares({ housing: 750, dining: 250, tiny: 0 })).toEqual([
+      { category: 'housing', total: 750, pct: 75 },
+      { category: 'dining', total: 250, pct: 25 },
+    ])
+    expect(spendShares({})).toEqual([])
+  })
+})
+
+describe('transfersToMake', () => {
+  it('lists the moves to make this month, including each unpaid payoff', () => {
+    const items = transfersToMake({ income: 10000, taxPct: 10, tithePct: 10, savingsTarget: 5000, payoffsDue: [one('o2', 'Trip', 800, '2026-11')] })
+    expect(items.map((i) => i.key)).toEqual(['deposit', 'tax', 'tithe', 'savings', 'payoff:o2'])
+    expect(items.map((i) => i.amount)).toEqual([10000, 1000, 900, 5000, 800])
+  })
+  it('leaves out set-asides that are switched off', () => {
+    const items = transfersToMake({ income: 10000, taxPct: 0, tithePct: 0, savingsTarget: 5000, payoffsDue: [] })
+    expect(items.map((i) => i.key)).toEqual(['deposit', 'savings'])
+  })
+})
+
+describe('cancelTracker', () => {
+  it('adds up what could be cancelled and what already was, per month and per year', () => {
+    expect(cancelTracker(bills)).toEqual({ couldCancel: 10, cancelled: 30, annualPotential: 120, annualSaved: 360, couldCount: 1, cancelledCount: 1 })
+  })
+})
+
+describe('statusForRatio', () => {
+  it('turns spend versus budget into a label', () => {
+    expect(statusForRatio(0.8).label).toBe('CRUSHED IT')
+    expect(statusForRatio(1).label).toBe('ON TRACK')
+    expect(statusForRatio(1.05).label).toBe('WATCH IT')
+    expect(statusForRatio(1.3).label).toBe('OVER BUDGET')
+  })
+})
+
+describe('budgetRows', () => {
+  const months = ['2026-10', '2026-11']
+  const actuals = [
+    { income: 0, spent: 0, transferOut: 0, hasBank: false, spentByCategory: {} },
+    { income: 0, spent: 0, transferOut: 0, hasBank: false, spentByCategory: { housing: 2200, dining: 300 } },
+  ]
+  it('compares each category with its budget over the months that have activity', () => {
+    const rows = budgetRows({ bills, budgets: [{ id: 'b', category: 'dining', amount: 250 }], months, actuals })
+    const housing = rows.find((r) => r.category === 'housing')!
+    expect(housing).toMatchObject({ budget: 2000, perMonth: [0, 2200], avg: 2200 })
+    expect(housing.status.label).toBe('WATCH IT')
+    const dining = rows.find((r) => r.category === 'dining')!
+    expect(dining).toMatchObject({ budget: 250, avg: 300 })
+    expect(dining.status.label).toBe('OVER BUDGET')
+  })
+  it('lets a saved budget replace the one worked out from bills', () => {
+    const rows = budgetRows({ bills, budgets: [{ id: 'b', category: 'housing', amount: 2500 }], months, actuals })
+    expect(rows.find((r) => r.category === 'housing')).toMatchObject({ budget: 2500 })
+    expect(rows.find((r) => r.category === 'housing')!.status.label).toBe('CRUSHED IT')
+  })
+  it('has no status for a category with no budget', () => {
+    const rows = budgetRows({ bills: [], budgets: [], months, actuals })
+    expect(rows.find((r) => r.category === 'dining')!.status.label).toBe('NO BUDGET')
+  })
+})
+
+describe('monthWindow', () => {
+  it('lists months around the current one', () => {
+    expect(monthWindow('2026-11', 2, 2)).toEqual(['2026-09', '2026-10', '2026-11', '2026-12', '2027-01'])
+  })
+})
+
+describe('monthSeries', () => {
+  it('gives income, spend, plan and net for each month', () => {
+    const actuals = [
+      monthActuals(bills, [pay('r1', '2026-10')], [], '2026-10'),
+      monthActuals(bills, [pay('r1', '2026-11')], [tx('e', '2026-11-04', 100, 'dining')], '2026-11'),
+    ]
+    const rows = monthSeries({ months: ['2026-10', '2026-11'], actuals, income: 10000, bills, savings: [] })
+    expect(rows[0]).toMatchObject({ month: '2026-10', income: 10000, spent: 2000, planned: 2140, net: 8000, hasData: true })
+    expect(rows[1]).toMatchObject({ month: '2026-11', spent: 2600, planned: 3440, net: 7400 })
+  })
+  it('marks months with nothing recorded', () => {
+    const rows = monthSeries({ months: ['2027-03'], actuals: [monthActuals([], [], [], '2027-03')], income: 10000, bills: [], savings: [] })
+    expect(rows[0]).toMatchObject({ hasData: false, spent: 0 })
+  })
+})
+
+describe('categoryTrend and topSpikes', () => {
+  const months = ['2026-09', '2026-10', '2026-11']
+  const mk = (cat: Record<string, number>) => ({ income: 0, spent: 0, transferOut: 0, hasBank: false, spentByCategory: cat })
+  const actuals = [mk({ dining: 100 }), mk({ dining: 100 }), mk({ dining: 400, travel: 30 })]
+  it('lists one category month by month', () => {
+    expect(categoryTrend('dining', actuals)).toEqual([100, 100, 400])
+    expect(categoryTrend('car', actuals)).toEqual([0, 0, 0])
+  })
+  it('finds categories that jumped well above their usual', () => {
+    const spikes = topSpikes(months, actuals)
+    expect(spikes).toEqual([{ category: 'dining', month: '2026-11', value: 400, avg: 200, pctOver: 100 }])
+  })
+})
+
+describe('ledger rows', () => {
+  const expenses = [
+    tx('e1', '2026-11-03', 120, 'dining', { note: 'Dinner out' }),
+    tx('i1', '2026-11-01', 5000, 'income', { kind: 'income', note: 'Paycheck' }),
+    tx('e2', '2026-10-30', 50, 'dining'),
+  ]
+  const savings: SavingsEntry[] = [{ id: 's1', month: '2026-11', amount: 700 }]
+  const rows = ledgerRows({ month: '2026-11', expenses, payments: [pay('r1', '2026-11')], bills, savings })
+
+  it('combines logged items, ticked bills, savings and paid payoffs for a month', () => {
+    expect(rows.map((r) => [r.kind, r.description, r.amount])).toEqual(
+      expect.arrayContaining([
+        ['expense', 'Dinner out', -120],
+        ['income', 'Paycheck', 5000],
+        ['bill', 'Rent', -2000],
+        ['savings', 'Savings', -700],
+        ['payoff', 'Card A', -500],
+      ]),
+    )
+    expect(rows).toHaveLength(5)
+  })
+  it('only lets logged items be edited', () => {
+    expect(rows.filter((r) => r.editable).map((r) => r.id).sort()).toEqual(['e1', 'i1'])
+  })
+  it('filters by search, kind and category, and sorts', () => {
+    expect(filterLedger(rows, { search: 'rent', kind: 'all', category: 'all', sort: 'date', dir: 'asc' }).map((r) => r.description)).toEqual(['Rent'])
+    expect(filterLedger(rows, { search: '', kind: 'bill', category: 'all', sort: 'date', dir: 'asc' })).toHaveLength(1)
+    expect(filterLedger(rows, { search: '', kind: 'all', category: 'dining', sort: 'date', dir: 'asc' })).toHaveLength(1)
+    const byAmount = filterLedger(rows, { search: '', kind: 'all', category: 'all', sort: 'amount', dir: 'desc' })
+    expect(byAmount[0].description).toBe('Paycheck')
+    expect(byAmount.at(-1)!.description).toBe('Rent')
+  })
+})
