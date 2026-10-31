@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { SyncEngine } from '../src/lib/syncEngine'
-import { decryptRow, deriveKey, generateCode } from '../src/lib/syncCrypto'
+import { decryptRow, deriveKey, encryptRow, generateCode } from '../src/lib/syncCrypto'
+import { TABLES } from '../src/lib/tables'
 import type { Row } from '../src/types'
 import { FakeBackend, MemoryKV, MemoryLocal, offline, serverError } from './syncHelpers'
 
@@ -125,5 +126,187 @@ describe('SyncEngine: tracking and pushing local changes', () => {
     local.put('bills', row('b1'))
     await engine.syncNow()
     expect(engine.status.lastSyncedAt).toBe(12345)
+  })
+})
+
+async function pair(opts: { aNow?: () => number; bNow?: () => number } = {}) {
+  const code = generateCode()
+  const backend = new FakeBackend()
+  const a = await phone(code, backend, { now: opts.aNow })
+  const b = await phone(code, backend, { now: opts.bNow })
+  return { code, backend, a, b }
+}
+
+describe('SyncEngine: receiving and merging', () => {
+  it('shows a row added on one phone on the other', async () => {
+    const { a, b } = await pair()
+    a.local.put('bills', row('b1', { amount: 1700 }))
+    await a.engine.syncNow()
+    const result = await b.engine.syncNow()
+    expect(result.pulled).toBe(1)
+    expect(b.local.rows('bills')).toEqual([{ id: 'b1', name: 'Item b1', amount: 1700 }])
+  })
+
+  it('keeps edits to different rows made on both phones', async () => {
+    const { a, b } = await pair()
+    a.local.put('bills', row('b1'))
+    a.local.put('bills', row('b2'))
+    await a.engine.syncNow()
+    await b.engine.syncNow()
+    a.local.put('bills', row('b1', { amount: 1 }))
+    b.local.put('bills', row('b2', { amount: 2 }))
+    await a.engine.syncNow()
+    await b.engine.syncNow()
+    await a.engine.syncNow()
+    for (const p of [a, b]) expect(p.local.rows('bills').map((r) => [r.id, r.amount])).toEqual([['b1', 1], ['b2', 2]])
+  })
+
+  it('lets the later edit of the same row win on both phones, whichever syncs first', async () => {
+    for (const order of ['ab', 'ba']) {
+      const { a, b } = await pair({ aNow: () => 2000, bNow: () => 3000 })
+      a.local.put('bills', row('b1'))
+      await a.engine.syncNow()
+      await b.engine.syncNow()
+      a.local.put('bills', row('b1', { who: 'A' }))
+      b.local.put('bills', row('b1', { who: 'B' }))
+      const [first, second] = order === 'ab' ? [a, b] : [b, a]
+      await first.engine.syncNow()
+      await second.engine.syncNow()
+      await first.engine.syncNow()
+      expect(a.local.rows('bills')[0].who).toBe('B')
+      expect(b.local.rows('bills')[0].who).toBe('B')
+    }
+  })
+
+  it('removes a row on both phones when the delete is later than an offline edit, and never brings it back', async () => {
+    const { a, b } = await pair({ aNow: () => 5000, bNow: () => 4000 })
+    a.local.put('bills', row('b1'))
+    await a.engine.syncNow()
+    await b.engine.syncNow()
+    b.local.put('bills', row('b1', { edited: true })) // offline, stamped 4000+
+    a.local.remove('bills', 'b1') // stamped 5000+
+    await a.engine.syncNow()
+    await b.engine.syncNow()
+    await a.engine.syncNow()
+    expect(a.local.rows('bills')).toEqual([])
+    expect(b.local.rows('bills')).toEqual([])
+    expect(b.engine.status.pending).toBe(0)
+  })
+
+  it('lets an edit that is later than a delete bring the row back', async () => {
+    const { a, b } = await pair({ aNow: () => 3000, bNow: () => 9000 })
+    a.local.put('bills', row('b1'))
+    await a.engine.syncNow()
+    await b.engine.syncNow()
+    a.local.remove('bills', 'b1')
+    b.local.put('bills', row('b1', { edited: true }))
+    await a.engine.syncNow()
+    await b.engine.syncNow()
+    await a.engine.syncNow()
+    expect(a.local.rows('bills')[0]).toMatchObject({ id: 'b1', edited: true })
+    expect(b.local.rows('bills')[0]).toMatchObject({ id: 'b1', edited: true })
+  })
+
+  it('does nothing on repeated syncs and never sends back what it just received', async () => {
+    const { backend, a, b } = await pair()
+    a.local.put('bills', row('b1'))
+    await a.engine.syncNow()
+    await b.engine.syncNow()
+    const pushes = backend.pushes.length
+    const applied = b.local.applied.length
+    for (let i = 0; i < 3; i++) {
+      await a.engine.syncNow()
+      await b.engine.syncNow()
+    }
+    expect(backend.pushes.length).toBe(pushes)
+    expect(b.local.applied.length).toBe(applied)
+    expect(b.engine.status.pending).toBe(0)
+  })
+
+  it('keeps pulling when a call returns a full page of 1000', async () => {
+    const { backend, a, b } = await pair()
+    a.local.tables = { logs: Array.from({ length: 1500 }, (_, i) => row(`l${i}`)) }
+    a.engine.markAllDirty()
+    await a.engine.syncNow()
+    const result = await b.engine.syncNow()
+    expect(result.pulled).toBe(1500)
+    expect(b.local.rows('logs')).toHaveLength(1500)
+    expect(backend.pulls.filter((p) => p === 0).length).toBeGreaterThanOrEqual(1)
+    expect(backend.pulls.length).toBeGreaterThanOrEqual(3) // two for B, one for A's first sync
+  })
+
+  it('skips a row it cannot open, counts it, and still applies the rest', async () => {
+    const { backend, a, b } = await pair()
+    a.local.put('bills', row('good'))
+    await a.engine.syncNow()
+    const wrong = await deriveKey(generateCode())
+    backend.rows.set(`${HOUSEHOLD}|bills|bad`, { tbl: 'bills', id: 'bad', payload: await encryptRow(wrong, 'bills', row('bad')), deleted: false, updated_at: 10, seq: ++backend.seq })
+    const result = await b.engine.syncNow()
+    expect(result.rejected).toBe(1)
+    expect(b.local.rows('bills').map((r) => r.id)).toEqual(['good'])
+    expect(b.engine.status.state).toBe('idle')
+  })
+
+  it('does not move on when the phone cannot save, and retries the same rows later', async () => {
+    const { b, a } = await pair()
+    a.local.put('bills', row('b1'))
+    await a.engine.syncNow()
+    b.local.applyError = new Error('storage full')
+    await b.engine.syncNow()
+    expect(b.engine.status).toMatchObject({ state: 'error', message: 'storage full' })
+    expect(b.local.rows('bills')).toEqual([])
+    expect(b.kv.get('lp.sync.cursor') ?? '0').toBe('0')
+    b.local.applyError = null
+    await b.engine.syncNow()
+    expect(b.local.rows('bills')).toHaveLength(1)
+    expect(b.engine.status.state).toBe('idle')
+  })
+
+  it('raises its clock to changes it has seen, so a later local edit beats them', async () => {
+    const { backend, a, b } = await pair({ aNow: () => 50_000, bNow: () => 1000 })
+    a.local.put('bills', row('b1'))
+    await a.engine.syncNow()
+    await b.engine.syncNow()
+    b.local.put('bills', row('b1', { edited: true }))
+    await b.engine.syncNow()
+    await a.engine.syncNow()
+    expect(a.local.rows('bills')[0].edited).toBe(true)
+    expect(backend.pushes.at(-1)![0].updated_at).toBeGreaterThan(50_000)
+  })
+})
+
+describe('SyncEngine: joining a shared planner', () => {
+  it('makes this phone match the shared copy, dropping what it held, and leaves nothing waiting', async () => {
+    const { a, b } = await pair()
+    a.local.put('bills', row('b1'))
+    a.local.put('places', row('p1'))
+    await a.engine.syncNow()
+    b.local.put('routines', row('own')) // something entered on the new phone before joining
+    const { pulled } = await b.engine.replaceFromRemote()
+    expect(pulled).toBe(2)
+    expect(b.local.rows('bills').map((r) => r.id)).toEqual(['b1'])
+    expect(b.local.rows('routines')).toEqual([])
+    for (const t of TABLES) expect(Array.isArray(b.local.tables[t])).toBe(true)
+    expect(b.engine.status.pending).toBe(0)
+    const sent = (await b.engine.syncNow()).pushed
+    expect(sent).toBe(0)
+  })
+
+  it('works against an empty shared copy', async () => {
+    const { b } = await pair()
+    b.local.put('routines', row('own'))
+    const { pulled } = await b.engine.replaceFromRemote()
+    expect(pulled).toBe(0)
+    expect(b.local.rows('routines')).toEqual([])
+  })
+
+  it('removes a row that was deleted in the shared copy', async () => {
+    const { a, b } = await pair()
+    a.local.put('bills', row('b1'))
+    await a.engine.syncNow()
+    a.local.remove('bills', 'b1')
+    await a.engine.syncNow()
+    await b.engine.replaceFromRemote()
+    expect(b.local.rows('bills')).toEqual([])
   })
 })
