@@ -44,7 +44,7 @@ describe('Report screen', () => {
     const select = screen.getByRole('combobox', { name: 'Month' })
     expect(select).toHaveValue('2026-10')
     expect(within(select).getByRole('option', { name: 'November 2026 (so far)' })).toBeInTheDocument()
-    expect(screen.getByText('October 2026')).toBeInTheDocument()
+    expect(screen.getByText('October 2026', { selector: 'p' })).toBeInTheDocument()
   })
   it('changes month with the picker', async () => {
     page()

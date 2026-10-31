@@ -10,6 +10,12 @@ export const EPISODE_TITLES = ['The Fresh Start', 'The Savings Push', 'Rising Ti
 const PLAN_MONTH = PLAN_START.slice(0, 7)
 const monthIndex = (month: string) => Number(month.slice(0, 4)) * 12 + Number(month.slice(5, 7)) - 1
 
+/** `Arc 3: Rising Tide`: the month's place in the series. */
+export function episodeTitle(month: string): string {
+  const n = monthIndex(month) - monthIndex(PLAN_MONTH) + 1
+  return `Arc ${n}: ${EPISODE_TITLES[(((n - 1) % EPISODE_TITLES.length) + EPISODE_TITLES.length) % EPISODE_TITLES.length]}`
+}
+
 export interface Episode {
   month: string
   title: string
@@ -21,8 +27,7 @@ export interface Episode {
 
 /** A month told as an episode: a title in the series, what each of you ticked, streaks, bills paid and spending. */
 export function episodeFor(month: string, data: GameData & { expenses: Expense[] }, members: { id: string }[]): Episode {
-  const n = monthIndex(month) - monthIndex(PLAN_MONTH) + 1
-  const title = `Arc ${n}: ${EPISODE_TITLES[(((n - 1) % EPISODE_TITLES.length) + EPISODE_TITLES.length) % EPISODE_TITLES.length]}`
+  const title = episodeTitle(month)
   const ticksByMember: Record<string, number> = {}
   let bestStreak = 0
   for (const m of members) {

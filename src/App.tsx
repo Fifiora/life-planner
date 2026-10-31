@@ -6,6 +6,7 @@ import Calendar from './screens/Calendar'
 import Finance from './screens/Finance'
 import Food from './screens/Food'
 import Health from './screens/Health'
+import Report from './screens/Report'
 import Settings from './screens/Settings'
 import Study from './screens/Study'
 import Today from './screens/Today'
@@ -43,6 +44,7 @@ function Shell({ boot }: { boot: BootResult }) {
           <Route path="/travel" element={<Travel />} />
           <Route path="/food" element={<Food />} />
           <Route path="/finance" element={<Finance />} />
+          <Route path="/report" element={<Report />} />
           {!readOnly && <Route path="/settings" element={<Settings />} />}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

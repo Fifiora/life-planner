@@ -623,3 +623,19 @@ html[data-style="anime"] .btn-primary { box-shadow: 3px 3px 0 color-mix(in srgb,
 .boss-fill { background: linear-gradient(90deg, #e11d48, #fb923c); }
 .cheer-line { margin: 0 0 0.4rem; font-weight: 750; }
 .episode-card h2 { font-style: italic; }
+
+/* ---------- Month-end report ---------- */
+.report-actions { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem; }
+.report-actions .input { min-width: 11rem; }
+.episode-title { margin: -0.4rem 0 0; font-style: italic; font-weight: 750; }
+.report-card .list-row { align-items: flex-start; }
+
+@media print {
+  html, body { background: #fff !important; color: #000 !important; }
+  body::before { display: none !important; }
+  .tabbar, .report-actions, .toast-region, .page-head .head-actions { display: none !important; }
+  .app { max-width: none; padding: 0; margin: 0; }
+  .card { background: #fff !important; color: #000 !important; box-shadow: none !important; border: 1px solid #999 !important; border-radius: 0 !important; -webkit-backdrop-filter: none; backdrop-filter: none; break-inside: avoid; }
+  .muted, .sub { color: #333 !important; }
+  .page-head h1 { background: none !important; color: #000 !important; -webkit-text-fill-color: #000; font-style: normal; }
+}
