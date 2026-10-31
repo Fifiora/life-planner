@@ -210,6 +210,7 @@ export default function Settings() {
               <option value="15">After 15 minutes away</option>
               <option value="-1">Only when I close the app</option>
             </select>
+          </>
         ) : (
           <>
             <div className="row2">
