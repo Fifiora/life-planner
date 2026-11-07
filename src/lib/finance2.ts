@@ -42,9 +42,33 @@ export function forecast(income: number, bills: Bill[], target: number, startMon
   })
 }
 
+/** What was really paid on a bill for a month: the amount typed in, else the bill's own amount (0 when not paid). */
+export const paymentAmount = (bill: Bill, payment?: BillPayment) => (payment ? (payment.amount ?? bill.amount) : 0)
+
+/** What has really been paid on a one-time payoff: all of it once cleared (or what was typed), else the part paid. */
+export const payoffPaid = (bill: Bill) => (bill.paid ? (bill.paid_amount ?? bill.amount) : (bill.paid_amount ?? 0))
+
+/** What to save on a payment when an amount is typed in (the full bill amount means "no amount"). */
+export const paymentPatch = (bill: Bill, amount: number): Partial<BillPayment> => ({ amount: amount === bill.amount ? null : amount })
+
+/** What to save on a payoff when an amount paid is typed in: cleared at the full amount, part-paid below it. */
+export const payoffPatch = (bill: Bill, amount: number): Partial<Bill> =>
+  amount >= bill.amount ? { paid: true, paid_amount: amount === bill.amount ? null : amount } : { paid: false, paid_amount: amount }
+
+/** Money paid per monthly bill for `month`, adding up every payment recorded for it. */
+export function paidPerBill(bills: Bill[], payments: BillPayment[], month: string): Map<string, number> {
+  const byId = new Map(bills.map((b) => [b.id, b]))
+  const out = new Map<string, number>()
+  for (const p of payments) {
+    const bill = byId.get(p.bill_id)
+    if (p.month === month && bill && bill.kind === 'recurring') out.set(bill.id, (out.get(bill.id) ?? 0) + paymentAmount(bill, p))
+  }
+  return out
+}
+
 export interface PayoffItem {
   bill: Bill
-  status: 'paid' | 'overdue' | 'upcoming'
+  status: 'paid' | 'partial' | 'overdue' | 'upcoming'
 }
 
 export interface PayoffProgress {
@@ -65,33 +89,46 @@ export function payoffProgress(bills: Bill[], today: string, deadline: string): 
     .sort((a, b) => (a.due_month ?? '').localeCompare(b.due_month ?? '') || a.name.localeCompare(b.name))
   const items = list.map<PayoffItem>((bill) => ({
     bill,
-    status: bill.paid ? 'paid' : (bill.due_month ?? '') < thisMonth ? 'overdue' : 'upcoming',
+    status: bill.paid ? 'paid' : (bill.due_month ?? '') < thisMonth ? 'overdue' : payoffPaid(bill) > 0 ? 'partial' : 'upcoming',
   }))
   const total = list.reduce((s, b) => s + b.amount, 0)
-  const paid = list.filter((b) => b.paid).reduce((s, b) => s + b.amount, 0)
+  const paid = list.reduce((s, b) => s + payoffPaid(b), 0)
   return {
     total,
     paid,
-    remaining: total - paid,
-    pct: total === 0 ? 100 : Math.round((paid / total) * 100),
+    remaining: list.reduce((s, b) => s + Math.max(0, b.amount - payoffPaid(b)), 0),
+    pct: total === 0 ? 100 : Math.min(100, Math.round((paid / total) * 100)),
     daysLeft: daysBetween(today, deadline),
     overdue: items.filter((i) => i.status === 'overdue').map((i) => i.bill),
     items,
   }
 }
 
-/** Which monthly bills have been ticked off as paid for `month`. */
+/** Which monthly bills have been paid for `month`, and how much money that is (part payments count for what they were). */
 export function billsPaidSummary(bills: Bill[], payments: BillPayment[], month: string) {
   const recurring = bills.filter((b) => b.kind === 'recurring')
-  const paidIds = new Set(payments.filter((p) => p.month === month).map((p) => p.bill_id))
-  const paid = recurring.filter((b) => paidIds.has(b.id))
+  const paidBy = paidPerBill(bills, payments, month)
+  const paidOf = (b: Bill) => paidBy.get(b.id) ?? 0
+  const full = recurring.filter((b) => paidBy.has(b.id) && paidOf(b) >= b.amount)
   return {
-    paidCount: paid.length,
+    paidCount: full.length,
     totalCount: recurring.length,
-    paidAmount: paid.reduce((s, b) => s + b.amount, 0),
+    paidAmount: recurring.reduce((s, b) => s + paidOf(b), 0),
     totalAmount: recurring.reduce((s, b) => s + b.amount, 0),
-    unpaid: recurring.filter((b) => !paidIds.has(b.id)),
+    toGoAmount: recurring.reduce((s, b) => s + Math.max(0, b.amount - paidOf(b)), 0),
+    partial: recurring.filter((b) => paidOf(b) > 0 && paidOf(b) < b.amount),
+    unpaid: recurring.filter((b) => !(paidBy.has(b.id) && paidOf(b) >= b.amount)),
   }
+}
+
+/** Money paid against everything due in `month`: the monthly bills plus the payoffs due that month. */
+export function monthPaidProgress(bills: Bill[], payments: BillPayment[], month: string) {
+  const summary = billsPaidSummary(bills, payments, month)
+  const due = bills.filter((b) => b.kind === 'one_time' && b.due_month === month)
+  const paid = summary.paidAmount + due.reduce((s, b) => s + payoffPaid(b), 0)
+  const planned = summary.totalAmount + due.reduce((s, b) => s + b.amount, 0)
+  const toGo = summary.toGoAmount + due.reduce((s, b) => s + Math.max(0, b.amount - payoffPaid(b)), 0)
+  return { paid, planned, toGo, pct: planned > 0 ? Math.min(100, Math.round((paid / planned) * 100)) : 0 }
 }
 
 /** This month's extra spending against its budget; groceries are tracked apart (they have their own bill). */

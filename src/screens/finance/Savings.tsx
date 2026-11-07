@@ -3,14 +3,17 @@ import type { FinanceData } from '../../data/useFinance'
 import { useHousehold } from '../../data/household'
 import { savingsProgress } from '../../lib/finance2'
 import { money, monthLabel } from '../../lib/format'
+import type { SavingsEntry } from '../../types'
+import { AmountSheet } from '../../ui/AmountSheet'
 
 export function Savings({ f, month }: { f: FinanceData; month: string }) {
-  const { me } = useHousehold()
+  const { me, readOnly } = useHousehold()
   const [amount, setAmount] = useState('')
   const [when, setWhen] = useState(month)
   useEffect(() => setWhen(month), [month])
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [editing, setEditing] = useState<SavingsEntry | null>(null)
 
   const p = savingsProgress(f.savings.rows, f.target, f.savingsStart, month)
   const entries = [...f.savings.rows].sort((a, b) => b.month.localeCompare(a.month))
@@ -67,12 +70,27 @@ export function Savings({ f, month }: { f: FinanceData; month: string }) {
               <li key={e.id} className="list-row">
                 <span className="grow"><strong>{monthLabel(e.month)}</strong>{e.note && <span className="muted small block-text">{e.note}</span>}</span>
                 <span style={{ fontWeight: 600 }}>{money(e.amount)}</span>
+                {!readOnly && <button type="button" className="icon-btn" aria-label={`Edit savings for ${monthLabel(e.month)}`} onClick={() => setEditing(e)}>✎</button>}
                 <button type="button" className="icon-btn" aria-label={`Delete savings for ${monthLabel(e.month)}`} onClick={() => f.savings.remove(e.id)}>✕</button>
               </li>
             ))}
           </ul>
         )}
       </section>
+      {editing && (
+        <AmountSheet
+          key={editing.id}
+          open
+          title="Edit savings"
+          label="Amount"
+          initial={editing.amount}
+          onClose={() => setEditing(null)}
+          onSave={async (n) => {
+            await f.savings.update(editing.id, { amount: n })
+            setEditing(null)
+          }}
+        />
+      )}
     </>
   )
 }

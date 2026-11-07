@@ -42,6 +42,7 @@ export interface Bill {
   due_month: string | null // YYYY-MM, required for one_time
   paid: boolean
   cancel_status?: '' | 'could' | 'cancelled' // marking a subscription as one you could cancel / did cancel
+  paid_amount?: number | null // payoffs: what has really been paid (part of it, or more); empty means none, or all once paid
 }
 
 export interface Income {
@@ -137,6 +138,7 @@ export interface BillPayment {
   month: string // YYYY-MM
   paid_on: string // YYYY-MM-DD
   member_id?: string // who ticked it off (older rows have none)
+  amount?: number | null // what was really paid; empty means the bill's own amount
 }
 
 export interface SavingsEntry {
@@ -195,6 +197,7 @@ export interface ChecklistItem {
   month: string
   key: string
   done: boolean
+  amount?: number | null // what was really sent; empty means the planned amount
 }
 
 export type Repeat = 'none' | 'weekly' | 'biweekly' | 'monthly' | 'yearly'

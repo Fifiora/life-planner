@@ -1,4 +1,4 @@
-import type { PayoffProgress } from '../lib/finance2'
+import { payoffPaid, type PayoffProgress } from '../lib/finance2'
 import { money, monthLabel } from '../lib/format'
 
 export function PayoffCard({ payoff, deadlineLabel }: { payoff: PayoffProgress; deadlineLabel: string }) {
@@ -21,10 +21,10 @@ export function PayoffCard({ payoff, deadlineLabel }: { payoff: PayoffProgress; 
             <li key={bill.id} className="list-row">
               <span className="grow">
                 <strong>{bill.name}</strong>
-                <span className="muted small block-text">{money(bill.amount)} · due {bill.due_month ? monthLabel(bill.due_month) : '—'}</span>
+                <span className="muted small block-text">{money(bill.amount)} · due {bill.due_month ? monthLabel(bill.due_month) : '—'}{status === 'partial' || (status === 'overdue' && payoffPaid(bill) > 0) ? ` · ${money(payoffPaid(bill))} paid` : ''}</span>
               </span>
               <span className={`badge ${status === 'paid' ? 'ok' : status === 'overdue' ? 'bad' : ''}`}>
-                {status === 'paid' ? 'Paid' : status === 'overdue' ? 'Overdue' : 'Upcoming'}
+                {status === 'paid' ? 'Paid' : status === 'overdue' ? 'Overdue' : status === 'partial' ? 'Part paid' : 'Upcoming'}
               </span>
             </li>
           ))}

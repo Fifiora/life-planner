@@ -24,7 +24,7 @@ const CIRC = 2 * Math.PI * R
  * Choose a slice or a legend row to dim the rest and show its breakdown; choose it again (or the empty
  * area, or "Show all") to bring everything back.
  */
-export function Donut({ shares, centerLabel, detail }: { shares: Share[]; centerLabel?: string; detail?: (category: string) => ReactNode }) {
+export function Donut({ shares, centerLabel, centerSub, detail }: { shares: Share[]; centerLabel?: string; centerSub?: string; detail?: (category: string) => ReactNode }) {
   const [selected, setSelected] = useState<string | null>(null)
   // A category that left the chart must not come back selected when it returns.
   if (selected && !shares.some((s) => s.category === selected)) setSelected(null)
@@ -32,8 +32,9 @@ export function Donut({ shares, centerLabel, detail }: { shares: Share[]; center
 
   const active = selected && shares.some((s) => s.category === selected) ? selected : null
   const toggle = (category: string) => setSelected(active === category ? null : category)
-  const label = `Spending by category: ${shares.map((s) => `${s.category} ${s.pct}%`).join(', ')}`
-  const sum = shares.reduce((s, x) => s + x.total, 0)
+  const toGoSum = shares.reduce((s, x) => s + (x.toGo ?? 0), 0)
+  const label = `Spending by category: ${shares.map((s) => `${s.category} ${s.pct}%`).join(', ')}${toGoSum > 0 ? `, still to pay ${money(toGoSum)}` : ''}`
+  const sum = shares.reduce((s, x) => s + x.total + (x.toGo ?? 0), 0) || 1
   let used = 0
 
   return (
@@ -44,32 +45,41 @@ export function Donut({ shares, centerLabel, detail }: { shares: Share[]; center
             <circle cx="50" cy="50" r={R} fill="none" stroke="var(--line)" strokeWidth="14" />
             {shares.map((s) => {
               const length = (s.total / sum) * CIRC
-              const circle = (
-                <circle
-                  key={s.category}
-                  data-category={s.category}
-                  className={`slice${active === s.category ? ' selected' : ''}${active && active !== s.category ? ' dimmed' : ''}`}
-                  cx="50"
-                  cy="50"
-                  r={R}
-                  fill="none"
-                  stroke={categoryColor(s.category)}
-                  strokeWidth={active === s.category ? 17 : 14}
-                  strokeDasharray={`${Math.max(0, length - 0.6)} ${CIRC}`}
-                  strokeDashoffset={-used}
-                  transform="rotate(-90 50 50)"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggle(s.category)
-                  }}
-                >
-                  <title>{`${cap(s.category)}: ${money(s.total)} (${s.pct}%)`}</title>
-                </circle>
+              const goLength = ((s.toGo ?? 0) / sum) * CIRC
+              const start = used
+              const pick = (e: { stopPropagation: () => void }) => {
+                e.stopPropagation()
+                toggle(s.category)
+              }
+              const common = {
+                cx: 50,
+                cy: 50,
+                r: R,
+                fill: 'none',
+                stroke: categoryColor(s.category),
+                transform: 'rotate(-90 50 50)',
+                onClick: pick,
+              }
+              const state = `${active === s.category ? ' selected' : ''}${active && active !== s.category ? ' dimmed' : ''}`
+              const strokeWidth = active === s.category ? 17 : 14
+              used += length + goLength
+              return (
+                <g key={s.category}>
+                  {length > 0 && (
+                    <circle {...common} data-category={s.category} className={`slice${state}`} strokeWidth={strokeWidth} strokeDasharray={`${Math.max(0, length - 0.6)} ${CIRC}`} strokeDashoffset={-start}>
+                      <title>{`${cap(s.category)}: ${money(s.total)} (${s.pct}%)`}</title>
+                    </circle>
+                  )}
+                  {goLength > 0 && (
+                    <circle {...common} data-togo={s.category} className={`slice togo${state}`} strokeWidth={strokeWidth} strokeOpacity={0.3} strokeDasharray={`${Math.max(0, goLength - 0.6)} ${CIRC}`} strokeDashoffset={-(start + length)}>
+                      <title>{`${cap(s.category)}: ${money(s.toGo ?? 0)} still to pay`}</title>
+                    </circle>
+                  )}
+                </g>
               )
-              used += length
-              return circle
             })}
-            {centerLabel && <text x="50" y="54" textAnchor="middle" fontSize="11" fontWeight="700" fill="currentColor">{centerLabel}</text>}
+            {centerLabel && <text x="50" y={centerSub ? 50 : 54} textAnchor="middle" fontSize="11" fontWeight="700" fill="currentColor">{centerLabel}</text>}
+            {centerLabel && centerSub && <text x="50" y="60" textAnchor="middle" fontSize="6" fill="currentColor" opacity="0.7">{centerSub}</text>}
           </svg>
         </div>
         <ul className="legend">
@@ -85,6 +95,7 @@ export function Donut({ shares, centerLabel, detail }: { shares: Share[]; center
                 <span className="dot" style={{ background: categoryColor(s.category) }} aria-hidden />
                 <span className="grow">{cap(s.category)}</span>
                 <strong>{money(s.total)}</strong>
+                {(s.toGo ?? 0) > 0 && <span className="muted small">{`+${money(s.toGo ?? 0)} to go`}</span>}
                 <span className="muted small">{`${s.pct}%`}</span>
               </button>
             </li>

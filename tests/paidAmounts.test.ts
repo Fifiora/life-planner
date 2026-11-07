@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { billsPaidSummary, monthPaidProgress, payoffPaid, payoffProgress, paymentAmount } from '../src/lib/finance2'
+import { billsPaidSummary, monthPaidProgress, paymentPatch, payoffPaid, payoffPatch, payoffProgress, paymentAmount } from '../src/lib/finance2'
 import { categoryBreakdown, ledgerRows, monthActuals, remainingByCategory, spendShares, withRemaining } from '../src/lib/ledger'
 import type { Bill, BillPayment, Expense } from '../src/types'
 
@@ -140,5 +140,18 @@ describe('ledgerRows with edited amounts', () => {
       ['payoff', 'o1', true],
       ['savings', 's1', true],
     ])
+  })
+})
+
+describe('what to save when an amount is typed in', () => {
+  it('keeps a payment at the full bill as "no amount", and anything else as typed', () => {
+    expect(paymentPatch(rent, 2000)).toEqual({ amount: null })
+    expect(paymentPatch(rent, 1500)).toEqual({ amount: 1500 })
+  })
+  it('marks a payoff cleared once the full amount is paid, and part-paid below that', () => {
+    const card = one('o', 'Card', 500, '2026-11')
+    expect(payoffPatch(card, 200)).toEqual({ paid: false, paid_amount: 200 })
+    expect(payoffPatch(card, 500)).toEqual({ paid: true, paid_amount: null })
+    expect(payoffPatch(card, 520)).toEqual({ paid: true, paid_amount: 520 })
   })
 })

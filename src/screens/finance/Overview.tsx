@@ -2,9 +2,10 @@ import { useState } from 'react'
 import type { FinanceData } from '../../data/useFinance'
 import { useHousehold } from '../../data/household'
 import { todayCT } from '../../lib/dates'
-import { categoryTotals, payoffProgress } from '../../lib/finance2'
+import { categoryTotals, monthPaidProgress, payoffProgress } from '../../lib/finance2'
 import { money, monthLabel } from '../../lib/format'
-import { budgetFor, cancelTracker, categoryBreakdown, monthCallouts, monthKpis, plannedByCategory, spendShares, transfersToMake } from '../../lib/ledger'
+import { budgetFor, cancelTracker, categoryBreakdown, monthCallouts, monthKpis, remainingByCategory, spendShares, transfersToMake, withRemaining } from '../../lib/ledger'
+import { AmountSheet } from '../../ui/AmountSheet'
 import { BreakdownPanel } from '../../ui/BreakdownPanel'
 import { Callouts } from '../../ui/Callouts'
 import { Donut } from '../../ui/Donut'
@@ -22,20 +23,25 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
   const actuals = f.actualsFor(month)
   const saved = f.savings.rows.filter((s) => s.month === month).reduce((s, e) => s + e.amount, 0)
   const kpis = monthKpis(totalIncome, actuals, saved)
-  const usingPlan = actuals.spent === 0
-  const shares = spendShares(usingPlan ? plannedByCategory(f.bills.rows, month) : actuals.spentByCategory)
+  const paidShares = spendShares(actuals.spentByCategory)
+  const remaining = remainingByCategory(f.bills.rows, f.payments.rows, f.expenses.rows, month)
+  const donutShares = withRemaining(paidShares, remaining)
+  const toGoTotal = Object.values(remaining).reduce((s, n) => s + n, 0)
+  const progress = monthPaidProgress(f.bills.rows, f.payments.rows, month)
   const cancel = cancelTracker(f.bills.rows)
   const payoff = payoffProgress(f.bills.rows, todayCT(), f.deadline)
   const subscriptions = categoryTotals(f.bills.rows, totalIncome).find((c) => c.category === 'subscriptions')
   const dueNow = f.bills.rows.filter((b) => b.kind === 'one_time' && !b.paid && b.due_month === month)
   const transfers = transfersToMake({ income: totalIncome, taxPct: f.goalTax, tithePct: f.goalTithe, savingsTarget: target, payoffsDue: dueNow })
-  const budgetMap = Object.fromEntries(shares.map((s) => [s.category, budgetFor(s.category, f.bills.rows, f.budgets.rows)]))
-  const callouts = monthCallouts({ kpis, shares, budgets: budgetMap, couldCancelMonthly: cancel.couldCancel })
+  const budgetMap = Object.fromEntries(paidShares.map((s) => [s.category, budgetFor(s.category, f.bills.rows, f.budgets.rows)]))
+  const callouts = monthCallouts({ kpis, shares: paidShares, budgets: budgetMap, couldCancelMonthly: cancel.couldCancel })
 
-  const done = (key: string) => f.checklist.rows.some((c) => c.month === month && c.key === key && c.done)
+  const [sending, setSending] = useState<{ key: string; title: string; planned: number; sent: number } | null>(null)
+  const row = (key: string) => f.checklist.rows.find((c) => c.month === month && c.key === key)
+  const done = (key: string) => row(key)?.done === true
   async function toggleTransfer(key: string) {
     const existing = f.checklist.rows.find((c) => c.month === month && c.key === key)
-    if (existing) await f.checklist.update(existing.id, { done: !existing.done })
+    if (existing) await f.checklist.update(existing.id, { done: !existing.done, amount: null })
     else await f.checklist.insert({ month, key, done: true })
   }
 
@@ -68,18 +74,22 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
       </div>
 
       <section className="card donut-card">
-        <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Spending by category</h2></div>{usingPlan && <span className="pill">planned</span>}</div>
+        <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Spending by category</h2></div></div>
         <Donut
-          shares={shares}
-          centerLabel={money(shares.reduce((s, x) => s + x.total, 0))}
+          shares={donutShares}
+          centerLabel={money(actuals.spent)}
+          centerSub={toGoTotal > 0 ? `of ${money(actuals.spent + toGoTotal)}` : undefined}
           detail={(category) => (
             <BreakdownPanel
-              breakdown={categoryBreakdown({ category, bills: f.bills.rows, payments: f.payments.rows, expenses: f.expenses.rows, month, planned: usingPlan })}
+              breakdown={categoryBreakdown({ category, bills: f.bills.rows, payments: f.payments.rows, expenses: f.expenses.rows, month, planned: false })}
               income={kpis.realIncome}
-              planned={usingPlan}
+              planned={false}
             />
           )}
         />
+        {!actuals.hasBank && progress.planned > 0 && (
+          <p className="bar-text">Paid {money(progress.paid)} of {money(progress.planned)} planned · {money(progress.toGo)} to go</p>
+        )}
       </section>
 
       <section className="card">
@@ -95,6 +105,17 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
                 <strong>{t.title}</strong>
                 <span className="muted small block-text">{t.sub}</span>
               </span>
+              {done(t.key) && (() => {
+                const sent = row(t.key)?.amount ?? t.amount
+                return (
+                  <>
+                    <span className="muted small">Sent {money(sent)}{sent !== t.amount ? ` of ${money(t.amount)}` : ''}</span>
+                    {!readOnly && (
+                      <button type="button" className="icon-btn" aria-label={`Edit amount sent for ${t.title}`} onClick={() => setSending({ key: t.key, title: t.title, planned: t.amount, sent })}>✎</button>
+                    )}
+                  </>
+                )
+              })()}
             </li>
           ))}
         </ul>
@@ -168,6 +189,24 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
       </section>
 
       <Verse text="But seek ye first the kingdom of God, and his righteousness; and all these things shall be added unto you." reference="Matthew 6:33" />
+
+      {sending && (
+        <AmountSheet
+          key={sending.key}
+          open
+          title="Amount sent"
+          label="Amount"
+          initial={sending.sent}
+          full={sending.planned}
+          fullLabel="Sent in full"
+          onClose={() => setSending(null)}
+          onSave={async (n) => {
+            const existing = row(sending.key)
+            if (existing) await f.checklist.update(existing.id, { amount: n === sending.planned ? null : n })
+            setSending(null)
+          }}
+        />
+      )}
 
       <Sheet open={incomeOpen} onClose={() => setIncomeOpen(false)} title="Monthly income">
         <label className="label" htmlFor="income-amount">Combined monthly contributions</label>

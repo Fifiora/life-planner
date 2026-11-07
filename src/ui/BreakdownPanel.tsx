@@ -5,7 +5,7 @@ const KIND: Record<string, string> = { bill: 'Bill', payoff: 'Payoff', spent: 'S
 
 /** The right-hand detail for one chosen donut slice. */
 export function BreakdownPanel({ breakdown, income, planned }: { breakdown: Breakdown; income: number; planned: boolean }) {
-  const { rows, total, previousTotal, change, hasPrevious } = breakdown
+  const { rows, total, previousTotal, change, hasPrevious, toGo, toGoTotal } = breakdown
   const share = income > 0 ? Math.round((total / income) * 100) : 0
   const vs =
     !hasPrevious
@@ -26,9 +26,24 @@ export function BreakdownPanel({ breakdown, income, planned }: { breakdown: Brea
             <span className="chip-kind">{KIND[r.kind]}</span>
             <span className="grow">{r.label}</span>
             <strong>{money(r.amount)}</strong>
+            {r.of !== undefined && <span className="muted small">{`of ${money(r.of)}`}</span>}
           </li>
         ))}
       </ul>
+      {toGo.length > 0 && (
+        <>
+          <p className="muted small mt">Still to pay: <strong>{money(toGoTotal)}</strong></p>
+          <ul className="list">
+            {toGo.map((r, i) => (
+              <li key={`${r.label}-${i}`} className="list-row" style={{ opacity: 0.7 }}>
+                <span className="chip-kind">{KIND[r.kind]}</span>
+                <span className="grow">{r.label}</span>
+                <strong>{money(r.amount)}</strong>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   )
 }

@@ -2,12 +2,14 @@ import { useState, type FormEvent } from 'react'
 import type { FinanceData } from '../../data/useFinance'
 import { useHousehold } from '../../data/household'
 import { todayCT } from '../../lib/dates'
-import { defaultExpenseDate, normCategory } from '../../lib/finance2'
+import { defaultExpenseDate, normCategory, paymentPatch, payoffPatch, payoffPaid } from '../../lib/finance2'
 import { newBankRows, parseBankCsv } from '../../lib/bankCsv'
 import { readFileText } from '../../lib/files'
 import { receiptStore } from '../../lib/receipts'
 import { cap, money } from '../../lib/format'
-import { filterLedger, ledgerRows, type LedgerFilter, type LedgerKind } from '../../lib/ledger'
+import { filterLedger, ledgerRows, type LedgerFilter, type LedgerKind, type LedgerRow } from '../../lib/ledger'
+import { AmountSheet } from '../../ui/AmountSheet'
+import { ExpenseEditForm } from '../../ui/ExpenseEditForm'
 
 export const EXPENSE_CATEGORIES: [string, string][] = [
   ['dining', 'Eating out / dates'],
@@ -33,6 +35,7 @@ export function Transactions({ f, month }: { f: FinanceData; month: string }) {
   const [filter, setFilter] = useState<LedgerFilter>({ search: '', kind: 'all', category: 'all', sort: 'date', dir: 'desc' })
   const [preview, setPreview] = useState<{ rows: ReturnType<typeof newBankRows>; skipped: number } | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
+  const [editRow, setEditRow] = useState<LedgerRow | null>(null)
 
   const { flex } = f
   const pct = flex.budget > 0 ? Math.min(100, Math.round((flex.spent / flex.budget) * 100)) : flex.spent > 0 ? 100 : 0
@@ -50,6 +53,17 @@ export function Transactions({ f, month }: { f: FinanceData; month: string }) {
     await f.expenses.insert({ date: date || todayCT(), amount: n, category, note: note.trim(), member_id: me.id, kind: 'expense', source: 'manual' })
     setAmount('')
     setNote('')
+  }
+
+  const editedExpense = editRow?.editable ? f.expenses.rows.find((x) => x.id === editRow.rawId) : undefined
+  const editedBill = editRow?.kind === 'bill' ? f.bills.rows.find((b) => b.id === f.payments.rows.find((p) => p.id === editRow.rawId)?.bill_id) : editRow?.kind === 'payoff' ? f.bills.rows.find((b) => b.id === editRow.rawId) : undefined
+
+  async function saveAmount(n: number) {
+    if (!editRow) return
+    if (editRow.kind === 'bill' && editedBill) await f.payments.update(editRow.rawId, paymentPatch(editedBill, n))
+    else if (editRow.kind === 'payoff' && editedBill) await f.bills.update(editedBill.id, payoffPatch(editedBill, n))
+    else if (editRow.kind === 'savings') await f.savings.update(editRow.rawId, { amount: n })
+    setEditRow(null)
   }
 
   async function chooseFile(file: File | undefined) {
@@ -193,7 +207,10 @@ export function Transactions({ f, month }: { f: FinanceData; month: string }) {
                       )}
                     </td>
                     <td style={{ color: r.amount > 0 ? 'var(--ok)' : undefined, fontWeight: 600 }}>{r.amount > 0 ? '+' : ''}{money(r.amount)}</td>
-                    <td>{r.editable && !readOnly && <button type="button" className="icon-btn" aria-label={`Delete ${r.description}`} onClick={() => { const photo = f.expenses.rows.find((x) => x.id === r.id)?.receipt_id; void f.expenses.remove(r.id); if (photo) void receiptStore.remove(photo) }}>✕</button>}</td>
+                    <td>
+                      {r.amountEditable && !readOnly && <button type="button" className="icon-btn" aria-label={`Edit ${r.description}`} onClick={() => setEditRow(r)}>✎</button>}
+                      {r.editable && !readOnly && <button type="button" className="icon-btn" aria-label={`Delete ${r.description}`} onClick={() => { const photo = f.expenses.rows.find((x) => x.id === r.id)?.receipt_id; void f.expenses.remove(r.id); if (photo) void receiptStore.remove(photo) }}>✕</button>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -201,6 +218,29 @@ export function Transactions({ f, month }: { f: FinanceData; month: string }) {
           </div>
         )}
       </section>
+      {editRow && editedExpense && (
+        <ExpenseEditForm
+          key={editRow.rawId}
+          expense={editedExpense}
+          onClose={() => setEditRow(null)}
+          onSave={async (values) => {
+            await f.expenses.update(editedExpense.id, values)
+            setEditRow(null)
+          }}
+        />
+      )}
+      {editRow && !editedExpense && editRow.amountEditable && (
+        <AmountSheet
+          key={editRow.rawId}
+          open
+          title="Edit transaction"
+          label="Amount"
+          initial={editRow.kind === 'payoff' && editedBill ? payoffPaid(editedBill) || Math.abs(editRow.amount) : Math.abs(editRow.amount)}
+          full={editedBill?.amount}
+          onClose={() => setEditRow(null)}
+          onSave={saveAmount}
+        />
+      )}
     </>
   )
 }

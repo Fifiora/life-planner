@@ -3,9 +3,10 @@ import { useState } from 'react'
 import type { FinanceData } from '../../data/useFinance'
 import { useHousehold } from '../../data/household'
 import { todayCT } from '../../lib/dates'
-import { billsPaidSummary, categoryTotals, normCategory } from '../../lib/finance2'
+import { billsPaidSummary, categoryTotals, monthPaidProgress, normCategory, paymentAmount, paymentPatch, payoffPaid, payoffPatch } from '../../lib/finance2'
 import { cap, money, monthLabel } from '../../lib/format'
-import type { Bill } from '../../types'
+import type { Bill, BillPayment } from '../../types'
+import { AmountSheet } from '../../ui/AmountSheet'
 import { BillForm } from '../../ui/BillForm'
 import { Confetti } from '../../ui/Confetti'
 import { Sheet } from '../../ui/Sheet'
@@ -15,8 +16,11 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Bill | null>(null)
   const [celebrate, setCelebrate] = useState(false)
+  const [paying, setPaying] = useState<{ bill: Bill; payment?: BillPayment } | null>(null)
 
   const summary = billsPaidSummary(f.bills.rows, f.payments.rows, month)
+  const progress = monthPaidProgress(f.bills.rows, f.payments.rows, month)
+  const paymentFor = (b: Bill) => f.payments.rows.find((p) => p.bill_id === b.id && p.month === month)
   const paidIds = new Set(f.payments.rows.filter((p) => p.month === month).map((p) => p.bill_id))
   const recurring = f.bills.rows.filter((b) => b.kind === 'recurring')
   const groups = categoryTotals(f.bills.rows, f.totalIncome).map((c) => ({
@@ -24,7 +28,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
     bills: recurring.filter((b) => normCategory(b.category) === c.category).sort((a, b) => b.amount - a.amount),
   }))
   const oneTime = f.bills.rows.filter((b) => b.kind === 'one_time').sort((a, b) => (a.due_month ?? '').localeCompare(b.due_month ?? ''))
-  const pct = summary.totalCount ? Math.round((summary.paidCount / summary.totalCount) * 100) : 0
+  const pct = progress.pct
 
   async function togglePaid(bill: Bill) {
     const existing = f.payments.rows.find((p) => p.bill_id === bill.id && p.month === month)
@@ -32,12 +36,26 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
     else await f.payments.insert({ bill_id: bill.id, month, paid_on: todayCT(), member_id: me.id })
   }
 
+  function cheer() {
+    setCelebrate(true)
+    window.setTimeout(() => setCelebrate(false), 2200)
+  }
+
   async function markPayoff(b: Bill) {
-    await f.bills.update(b.id, { paid: !b.paid })
-    if (!b.paid) {
-      setCelebrate(true)
-      window.setTimeout(() => setCelebrate(false), 2200)
+    await f.bills.update(b.id, { paid: !b.paid, paid_amount: null })
+    if (!b.paid) cheer()
+  }
+
+  async function savePaid(n: number) {
+    if (!paying) return
+    const { bill, payment } = paying
+    if (bill.kind === 'one_time') {
+      await f.bills.update(bill.id, payoffPatch(bill, n))
+      if (!bill.paid && n >= bill.amount) cheer()
+    } else if (payment) {
+      await f.payments.update(payment.id, paymentPatch(bill, n))
     }
+    setPaying(null)
   }
 
   return (
@@ -55,7 +73,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
         <div className="bar mt" role="progressbar" aria-label="Bills paid this month" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
           <div className="bar-fill" style={{ width: `${pct}%` }} />
         </div>
-        <p className="bar-text">{summary.paidCount} of {summary.totalCount} paid · {money(summary.paidAmount)} of {money(summary.totalAmount)}</p>
+        <p className="bar-text">{summary.paidCount} of {summary.totalCount} paid{summary.partial.length > 0 ? ` · ${summary.partial.length} part-paid` : ''} · {money(progress.paid)} of {money(progress.planned)}</p>
         {summary.unpaid.length > 0 && summary.unpaid.length <= 6 && (
           <p className="muted small">Still to pay: {summary.unpaid.map((b) => b.name).join(', ')}</p>
         )}
@@ -73,8 +91,11 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
                 <span className="grow">
                   <button type="button" className="plain-btn" onClick={() => setEditing(b)}><strong>{b.name}</strong></button>
                   <span className="muted small block-text">Due {b.due_month ? monthLabel(b.due_month) : '—'}</span>
+                  {!b.paid && payoffPaid(b) > 0 && <span className="muted small block-text">Partly paid · {money(payoffPaid(b))} of {money(b.amount)}</span>}
+                  {b.paid && b.paid_amount != null && b.paid_amount !== b.amount && <span className="muted small block-text">Paid {money(b.paid_amount)}</span>}
                 </span>
                 <span style={{ fontWeight: 700, textDecoration: b.paid ? 'line-through' : undefined }}>{money(b.amount)}</span>
+                {!readOnly && <button type="button" className="icon-btn" aria-label={`Edit amount paid for ${b.name}`} onClick={() => setPaying({ bill: b })}>✎</button>}
                 {readOnly && b.paid && <span className="pill">Paid ✓</span>}
                 <button type="button" className={`btn btn-small${b.paid ? '' : ' btn-primary'}`} onClick={() => markPayoff(b)}>{b.paid ? 'Paid ✓' : 'Mark paid'}</button>
               </li>
@@ -109,7 +130,22 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
                   <option value="could">Could cancel</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
-                <span style={{ fontWeight: 600, opacity: paidIds.has(b.id) ? 0.55 : 1 }}>{money(b.amount)}</span>
+                {(() => {
+                  const payment = paymentFor(b)
+                  if (!payment) return <span style={{ fontWeight: 600 }}>{money(b.amount)}</span>
+                  const paid = paymentAmount(b, payment)
+                  const text = paid < b.amount ? `${money(paid)} of ${money(b.amount)}` : money(paid)
+                  return (
+                    <span className="amt-col">
+                      {readOnly ? (
+                        <span style={{ fontWeight: 600, opacity: 0.55 }}>{text}</span>
+                      ) : (
+                        <button type="button" className="plain-btn" style={{ fontWeight: 600, opacity: 0.8 }} aria-label={`Edit amount paid for ${b.name}`} onClick={() => setPaying({ bill: b, payment })}>{text}</button>
+                      )}
+                      {paid < b.amount && <span className="muted small block-text">{money(b.amount - paid)} to go</span>}
+                    </span>
+                  )
+                })()}
               </li>
             ))}
           </ul>
@@ -117,6 +153,18 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
       ))}
       {groups.length === 0 && <section className="card"><p className="muted small">No monthly bills yet. Tap + above to add one.</p></section>}
 
+      {paying && (
+        <AmountSheet
+          key={paying.bill.id}
+          open
+          title={`Amount paid: ${paying.bill.name}`}
+          label="Amount"
+          initial={paying.bill.kind === 'one_time' ? payoffPaid(paying.bill) || paying.bill.amount : paymentAmount(paying.bill, paying.payment)}
+          full={paying.bill.amount}
+          onClose={() => setPaying(null)}
+          onSave={savePaid}
+        />
+      )}
       <Sheet open={adding} onClose={() => setAdding(false)} title="Add a bill">
         <BillForm onSave={async (values) => { await f.bills.insert(values); setAdding(false) }} />
       </Sheet>

@@ -1,6 +1,6 @@
 import type { Bill, BillPayment, Budget, Expense, SavingsEntry } from '../types'
 import { monthView } from './finance'
-import { normCategory } from './finance2'
+import { normCategory, paidPerBill, payoffPaid } from './finance2'
 import { cap, money, monthLabel, shiftMonthKey } from './format'
 
 // ---------- A month's real numbers ----------
@@ -37,11 +37,8 @@ export function monthActuals(bills: Bill[], payments: BillPayment[], expenses: E
   }
   if (!hasBank) {
     const byId = new Map(bills.map((b) => [b.id, b]))
-    for (const p of payments) {
-      const bill = byId.get(p.bill_id)
-      if (p.month === month && bill && bill.kind === 'recurring') add(bill.category, bill.amount)
-    }
-    for (const b of bills) if (b.kind === 'one_time' && b.paid && b.due_month === month) add(b.category, b.amount)
+    for (const [id, amount] of paidPerBill(bills, payments, month)) add((byId.get(id) as Bill).category, amount)
+    for (const b of bills) if (b.kind === 'one_time' && b.due_month === month && payoffPaid(b) > 0) add(b.category, payoffPaid(b))
   }
   return { income, spent: Object.values(by).reduce((s, n) => s + n, 0), transferOut, hasBank, spentByCategory: by }
 }
@@ -63,6 +60,8 @@ export interface Share {
   category: string
   total: number
   pct: number
+  /** Planned money in this category that has not been paid yet. */
+  toGo?: number
 }
 
 export function spendShares(byCategory: Record<string, number>): Share[] {
@@ -85,12 +84,37 @@ export function plannedByCategory(bills: Bill[], month: string): Record<string, 
   return by
 }
 
+/** Planned money not paid yet, by category (monthly bills and the payoffs due this month). Empty once bank lines exist. */
+export function remainingByCategory(bills: Bill[], payments: BillPayment[], expenses: Expense[], month: string): Record<string, number> {
+  if (expenses.some((e) => e.date.slice(0, 7) === month && e.source === 'bank')) return {}
+  const by: Record<string, number> = {}
+  const paidBy = paidPerBill(bills, payments, month)
+  for (const b of bills) {
+    const left = b.kind === 'recurring' ? b.amount - (paidBy.get(b.id) ?? 0) : b.due_month === month ? b.amount - payoffPaid(b) : 0
+    if (left > 0) by[normCategory(b.category)] = (by[normCategory(b.category)] ?? 0) + left
+  }
+  return by
+}
+
+/** Adds what is still to pay to each category's share, and brings in categories with nothing paid yet. */
+export function withRemaining(shares: Share[], remaining: Record<string, number>): Share[] {
+  const out = shares.map((s) => ({ ...s, toGo: remaining[s.category] ?? 0 }))
+  const known = new Set(shares.map((s) => s.category))
+  const extra = Object.entries(remaining)
+    .filter(([category, left]) => left > 0 && !known.has(category))
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([category, left]) => ({ category, total: 0, pct: 0, toGo: left }))
+  return [...out, ...extra]
+}
+
 // ---------- One category in detail ----------
 
 export interface BreakdownRow {
   label: string
   amount: number
   kind: 'bill' | 'payoff' | 'spent'
+  /** The planned amount, when less than that was paid. */
+  of?: number
 }
 
 export interface Breakdown {
@@ -99,12 +123,16 @@ export interface Breakdown {
   total: number
   previousTotal: number
   change: number
+  /** Planned bills and payoffs in this category that are not fully paid, with what is left on each. */
+  toGo: BreakdownRow[]
+  toGoTotal: number
   /** False when there is nothing from last month to compare with (so "up from nothing" is not claimed). */
   hasPrevious: boolean
 }
 
-function breakdownRows(category: string, bills: Bill[], payments: BillPayment[], expenses: Expense[], month: string, planned: boolean): BreakdownRow[] {
+function breakdownRows(category: string, bills: Bill[], payments: BillPayment[], expenses: Expense[], month: string, planned: boolean): { rows: BreakdownRow[]; toGo: BreakdownRow[] } {
   const rows: BreakdownRow[] = []
+  const toGo: BreakdownRow[] = []
   if (planned) {
     for (const b of bills) {
       if ((b.kind === 'recurring' || b.due_month === month) && normCategory(b.category) === category) {
@@ -117,29 +145,31 @@ function breakdownRows(category: string, bills: Bill[], payments: BillPayment[],
       if (kindOf(e) === 'expense' && normCategory(e.category) === category) rows.push({ label: e.note?.trim() || cap(category), amount: e.amount, kind: 'spent' })
     }
     if (!inMonth.some((e) => e.source === 'bank')) {
-      const byId = new Map(bills.map((b) => [b.id, b]))
-      for (const p of payments) {
-        const bill = byId.get(p.bill_id)
-        if (p.month === month && bill && bill.kind === 'recurring' && normCategory(bill.category) === category) rows.push({ label: bill.name, amount: bill.amount, kind: 'bill' })
-      }
+      const paidBy = paidPerBill(bills, payments, month)
       for (const b of bills) {
-        if (b.kind === 'one_time' && b.paid && b.due_month === month && normCategory(b.category) === category) rows.push({ label: b.name, amount: b.amount, kind: 'payoff' })
+        if (normCategory(b.category) !== category) continue
+        const kind = b.kind === 'one_time' ? 'payoff' : 'bill'
+        if (b.kind === 'one_time' && b.due_month !== month) continue
+        const paid = b.kind === 'one_time' ? payoffPaid(b) : (paidBy.get(b.id) ?? 0)
+        if (paid > 0) rows.push(paid < b.amount ? { label: b.name, amount: paid, kind, of: b.amount } : { label: b.name, amount: paid, kind })
+        if (paid < b.amount) toGo.push({ label: b.name, amount: b.amount - paid, kind })
       }
     }
   }
-  return rows.sort((a, b) => b.amount - a.amount || a.label.localeCompare(b.label))
+  const order = (a: BreakdownRow, b: BreakdownRow) => b.amount - a.amount || a.label.localeCompare(b.label)
+  return { rows: rows.sort(order), toGo: toGo.sort(order) }
 }
 
 /** What makes up one category in a month (planned bills, or what really happened), and how it compares with last month. */
 export function categoryBreakdown(input: { category: string; bills: Bill[]; payments: BillPayment[]; expenses: Expense[]; month: string; planned: boolean }): Breakdown {
   const { category, bills, payments, expenses, month, planned } = input
-  const rows = breakdownRows(category, bills, payments, expenses, month, planned)
+  const { rows, toGo } = breakdownRows(category, bills, payments, expenses, month, planned)
   const total = rows.reduce((s, r) => s + r.amount, 0)
   const previous = shiftMonthKey(month, -1)
   const before = planned ? null : monthActuals(bills, payments, expenses, previous)
   const previousTotal = before ? (before.spentByCategory[category] ?? 0) : (plannedByCategory(bills, previous)[category] ?? 0)
   const hasPrevious = before ? before.spent > 0 : bills.length > 0
-  return { category, rows, total, previousTotal, change: total - previousTotal, hasPrevious }
+  return { category, rows, total, previousTotal, change: total - previousTotal, hasPrevious, toGo, toGoTotal: toGo.reduce((s, r) => s + r.amount, 0) }
 }
 
 // ---------- Transfers and cancel tracker ----------
@@ -297,7 +327,12 @@ export interface LedgerRow {
   category: string
   amount: number // money in is positive, money out is negative
   kind: LedgerKind
+  /** Category can be changed and the row deleted here (logged items only). */
   editable: boolean
+  /** The stored item behind the row (an expense, a payment, a payoff or a savings entry). */
+  rawId: string
+  /** The amount can be corrected here. */
+  amountEditable: boolean
 }
 
 export function ledgerRows(input: { month: string; expenses: Expense[]; payments: BillPayment[]; bills: Bill[]; savings: SavingsEntry[] }): LedgerRow[] {
@@ -313,18 +348,20 @@ export function ledgerRows(input: { month: string; expenses: Expense[]; payments
       amount: kind === 'income' ? e.amount : -e.amount,
       kind,
       editable: true,
+      rawId: e.id,
+      amountEditable: true,
     })
   }
   const byId = new Map(bills.map((b) => [b.id, b]))
   for (const p of payments.filter((x) => x.month === month)) {
     const bill = byId.get(p.bill_id)
-    if (bill) rows.push({ id: `pay-${p.id}`, date: p.paid_on, description: bill.name, category: normCategory(bill.category), amount: -bill.amount, kind: 'bill', editable: false })
+    if (bill) rows.push({ id: `pay-${p.id}`, date: p.paid_on, description: bill.name, category: normCategory(bill.category), amount: -(p.amount ?? bill.amount), kind: 'bill', editable: false, rawId: p.id, amountEditable: true })
   }
-  for (const b of bills.filter((x) => x.kind === 'one_time' && x.paid && x.due_month === month)) {
-    rows.push({ id: `payoff-${b.id}`, date: `${month}-01`, description: b.name, category: normCategory(b.category), amount: -b.amount, kind: 'payoff', editable: false })
+  for (const b of bills.filter((x) => x.kind === 'one_time' && x.due_month === month && payoffPaid(x) > 0)) {
+    rows.push({ id: `payoff-${b.id}`, date: `${month}-01`, description: b.name, category: normCategory(b.category), amount: -payoffPaid(b), kind: 'payoff', editable: false, rawId: b.id, amountEditable: true })
   }
   for (const s of savings.filter((x) => x.month === month)) {
-    rows.push({ id: `save-${s.id}`, date: `${month}-01`, description: s.note ? `Savings: ${s.note}` : 'Savings', category: 'savings', amount: -s.amount, kind: 'savings', editable: false })
+    rows.push({ id: `save-${s.id}`, date: `${month}-01`, description: s.note ? `Savings: ${s.note}` : 'Savings', category: 'savings', amount: -s.amount, kind: 'savings', editable: false, rawId: s.id, amountEditable: true })
   }
   return rows
 }
