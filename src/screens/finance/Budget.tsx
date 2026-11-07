@@ -1,4 +1,4 @@
-import { setBillAmounts } from '../../data/changeBills'
+import { followBill, setBillAmounts } from '../../data/changeBills'
 import type { FinanceData } from '../../data/useFinance'
 import { useHousehold } from '../../data/household'
 import { monthKeyCT } from '../../lib/dates'
@@ -23,8 +23,14 @@ export function Budget({ f }: { f: FinanceData }) {
   /** A category with bills: the bills become the new total, so the plan and budget agree everywhere. Otherwise it is a plain budget limit. */
   async function saveBudget(category: string, text: string, shown: number) {
     const amount = Number(text)
-    if (!Number.isFinite(amount) || amount < 0 || text.trim() === '' || amount === shown) return false
+    if (!Number.isFinite(amount) || amount < 0 || text.trim() === '') return false
     const bills = f.bills.rows.filter((b) => b.kind === 'recurring' && normCategory(b.category) === category)
+    if (amount === shown) {
+      // Same number: only bring this month's ticked bills back in line with the bills, if they drifted.
+      let changed = false
+      for (const b of bills) changed = (await followBill(f, b, monthKeyCT())) || changed
+      return changed
+    }
     const existing = f.budgets.rows.find((b) => normCategory(b.category) === category)
     if (bills.length > 0) {
       const byId = new Map(bills.map((b) => [b.id, b]))
