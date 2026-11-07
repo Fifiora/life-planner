@@ -353,6 +353,7 @@ describe('Settings cycle start', () => {
 describe('Finance overview chart share of income', () => {
   it('uses the income that was actually logged when there is some', async () => {
     localStorage.setItem('lp.data.expenses', JSON.stringify([{ id: 'inc', date: todayCT(), amount: 8500, category: 'income', note: 'Pay', member_id: 'a', kind: 'income', source: 'manual' }]))
+    localStorage.setItem('lp.data.bill_payments', JSON.stringify([{ id: 'p1', bill_id: 'b1', month: todayCT().slice(0, 7), paid_on: todayCT() }]))
     renderScreen(<Finance />)
     await userEvent.click(await screen.findByRole('button', { name: /housing/i }))
     expect(within(screen.getByRole('complementary', { name: 'Breakdown for Housing' })).getByText('20% of income')).toBeInTheDocument()
