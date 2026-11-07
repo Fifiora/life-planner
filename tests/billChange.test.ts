@@ -37,6 +37,10 @@ describe('paymentsToPin', () => {
     const out = paymentsToPin([pay('p1', 'rent', '2026-10'), pay('p2', 'rent', '2026-11', null), pay('p3', 'rent', '2026-09', 1650), pay('p4', 'other', '2026-10')], rent)
     expect(out).toEqual([{ id: 'p1', amount: 1700 }, { id: 'p2', amount: 1700 }])
   })
+  it('pins only the months before the given month, so this month and later follow the bill', () => {
+    const out = paymentsToPin([pay('p1', 'rent', '2026-10'), pay('p2', 'rent', '2026-11'), pay('p3', 'rent', '2026-12')], rent, '2026-11')
+    expect(out).toEqual([{ id: 'p1', amount: 1700 }])
+  })
   it('has nothing to pin when every payment already has its own amount', () => {
     expect(paymentsToPin([pay('p3', 'rent', '2026-09', 1650)], rent)).toEqual([])
   })

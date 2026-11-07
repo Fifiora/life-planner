@@ -3,6 +3,7 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import Finance from '../src/screens/Finance'
 import { todayCT } from '../src/lib/dates'
+import { shiftMonthKey } from '../src/lib/format'
 import { renderScreen, saved, seedPlanner } from './seed'
 
 beforeEach(() => seedPlanner())
@@ -39,18 +40,21 @@ describe('Budget edits change the plan', () => {
     expect(within(row).getByText('$1,900')).toBeInTheDocument()
   })
 
-  it('keeps what was really paid in earlier months and this month', async () => {
+  it('keeps what was paid in earlier months, but this month\'s payment follows the new amount', async () => {
+    const before = shiftMonthKey(month(), -1)
     localStorage.setItem('lp.data.bill_payments', JSON.stringify([
-      { id: 'old', bill_id: 'b1', month: '2026-10', paid_on: '2026-10-02' },
+      { id: 'old', bill_id: 'b1', month: before, paid_on: `${before}-02` },
       { id: 'now', bill_id: 'b1', month: month(), paid_on: todayCT() },
-      { id: 'own', bill_id: 'b1', month: '2026-09', paid_on: '2026-09-02', amount: 1650 },
+      { id: 'own', bill_id: 'b1', month: shiftMonthKey(month(), -2), paid_on: `${shiftMonthKey(month(), -2)}-02`, amount: 1650 },
     ]))
     renderScreen(<Finance />)
     await openTab('Budget')
     await setBudget('housing', '1900')
     await vi.waitFor(() => expect(bill('b1').amount).toBe(1900))
-    const byId = Object.fromEntries(saved('bill_payments').map((p) => [p.id, p.amount]))
-    expect(byId).toEqual({ old: 1700, now: 1700, own: 1650 })
+    const byId = Object.fromEntries(saved('bill_payments').map((p) => [p.id, p.amount ?? null]))
+    expect(byId).toEqual({ old: 1700, now: null, own: 1650 })
+    const row = (await screen.findByText('Housing')).closest('tr') as HTMLElement
+    expect(within(row).getByText('$1,900')).toBeInTheDocument()
   })
 
   it('shares the change across several bills in the category', async () => {
@@ -117,7 +121,8 @@ describe('Changing a bill from where you pay it', () => {
   })
 
   it('protects earlier payments when a bill is edited in its own form', async () => {
-    localStorage.setItem('lp.data.bill_payments', JSON.stringify([{ id: 'old', bill_id: 'b1', month: '2026-10', paid_on: '2026-10-02' }]))
+    const before = shiftMonthKey(month(), -1)
+    localStorage.setItem('lp.data.bill_payments', JSON.stringify([{ id: 'old', bill_id: 'b1', month: before, paid_on: `${before}-02` }]))
     renderScreen(<Finance />)
     await openTab('Bills')
     await userEvent.click(screen.getByRole('button', { name: 'Rent' }))
