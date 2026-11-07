@@ -1,8 +1,10 @@
+import { setBillAmounts } from '../../data/changeBills'
 import type { FinanceData } from '../../data/useFinance'
 import { useHousehold } from '../../data/household'
 import { monthKeyCT } from '../../lib/dates'
 import { normCategory } from '../../lib/finance2'
 import { cap, money, monthLabel } from '../../lib/format'
+import { splitCategoryTotal } from '../../lib/billChange'
 import { budgetRows, monthWindow } from '../../lib/ledger'
 import { Verse } from '../../ui/Verse'
 
@@ -18,12 +20,19 @@ export function Budget({ f }: { f: FinanceData }) {
     else if (r.status.pill === 'over') counts.over++
   }
 
-  async function saveBudget(category: string, text: string) {
+  /** A category with bills: the bills become the new total, so the plan and budget agree everywhere. Otherwise it is a plain budget limit. */
+  async function saveBudget(category: string, text: string, shown: number) {
     const amount = Number(text)
-    if (!Number.isFinite(amount) || amount < 0 || text.trim() === '') return
+    if (!Number.isFinite(amount) || amount < 0 || text.trim() === '' || amount === shown) return false
+    const bills = f.bills.rows.filter((b) => b.kind === 'recurring' && normCategory(b.category) === category)
     const existing = f.budgets.rows.find((b) => normCategory(b.category) === category)
-    if (existing) await f.budgets.update(existing.id, { amount })
+    if (bills.length > 0) {
+      const byId = new Map(bills.map((b) => [b.id, b]))
+      await setBillAmounts(f, splitCategoryTotal(bills, amount).map(({ id, amount: a }) => ({ bill: byId.get(id) as (typeof bills)[number], amount: a })))
+      if (existing) await f.budgets.remove(existing.id)
+    } else if (existing) await f.budgets.update(existing.id, { amount })
     else await f.budgets.insert({ category, amount })
+    return true
   }
 
   async function saveGoal(key: 'goal_tax' | 'goal_tithe', text: string) {
@@ -44,7 +53,7 @@ export function Budget({ f }: { f: FinanceData }) {
           <div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Budget vs actual</h2></div>
           <span className="muted small">{readOnly ? '' : 'Budgets editable here'}</span>
         </div>
-        <p className="muted small">Actual = bills ticked off as paid + spending logged or imported. A category's budget starts as what its monthly bills add up to; change it to set your own. Averages cover months with activity.</p>
+        <p className="muted small">Actual = bills ticked off as paid + spending logged or imported. A category's budget is what its monthly bills add up to. Change it and those bills change to match (shared in proportion), so the plan, charts and report all agree; paid months keep what was really paid. A category with no bills keeps your number as a plain limit. Averages cover months with activity.</p>
         <div className="table-wrap">
           <table className="ftable budget">
             <thead>
@@ -68,7 +77,7 @@ export function Budget({ f }: { f: FinanceData }) {
                         inputMode="decimal"
                         aria-label={`Budget for ${r.category}`}
                         defaultValue={r.budget}
-                        onBlur={(e) => void saveBudget(r.category, e.target.value)}
+                        onBlur={(e) => { const box = e.target; void saveBudget(r.category, box.value, r.budget).then((changed) => { if (!changed) box.value = String(r.budget) }) }}
                       />
                     )}
                   </td>

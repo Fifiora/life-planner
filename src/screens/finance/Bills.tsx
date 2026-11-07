@@ -1,3 +1,4 @@
+import { pinPayments, setBillAmounts } from '../../data/changeBills'
 import { StarterPlanLoader } from '../../ui/StarterPlanLoader'
 import { useState } from 'react'
 import type { FinanceData } from '../../data/useFinance'
@@ -46,14 +47,17 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
     if (!b.paid) cheer()
   }
 
-  async function savePaid(n: number) {
+  async function savePaid(n: number, options?: { makePlan: boolean }) {
     if (!paying) return
     const { bill, payment } = paying
     if (bill.kind === 'one_time') {
       await f.bills.update(bill.id, payoffPatch(bill, n))
       if (!bill.paid && n >= bill.amount) cheer()
     } else if (payment) {
-      await f.payments.update(payment.id, paymentPatch(bill, n))
+      if (options?.makePlan) {
+        await setBillAmounts(f, [{ bill, amount: n }])
+        await f.payments.update(payment.id, { amount: n })
+      } else await f.payments.update(payment.id, paymentPatch(bill, n))
     }
     setPaying(null)
   }
@@ -161,6 +165,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
           label="Amount"
           initial={paying.bill.kind === 'one_time' ? payoffPaid(paying.bill) || paying.bill.amount : paymentAmount(paying.bill, paying.payment)}
           full={paying.bill.amount}
+          planOffer={paying.bill.kind === 'recurring' ? { name: paying.bill.name, current: paying.bill.amount } : undefined}
           onClose={() => setPaying(null)}
           onSave={savePaid}
         />
@@ -173,7 +178,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
           <BillForm
             key={editing.id}
             initial={editing}
-            onSave={async (values) => { await f.bills.update(editing.id, values); setEditing(null) }}
+            onSave={async (values) => { if (values.amount !== editing.amount) await pinPayments(f, editing); await f.bills.update(editing.id, values); setEditing(null) }}
             onDelete={async () => { await f.bills.remove(editing.id); setEditing(null) }}
           />
         )}
