@@ -28,7 +28,7 @@ export function Budget({ f }: { f: FinanceData }) {
     const existing = f.budgets.rows.find((b) => normCategory(b.category) === category)
     if (bills.length > 0) {
       const byId = new Map(bills.map((b) => [b.id, b]))
-      await setBillAmounts(f, splitCategoryTotal(bills, amount).map(({ id, amount: a }) => ({ bill: byId.get(id) as (typeof bills)[number], amount: a })))
+      await setBillAmounts(f, splitCategoryTotal(bills, amount).map(({ id, amount: a }) => ({ bill: byId.get(id) as (typeof bills)[number], amount: a })), monthKeyCT())
       if (existing) await f.budgets.remove(existing.id)
     } else if (existing) await f.budgets.update(existing.id, { amount })
     else await f.budgets.insert({ category, amount })
@@ -53,7 +53,7 @@ export function Budget({ f }: { f: FinanceData }) {
           <div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Budget vs actual</h2></div>
           <span className="muted small">{readOnly ? '' : 'Budgets editable here'}</span>
         </div>
-        <p className="muted small">Actual = bills ticked off as paid + spending logged or imported. A category's budget is what its monthly bills add up to. Change it and those bills change to match (shared in proportion), so the plan, charts and report all agree; paid months keep what was really paid. A category with no bills keeps your number as a plain limit. Averages cover months with activity.</p>
+        <p className="muted small">Actual = bills ticked off as paid + spending logged or imported. A category's budget is what its monthly bills add up to. Change it and those bills change to match (shared in proportion), so the plan, charts and report all agree; earlier months keep what was really paid, while this month's ticked bills follow the new amount. A category with no bills keeps your number as a plain limit. Averages cover months with activity.</p>
         <div className="table-wrap">
           <table className="ftable budget">
             <thead>

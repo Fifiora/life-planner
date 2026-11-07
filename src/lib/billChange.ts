@@ -20,9 +20,13 @@ export function splitCategoryTotal(bills: Bill[], target: number): { id: string;
 }
 
 /**
- * Payments that simply follow the bill's amount would change with it. Pin each to what it was, so a
- * month that was paid keeps what was really paid after the bill's amount changes.
+ * Payments that simply follow the bill's amount would change with it. Pin each to what it was, so an
+ * earlier month keeps what was really paid after the bill's amount changes. With `beforeMonth`, only
+ * months before it are pinned: that month and later follow the bill (so a rent ticked at the old amount
+ * becomes what you really pay now).
  */
-export function paymentsToPin(payments: BillPayment[], bill: Bill): { id: string; amount: number }[] {
-  return payments.filter((p) => p.bill_id === bill.id && p.amount == null).map((p) => ({ id: p.id, amount: bill.amount }))
+export function paymentsToPin(payments: BillPayment[], bill: Bill, beforeMonth?: string): { id: string; amount: number }[] {
+  return payments
+    .filter((p) => p.bill_id === bill.id && p.amount == null && (beforeMonth === undefined || p.month < beforeMonth))
+    .map((p) => ({ id: p.id, amount: bill.amount }))
 }

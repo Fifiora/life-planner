@@ -3,7 +3,7 @@ import { StarterPlanLoader } from '../../ui/StarterPlanLoader'
 import { useState } from 'react'
 import type { FinanceData } from '../../data/useFinance'
 import { useHousehold } from '../../data/household'
-import { todayCT } from '../../lib/dates'
+import { monthKeyCT, todayCT } from '../../lib/dates'
 import { billsPaidSummary, categoryTotals, monthPaidProgress, normCategory, paymentAmount, paymentPatch, payoffPaid, payoffPatch } from '../../lib/finance2'
 import { cap, money, monthLabel } from '../../lib/format'
 import type { Bill, BillPayment } from '../../types'
@@ -55,7 +55,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
       if (!bill.paid && n >= bill.amount) cheer()
     } else if (payment) {
       if (options?.makePlan) {
-        await setBillAmounts(f, [{ bill, amount: n }])
+        await setBillAmounts(f, [{ bill, amount: n }], monthKeyCT())
         await f.payments.update(payment.id, { amount: n })
       } else await f.payments.update(payment.id, paymentPatch(bill, n))
     }
@@ -178,7 +178,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
           <BillForm
             key={editing.id}
             initial={editing}
-            onSave={async (values) => { if (values.amount !== editing.amount) await pinPayments(f, editing); await f.bills.update(editing.id, values); setEditing(null) }}
+            onSave={async (values) => { if (values.amount !== editing.amount) await pinPayments(f, editing, monthKeyCT()); await f.bills.update(editing.id, values); setEditing(null) }}
             onDelete={async () => { await f.bills.remove(editing.id); setEditing(null) }}
           />
         )}
