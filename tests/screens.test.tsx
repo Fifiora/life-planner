@@ -116,7 +116,7 @@ describe('Finance', () => {
     expect(screen.getByRole('img', { name: /housing by month/i })).toBeInTheDocument()
   })
 
-  it('budget compares each category with its budget and lets you change it', async () => {
+  it('budget compares each category with its budget and lets you change it (a category with bills changes the bills)', async () => {
     renderScreen(<Finance />)
     await userEvent.click(await screen.findByRole('tab', { name: 'Budget' }))
     expect(screen.getByText('Budget vs actual')).toBeInTheDocument()
@@ -125,8 +125,8 @@ describe('Finance', () => {
     await userEvent.clear(input)
     await userEvent.type(input, '1800')
     await userEvent.tab()
-    await vi.waitFor(() => expect(saved('budgets')).toHaveLength(1))
-    expect(saved('budgets')[0]).toMatchObject({ category: 'housing', amount: 1800 })
+    await vi.waitFor(() => expect(saved('bills').find((b) => b.id === 'b1').amount).toBe(1800))
+    expect(saved('budgets')).toHaveLength(0)
   })
 
   it('insights tell the story in plain words', async () => {
