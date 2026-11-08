@@ -1,10 +1,11 @@
 import type { FinanceData } from '../../data/useFinance'
 import { monthKeyCT, todayCT } from '../../lib/dates'
 import { buildInsights, categoryTotals, forecast, payoffProgress } from '../../lib/finance2'
+import { effectiveBills } from '../../lib/monthBills'
 import { ForecastTable } from '../../ui/ForecastTable'
 
 export function Plan({ f }: { f: FinanceData }) {
-  const rows = forecast(f.totalIncome, f.bills.rows, f.target, monthKeyCT(), 8)
+  const rows = forecast(f.totalIncome, f.billsBase.rows, f.target, monthKeyCT(), 8, (m) => effectiveBills(f.billsBase.rows, f.monthAmounts.rows, m))
   const categories = categoryTotals(f.bills.rows, f.totalIncome)
   const insights = buildInsights({ rows, categories, payoff: payoffProgress(f.bills.rows, todayCT(), f.deadline), target: f.target })
   return (

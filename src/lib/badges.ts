@@ -36,7 +36,7 @@ const LIST: (BadgeDef & { test: (c: Ctx) => boolean })[] = [
     },
   },
   { id: 'first-bill', name: 'Debt Slayer I', hint: 'Record a bill payment.', test: (c) => c.data.payments.some((p) => p.member_id === c.memberId) },
-  { id: 'payoff-hero', name: 'Payoff Hero', hint: 'Clear a one-time payoff.', test: (c) => c.data.bills.some((b) => b.kind === 'one_time' && b.paid) },
+  { id: 'payoff-hero', name: 'Payoff Hero', hint: 'Clear a one-time payoff.', test: (c) => c.data.bills.some((b) => b.kind === 'one_time' && !b.one_off && b.paid) },
   { id: 'party-5', name: 'Party Level 5', hint: 'Reach party level 5 together.', test: (c) => c.partyLevel >= 5 },
   { id: 'party-10', name: 'Party Level 10', hint: 'Reach party level 10 together.', test: (c) => c.partyLevel >= 10 },
   { id: 'first-cheer', name: 'First Cheer', hint: 'Cheer on your partner.', test: (c) => c.extra.cheersSent >= 1 },

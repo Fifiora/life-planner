@@ -35,10 +35,10 @@ export function categoryTotals(bills: Bill[], income: number): CategoryTotal[] {
 export type ForecastRow = MonthView & { month: string }
 
 /** The next `count` months starting at `startMonth`, each worked out like a single month. */
-export function forecast(income: number, bills: Bill[], target: number, startMonth: string, count: number): ForecastRow[] {
+export function forecast(income: number, bills: Bill[], target: number, startMonth: string, count: number, billsFor?: (month: string) => Bill[]): ForecastRow[] {
   return Array.from({ length: count }, (_, i) => {
     const month = shiftMonthKey(startMonth, i)
-    return { month, ...monthView(income, bills, target, month) }
+    return { month, ...monthView(income, billsFor ? billsFor(month) : bills, target, month) }
   })
 }
 
@@ -85,7 +85,7 @@ export interface PayoffProgress {
 export function payoffProgress(bills: Bill[], today: string, deadline: string): PayoffProgress {
   const thisMonth = today.slice(0, 7)
   const list = bills
-    .filter((b) => b.kind === 'one_time')
+    .filter((b) => b.kind === 'one_time' && !b.one_off)
     .sort((a, b) => (a.due_month ?? '').localeCompare(b.due_month ?? '') || a.name.localeCompare(b.name))
   const items = list.map<PayoffItem>((bill) => ({
     bill,

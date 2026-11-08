@@ -16,6 +16,7 @@ export const TABLES = [
   'bills',
   'settings',
   'bill_payments',
+  'bill_months',
   'savings',
   'expenses',
   'activities',

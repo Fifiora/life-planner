@@ -160,7 +160,7 @@ export function financeSection(r: MonthRange, input: ReportInput): FinanceSectio
     billsPaid: summary.paidCount,
     billsDue: summary.totalCount,
     unpaid: summary.unpaid.map((b) => b.name),
-    payoffsCleared: input.bills.filter((b) => b.kind === 'one_time' && b.paid && b.due_month === r.month).map((b) => b.name),
+    payoffsCleared: input.bills.filter((b) => b.kind === 'one_time' && !b.one_off && b.paid && b.due_month === r.month).map((b) => b.name),
     categories,
     changes,
   }

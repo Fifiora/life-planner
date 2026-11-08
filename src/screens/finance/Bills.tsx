@@ -1,4 +1,4 @@
-import { pinPayments, setBillAmounts } from '../../data/changeBills'
+import { clearMonthAmounts, pinPayments, setBillAmounts, setMonthAmount } from '../../data/changeBills'
 import { StarterPlanLoader } from '../../ui/StarterPlanLoader'
 import { useState } from 'react'
 import type { FinanceData } from '../../data/useFinance'
@@ -9,6 +9,8 @@ import { cap, money, monthLabel } from '../../lib/format'
 import type { Bill, BillPayment } from '../../types'
 import { AmountSheet } from '../../ui/AmountSheet'
 import { BillForm } from '../../ui/BillForm'
+import { MonthBillForm } from '../../ui/MonthBillForm'
+import { PlannedAmountSheet, type PlanScope } from '../../ui/PlannedAmountSheet'
 import { Confetti } from '../../ui/Confetti'
 import { Sheet } from '../../ui/Sheet'
 
@@ -17,6 +19,8 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Bill | null>(null)
   const [celebrate, setCelebrate] = useState(false)
+  const [addingForMonth, setAddingForMonth] = useState(false)
+  const [planning, setPlanning] = useState<Bill | null>(null)
   const [paying, setPaying] = useState<{ bill: Bill; payment?: BillPayment } | null>(null)
 
   const summary = billsPaidSummary(f.bills.rows, f.payments.rows, month)
@@ -28,7 +32,8 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
     ...c,
     bills: recurring.filter((b) => normCategory(b.category) === c.category).sort((a, b) => b.amount - a.amount),
   }))
-  const oneTime = f.bills.rows.filter((b) => b.kind === 'one_time').sort((a, b) => (a.due_month ?? '').localeCompare(b.due_month ?? ''))
+  const oneTime = f.bills.rows.filter((b) => b.kind === 'one_time' && !b.one_off).sort((a, b) => (a.due_month ?? '').localeCompare(b.due_month ?? ''))
+  const addedThisMonth = f.bills.rows.filter((b) => b.one_off && b.kind === 'one_time' && b.due_month === month).sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name))
   const pct = progress.pct
 
   async function togglePaid(bill: Bill) {
@@ -45,6 +50,13 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
   async function markPayoff(b: Bill) {
     await f.bills.update(b.id, { paid: !b.paid, paid_amount: null })
     if (!b.paid) cheer()
+  }
+
+  async function savePlanned(n: number, scope: PlanScope) {
+    if (!planning) return
+    if (scope === 'month') await setMonthAmount(f, planning, month, n)
+    else await setBillAmounts(f, [{ bill: planning, amount: n }], month)
+    setPlanning(null)
   }
 
   async function savePaid(n: number, options?: { makePlan: boolean }) {
@@ -81,7 +93,27 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
         {summary.unpaid.length > 0 && summary.unpaid.length <= 6 && (
           <p className="muted small">Still to pay: {summary.unpaid.map((b) => b.name).join(', ')}</p>
         )}
+        {!readOnly && <button type="button" className="btn btn-small mt" onClick={() => setAddingForMonth(true)}>Add a bill for this month</button>}
       </section>
+
+      {addedThisMonth.length > 0 && (
+        <section className="card">
+          <div className="card-head"><h2>{`Added for ${monthLabel(month)}`}</h2></div>
+          <ul className="list">
+            {addedThisMonth.map((b) => (
+              <li key={b.id} className="list-row">
+                <input type="checkbox" className="tick" checked={b.paid} disabled={readOnly} aria-label={`${b.name} paid`} onChange={() => void markPayoff(b)} />
+                <span className="grow">
+                  <button type="button" className="plain-btn" onClick={() => setEditing(b)}>{b.name}</button>
+                  <span className="muted small block-text">{cap(normCategory(b.category))}{!b.paid && payoffPaid(b) > 0 ? ` · ${money(payoffPaid(b))} paid` : ''}</span>
+                </span>
+                <span style={{ fontWeight: 600 }}>{money(b.amount)}</span>
+                {!readOnly && <button type="button" className="icon-btn" aria-label={`Edit amount paid for ${b.name}`} onClick={() => setPaying({ bill: b })}>✎</button>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="card">
         <div className="card-head">
@@ -150,6 +182,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
                     </span>
                   )
                 })()}
+                {!readOnly && <button type="button" className="icon-btn" aria-label={`Edit planned amount for ${b.name}`} onClick={() => setPlanning(b)}>✎</button>}
               </li>
             ))}
           </ul>
@@ -170,6 +203,17 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
           onSave={savePaid}
         />
       )}
+      {planning && (
+        <PlannedAmountSheet key={planning.id} open name={planning.name} initial={planning.amount} onClose={() => setPlanning(null)} onSave={savePlanned} />
+      )}
+      <Sheet open={addingForMonth} onClose={() => setAddingForMonth(false)} title={`Add a bill for ${monthLabel(month)}`}>
+        <MonthBillForm
+          onSave={async (values) => {
+            await f.bills.insert({ ...values, kind: 'one_time', due_month: month, one_off: true })
+            setAddingForMonth(false)
+          }}
+        />
+      </Sheet>
       <Sheet open={adding} onClose={() => setAdding(false)} title="Add a bill">
         <BillForm onSave={async (values) => { await f.bills.insert(values); setAdding(false) }} />
       </Sheet>
@@ -178,7 +222,17 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
           <BillForm
             key={editing.id}
             initial={editing}
-            onSave={async (values) => { if (values.amount !== editing.amount) await pinPayments(f, editing, monthKeyCT()); await f.bills.update(editing.id, values); setEditing(null) }}
+            onSave={async (values) => {
+              const base = f.billsBase.rows.find((b) => b.id === editing.id)?.amount ?? editing.amount
+              const patch = { ...values }
+              if (values.amount === editing.amount) patch.amount = base
+              else if (editing.kind === 'recurring') {
+                await pinPayments(f, { ...editing, amount: base }, monthKeyCT())
+                await clearMonthAmounts(f, editing, monthKeyCT())
+              }
+              await f.bills.update(editing.id, patch)
+              setEditing(null)
+            }}
             onDelete={async () => { await f.bills.remove(editing.id); setEditing(null) }}
           />
         )}
