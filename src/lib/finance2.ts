@@ -35,10 +35,10 @@ export function categoryTotals(bills: Bill[], income: number): CategoryTotal[] {
 export type ForecastRow = MonthView & { month: string }
 
 /** The next `count` months starting at `startMonth`, each worked out like a single month. */
-export function forecast(income: number, bills: Bill[], target: number, startMonth: string, count: number, billsFor?: (month: string) => Bill[]): ForecastRow[] {
+export function forecast(income: number, bills: Bill[], target: number, startMonth: string, count: number, billsFor?: (month: string) => Bill[], incomeFor?: (month: string) => number): ForecastRow[] {
   return Array.from({ length: count }, (_, i) => {
     const month = shiftMonthKey(startMonth, i)
-    return { month, ...monthView(income, billsFor ? billsFor(month) : bills, target, month) }
+    return { month, ...monthView(incomeFor ? incomeFor(month) : income, billsFor ? billsFor(month) : bills, target, month) }
   })
 }
 

@@ -6,7 +6,7 @@ const schedule = { amount: 9600, anchor: '2026-10-16' }
 describe('paydays every two weeks', () => {
   it('works out every date from one real payday, before and after it', () => {
     expect(scheduledDates('2026-10-16', '2026-11-01', '2026-12-31')).toEqual(['2026-11-13', '2026-11-27', '2026-12-11', '2026-12-25'])
-    expect(scheduledDates('2026-10-16', '2026-09-20', '2026-10-17')).toEqual(['2026-10-02', '2026-10-16'].filter((d) => d >= '2026-09-20').concat([]).length ? ['2026-10-02', '2026-10-16'] : [])
+    expect(scheduledDates('2026-10-16', '2026-09-20', '2026-10-17')).toEqual(['2026-10-02', '2026-10-16'])
     expect(scheduledDates('2026-10-16', '2026-09-01', '2026-09-30')).toEqual(['2026-09-04', '2026-09-18'])
   })
 

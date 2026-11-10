@@ -9,13 +9,14 @@ import { Budget } from './finance/Budget'
 import { Insights } from './finance/Insights'
 import { MonthVsMonth } from './finance/MonthVsMonth'
 import { Overview } from './finance/Overview'
+import { Pay } from './finance/Pay'
 import { Plan } from './finance/Plan'
 import { Savings } from './finance/Savings'
 import { Transactions } from './finance/Transactions'
 
-const TABS = ['Overview', 'Transactions', 'Month vs Month', 'Budget', 'Bills', 'Savings', 'Plan', 'Insights'] as const
+const TABS = ['Overview', 'Transactions', 'Month vs Month', 'Budget', 'Bills', 'Pay', 'Savings', 'Plan', 'Insights'] as const
 type Tab = (typeof TABS)[number]
-const BY_MONTH: Tab[] = ['Overview', 'Transactions', 'Bills', 'Savings']
+const BY_MONTH: Tab[] = ['Overview', 'Transactions', 'Bills', 'Pay', 'Savings']
 
 export default function Finance() {
   const [month, setMonth] = useState(monthKeyCT())
@@ -39,6 +40,7 @@ export default function Finance() {
       {tab === 'Month vs Month' && <MonthVsMonth f={f} />}
       {tab === 'Budget' && <Budget f={f} />}
       {tab === 'Bills' && <Bills f={f} month={month} />}
+      {tab === 'Pay' && <Pay f={f} month={month} />}
       {tab === 'Savings' && <Savings f={f} month={month} />}
       {tab === 'Plan' && <Plan f={f} />}
       {tab === 'Insights' && <Insights f={f} />}

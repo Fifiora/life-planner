@@ -5,7 +5,7 @@ import { effectiveBills } from '../../lib/monthBills'
 import { ForecastTable } from '../../ui/ForecastTable'
 
 export function Plan({ f }: { f: FinanceData }) {
-  const rows = forecast(f.totalIncome, f.billsBase.rows, f.target, monthKeyCT(), 8, (m) => effectiveBills(f.billsBase.rows, f.monthAmounts.rows, m))
+  const rows = forecast(f.totalIncome, f.billsBase.rows, f.target, monthKeyCT(), 8, (m) => effectiveBills(f.billsBase.rows, f.monthAmounts.rows, m), f.pay.incomeFor)
   const categories = categoryTotals(f.bills.rows, f.totalIncome)
   const insights = buildInsights({ rows, categories, payoff: payoffProgress(f.bills.rows, todayCT(), f.deadline), target: f.target })
   return (

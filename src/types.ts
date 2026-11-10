@@ -150,6 +150,17 @@ export interface BillMonth {
   amount: number
 }
 
+/** A payday that differs from the schedule (ticked, changed, skipped), or an extra deposit (no slot). */
+export interface Paycheck {
+  id: string
+  slot: string | null // the scheduled payday this belongs to (YYYY-MM-DD); empty for an extra deposit
+  date: string // the day the money lands (or landed)
+  amount?: number | null // empty means the schedule's amount
+  received: boolean // ticked once the money shows in the account
+  skipped?: boolean
+  note?: string | null
+}
+
 export interface SavingsEntry {
   id: string
   month: string // YYYY-MM
