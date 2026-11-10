@@ -20,6 +20,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
   const [editing, setEditing] = useState<Bill | null>(null)
   const [celebrate, setCelebrate] = useState(false)
   const [addingForMonth, setAddingForMonth] = useState(false)
+  const [addingTo, setAddingTo] = useState<string | null>(null)
   const [planning, setPlanning] = useState<Bill | null>(null)
   const [paying, setPaying] = useState<{ bill: Bill; payment?: BillPayment } | null>(null)
 
@@ -142,7 +143,12 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
 
       {groups.map((g) => (
         <section key={g.category} className="card">
-          <div className="card-head"><h3>{cap(g.category)}</h3><span className="pill">{money(g.total)}</span></div>
+          <div className="card-head">
+            <h3>{cap(g.category)}</h3>
+            <span className="row-gap"><span className="pill">{money(g.total)}</span>
+              {!readOnly && <button type="button" className="add-btn" aria-label={`Add to ${cap(g.category)}`} onClick={() => setAddingTo(g.category)}>+</button>}
+            </span>
+          </div>
           <ul className="list">
             {g.bills.map((b) => (
               <li key={b.id} className="list-row">
@@ -206,6 +212,20 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
       {planning && (
         <PlannedAmountSheet key={planning.id} open name={planning.name} initial={planning.amount} onClose={() => setPlanning(null)} onSave={savePlanned} />
       )}
+      <Sheet open={addingTo !== null} onClose={() => setAddingTo(null)} title={`Add to ${cap(addingTo ?? '')}`}>
+        {addingTo !== null && (
+          <MonthBillForm
+            key={addingTo}
+            category={addingTo}
+            askRepeat
+            onSave={async ({ repeat, ...values }) => {
+              if (repeat) await f.bills.insert({ ...values, kind: 'recurring', due_month: null })
+              else await f.bills.insert({ ...values, kind: 'one_time', due_month: month, one_off: true })
+              setAddingTo(null)
+            }}
+          />
+        )}
+      </Sheet>
       <Sheet open={addingForMonth} onClose={() => setAddingForMonth(false)} title={`Add a bill for ${monthLabel(month)}`}>
         <MonthBillForm
           onSave={async (values) => {

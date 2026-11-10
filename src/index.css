@@ -643,3 +643,5 @@ html[data-style="anime"] .btn-primary { box-shadow: 3px 3px 0 color-mix(in srgb,
 
 .check-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; font-size: 0.95rem; }
 .check-row input { width: 1.1rem; height: 1.1rem; }
+
+.row-gap { display: inline-flex; align-items: center; gap: 0.5rem; }
