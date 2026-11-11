@@ -68,6 +68,10 @@ There is one look, called calm glass: frosted glass cards with a bright top edge
 
 Settings → Appearance has the light/dark choice and a **Colour** picker with seven themes: Teal (default), Ocean, Rose, Plum, Forest, Sunset and Slate. Each has its own light and dark version and a matching tint in the background glow. The choice is saved on each device (`lp.accent`), so each phone can have its own. The stylesheet's contrast tests check every theme against AA (4.5:1) in light and dark.
 
+Glass depth (step 2): a quiet mottled stone sits under the glow so the blurred glass reads as glass; inner panes (stat boxes, tiles) are lighter glass with a bright top edge; money figures are large and set in Fraunces; "Left after bills" is the one saturated blue block on Finance; the tab strips are light pills on a frosted track. Blue, wood and black appear only in small touches (a wood-grain strip under each page title, a dark main button, a wood hairline on the tab bar). Hovering a card lifts it and sweeps a sheen across it; stat boxes and buttons lift too (only on devices that can hover, and not at all with reduced motion on).
+
+Settings → Appearance → **Background** picks the picture behind the glass, per device (`lp.ambient`): floating flowers (default), swimming fish over gently flowing water lines, or off. It is decorative only (hidden from screen readers, never takes a tap, hidden when printing, still for people who ask for less motion).
+
 ## Month-end report
 
 Open it from the card on Today (first week of a month) or from Settings. Pick any finished month since the plan began, or the current month "so far". It is worked out from what is already saved, so nothing about it is stored except your focus goals.
