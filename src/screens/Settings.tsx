@@ -225,8 +225,8 @@ export default function Settings() {
             </select>
             <EpisodeCard month={episodeMonth || months[0]} />
           </>
-          </section>
-      )}
+        )}
+      </section>
 
       <section className="card">
         <h2>Appearance</h2>
