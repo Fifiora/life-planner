@@ -28,6 +28,8 @@ import { QuickAdd } from '../ui/QuickAdd'
 import { StarterPlanLoader } from '../ui/StarterPlanLoader'
 import { Sheet } from '../ui/Sheet'
 import { UpNext } from '../ui/UpNext'
+import { GlowStats } from '../ui/GlowStats'
+import { TickTrend } from '../ui/TickTrend'
 import { WeekStrip } from '../ui/WeekStrip'
 
 const ratio = (done: number, total: number) => (total === 0 ? 0 : done / total)
@@ -116,7 +118,11 @@ export default function Today() {
         <div className="today-col today-main">
           <TodayHero rings={rings} done={doneToday} total={todayItems.length} streak={bestStreak} part={daypart(new Date().getHours())} host={host?.display_name} />
 
+          <GlowStats today={ratio(doneToday, todayItems.length)} areas={rings.reduce((a, r) => a + Math.max(0, Math.min(1, r.value)), 0) / rings.length} />
+
           <ReportCard today={data.today} />
+
+          <TickTrend logs={data.logs} today={data.today} members={members} meId={me.id} />
 
 
         {nothing && !data.loading ? (

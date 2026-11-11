@@ -901,3 +901,36 @@ body::before {
 .callout.bad { border-left-color: var(--danger); }
 .stack > .card { scroll-margin-top: 4.5rem; }
 @media (prefers-reduced-motion: reduce) { .kpi-card:hover { box-shadow: var(--shadow); } }
+
+/* ---------- Today, after the dashboard inspiration: soft-gradient tiles, a trend line, a schedule list ---------- */
+.glow-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+.glow-tile { position: relative; min-height: 11.5rem; padding: 1rem 1.1rem; border-radius: var(--radius); border: 1px solid var(--edge); box-shadow: var(--shadow), inset 0 1px 0 var(--gloss); display: grid; grid-template-rows: auto 1fr auto auto; overflow: hidden; transition: transform 0.25s ease, box-shadow 0.25s ease; }
+.glow-tile p { margin: 0; }
+.glow-a { background: radial-gradient(120% 90% at 85% 8%, color-mix(in srgb, var(--brand-2) 55%, transparent), transparent 60%), radial-gradient(110% 80% at 10% 100%, color-mix(in srgb, #e86aa6 42%, transparent), transparent 65%), radial-gradient(100% 100% at 0% 0%, color-mix(in srgb, var(--blue) 30%, transparent), transparent 70%), var(--card-solid); }
+.glow-b { background: radial-gradient(120% 90% at 85% 100%, color-mix(in srgb, var(--blue) 55%, transparent), transparent 60%), radial-gradient(110% 80% at 8% 5%, color-mix(in srgb, var(--brand) 45%, transparent), transparent 65%), radial-gradient(100% 100% at 100% 0%, color-mix(in srgb, #7be0e6 30%, transparent), transparent 70%), var(--card-solid); }
+.glow-title { font-size: 1rem; font-weight: 600; line-height: 1.2; }
+.glow-num { align-self: end; font-family: var(--serif); font-size: 3.2rem; font-weight: 600; letter-spacing: -0.04em; line-height: 1; margin-top: 1rem; }
+.glow-cap { font-size: 0.82rem; font-weight: 600; opacity: 0.8; margin-top: 0.15rem; }
+@media (hover: hover) { .glow-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow), 0 16px 34px color-mix(in srgb, var(--blue) 22%, transparent); } }
+
+.trend-card { position: relative; }
+.trend-card .card-head { align-items: flex-start; }
+.range-pick { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.3rem 0.25rem 0.8rem; border-radius: 999px; background: color-mix(in srgb, var(--card-solid) 70%, transparent); border: 1px solid var(--edge); }
+.range-pick .mini-select { border: 0; background: transparent; font-weight: 650; }
+.trend-svg { display: block; width: 100%; height: 11rem; margin-top: 0.3rem; overflow: visible; }
+.trend-bubble { position: absolute; top: 4.9rem; transform: translateX(-100%); margin-left: 0.2rem; display: grid; justify-items: center; padding: 0.3rem 0.7rem; border-radius: 0.9rem; background: var(--card-solid); border: 1px solid var(--edge); box-shadow: var(--shadow); font-size: 0.78rem; line-height: 1.2; pointer-events: none; }
+.trend-bubble span { color: var(--muted); }
+.trend-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-top: 0.4rem; }
+.trend-legend { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; list-style: none; margin: 0; padding: 0; font-size: 0.82rem; }
+.trend-legend i { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 0.2rem; margin-right: 0.4rem; vertical-align: -1px; }
+.trend-big { display: grid; justify-items: end; line-height: 1.1; }
+.trend-big strong { font-family: var(--serif); font-size: 2.4rem; font-weight: 600; letter-spacing: -0.03em; }
+
+/* "Up next" reads like a meetings list: when on the left, what and where on the right, an arrow at the end. */
+.upnext-row { display: grid; grid-template-columns: 5.2rem 1fr auto; align-items: center; gap: 0.7rem; }
+.upnext-row .mdot { display: none; }
+.upnext-row > .muted { order: -1; font-size: 0.78rem; line-height: 1.25; }
+.upnext-row > .grow { font-weight: 650; }
+.upnext-row::after { content: '↗'; color: var(--muted); font-size: 1rem; }
+.upnext-row { transition: background 0.15s ease; }
+@media (prefers-reduced-motion: reduce) { .glow-tile, .glow-tile:hover { transition: none; transform: none; } }

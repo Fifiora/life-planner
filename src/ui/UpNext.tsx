@@ -12,14 +12,14 @@ export function UpNext({ today, events, limit = 3 }: { today: string; events: Ca
     .slice(0, limit)
   if (coming.length === 0) return null
   return (
-    <section className="card">
+    <section className="card upnext">
       <div className="card-head">
         <div className="card-title"><span className="accent-bar" style={{ background: 'var(--brand)' }} /><h2>Up next</h2></div>
         <Link to="/calendar">Calendar</Link>
       </div>
       <ul className="list">
         {coming.map(({ e, date }) => (
-          <li key={`${e.id}-${date}`} className="list-row">
+          <li key={`${e.id}-${date}`} className="list-row upnext-row">
             <span className="mdot" style={{ background: e.category === 'other' ? 'var(--muted)' : `var(--${e.category})` }} />
             <span className="grow">{e.title}</span>
             <span className="muted small">{dueLabel(date, today)}{e.time ? ` · ${to12h(e.time)}` : ''}</span>
