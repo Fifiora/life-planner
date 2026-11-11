@@ -62,9 +62,9 @@ npm run build   # typecheck + production build
 
 The app has a light and a dark palette (Settings → Appearance), frosted-glass cards with hover effects, and a wide-screen layout: on a laptop the bottom bar becomes a left sidebar and cards flow into two or three columns. Phones keep the single-column layout.
 
-## Anime style, XP and shared goals
+## The look, XP and shared goals
 
-Each phone picks a style in Settings (or the header button / laptop sidebar): **Anime** (the default) or **Classic**, which is the plain look and wording. Anime adds an original mascot (Pip), a sunrise/night-city look, and a small game layer. Classic hides all of it.
+There is one look, called calm glass: frosted glass cards with a bright top edge and a fine grain texture over a warm porcelain (light) or deep charcoal (dark) background, one teal accent, Geist for the interface and Fraunces for page titles, aligned digits for money, clear focus rings and a press effect on buttons. Light, dark or match-my-phone is chosen in Settings. The game layer (the mascot Pip, XP, levels, streaks, badges, weekly boss, cheers and monthly episodes) is on for everyone; the earlier Anime/Classic switch is gone.
 
 Everything in the game layer is worked out from data that already syncs, so the two phones always agree and nothing needs repairing:
 
