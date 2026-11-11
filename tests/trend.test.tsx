@@ -32,3 +32,21 @@ describe('Today dashboard pieces', () => {
     expect(screen.getByLabelText('Range')).toHaveValue('14')
   })
 })
+
+describe('the Done today ring', () => {
+  it('is drawn in one piece per task when there are a few, and still reports its percent', async () => {
+    const { render } = await import('@testing-library/react')
+    const { Ring } = await import('../src/ui/Ring')
+    const { container } = render(<Ring label="Done today" color="var(--brand)" size={136} value={0.5} centre="2/4" segments={4} />)
+    expect(container.querySelector('.prog-seg')).not.toBeNull()
+    expect(container.querySelector('mask')).not.toBeNull()
+    expect(screen.getByRole('progressbar', { name: 'Done today' })).toHaveAttribute('aria-valuenow', '50')
+  })
+  it('is a plain ring with no segments', async () => {
+    const { render } = await import('@testing-library/react')
+    const { Ring } = await import('../src/ui/Ring')
+    const { container } = render(<Ring label="Health" color="var(--health)" value={1} />)
+    expect(container.querySelector('.prog-seg')).toBeNull()
+    expect(container.querySelector('.prog-ring')).toHaveClass('full')
+  })
+})

@@ -934,3 +934,23 @@ body::before {
 .upnext-row::after { content: '↗'; color: var(--muted); font-size: 1rem; }
 .upnext-row { transition: background 0.15s ease; }
 @media (prefers-reduced-motion: reduce) { .glow-tile, .glow-tile:hover { transition: none; transform: none; } }
+
+/* ---------- The Done today card, redesigned: a segmented glowing ring, a bigger story, a lit sky chip ---------- */
+.hero { position: relative; overflow: hidden; padding: 1.3rem 1.2rem 1.2rem; }
+.hero::before { content: ''; position: absolute; width: 16rem; height: 16rem; right: -5rem; top: -7rem; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--brand-2) 32%, transparent), transparent 68%); pointer-events: none; }
+.hero::after { content: ''; position: absolute; width: 14rem; height: 14rem; left: -6rem; bottom: -8rem; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--blue) 24%, transparent), transparent 68%); pointer-events: none; }
+.hero > * { position: relative; z-index: 1; }
+.hero-sun { position: absolute !important; top: 0.9rem; right: 1rem; z-index: 1; display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; font-size: 1.15rem; background: color-mix(in srgb, var(--card-solid) 60%, transparent); border: 1px solid var(--edge); box-shadow: inset 0 1px 0 var(--gloss), 0 4px 12px color-mix(in srgb, var(--ink) 10%, transparent); }
+.hero-top { gap: 1.2rem; }
+.hero-top .prog-ring { filter: drop-shadow(0 8px 18px color-mix(in srgb, var(--brand) 32%, transparent)); }
+.hero-top .prog-pct { font-family: var(--serif); font-size: 2rem; font-weight: 600; letter-spacing: -0.03em; }
+.hero-top .prog-label { display: none; }
+.prog-seg { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--brand) 60%, transparent)); }
+.prog-ring.full .prog-arc { filter: drop-shadow(0 0 9px color-mix(in srgb, var(--brand-2) 75%, transparent)); animation: ring-glow 2.6s ease-in-out infinite; }
+@keyframes ring-glow { 50% { filter: drop-shadow(0 0 16px color-mix(in srgb, var(--brand-2) 90%, transparent)); } }
+.hero-text { padding-right: 2.2rem; }
+.hero-text .headline { font-size: 1.45rem; line-height: 1.15; margin-bottom: 0.35rem; }
+.hero .streak-chip { font-family: 'Geist', system-ui, sans-serif; font-weight: 700; box-shadow: inset 0 1px 0 var(--gloss); border: 1px solid color-mix(in srgb, var(--food) 30%, transparent); }
+.hero .rings { margin-top: 1.2rem; }
+.hero .ring-link { padding: 0.65rem 0.1rem 0.5rem; }
+@media (prefers-reduced-motion: reduce) { .prog-ring.full .prog-arc { animation: none; } }

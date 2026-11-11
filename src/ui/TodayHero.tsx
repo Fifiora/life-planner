@@ -17,8 +17,9 @@ export interface HeroRing {
 export function TodayHero({ rings, done, total, streak, part, host }: { rings: HeroRing[]; done: number; total: number; streak: number; part: Daypart; host?: string }) {
   return (
     <section className={`card hero hero-${part}`} aria-label="Progress">
+      <span className="hero-sun" aria-hidden>{part === 'morning' ? '☀️' : part === 'afternoon' ? '🌤️' : '🌙'}</span>
       <div className="hero-top">
-        <Ring label="Done today" color="var(--brand)" size={112} value={total > 0 ? done / total : 0} centre={total > 0 ? `${done}/${total}` : '—'} />
+        <Ring label="Done today" color="var(--brand)" size={136} segments={total > 1 && total <= 24 ? total : undefined} value={total > 0 ? done / total : 0} centre={total > 0 ? `${done}/${total}` : '—'} />
         <div className="hero-text">
           {(total > 0 || streak >= 2) && (
             <p className="headline">
