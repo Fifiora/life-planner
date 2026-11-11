@@ -166,3 +166,17 @@ describe('one whole background and an organised Today', () => {
     expect(side.querySelector('.hero')).toBeNull()
   })
 })
+
+describe('Finance is organised', () => {
+  it('Overview opens with the plan card, ahead of the headline tiles', async () => {
+    seedPlanner()
+    const Finance = (await import('../src/screens/Finance')).default
+    const { container } = renderScreen(<Finance />)
+    await screen.findByText(/The plan for/)
+    const kids = [...container.querySelector('.stack')!.children]
+    const plan = kids.findIndex((el) => el.classList.contains('plan-card'))
+    const kpi = kids.findIndex((el) => el.classList.contains('kpi-row'))
+    expect(plan).toBeGreaterThan(-1)
+    expect(plan).toBeLessThan(kpi)
+  })
+})

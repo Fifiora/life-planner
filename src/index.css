@@ -872,3 +872,32 @@ body::before {
 .today-side .card { padding: 0.9rem 1rem; }
 .today-main .list-row, .today-main .row { padding-block: 0.15rem; }
 @media (prefers-reduced-motion: reduce) { .hero .ring-link:hover { transform: none; } }
+
+/* ---------- Finance: one organised page ---------- */
+/* The nine section tabs stay in reach while you scroll, swipe sideways on a phone, and fade at the edges. */
+.stack > .tabs[aria-label="Finance sections"] { position: sticky; top: 0.5rem; z-index: 6; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); box-shadow: var(--shadow), inset 0 1px 0 var(--gloss); }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs .seg { flex: none; scroll-snap-align: center; padding-inline: 0.95rem; white-space: nowrap; }
+.tabs .seg.active { background: linear-gradient(180deg, color-mix(in srgb, var(--noir) 80%, var(--brand)), var(--noir)); color: #f4f1ec; box-shadow: 0 4px 12px color-mix(in srgb, var(--noir) 30%, transparent); }
+.mpills { padding: 0.25rem; border-radius: 999px; background: color-mix(in srgb, var(--card-solid) 38%, transparent); border: 1px solid var(--edge); }
+.mpill { border-radius: 999px; border-color: transparent; background: transparent; }
+.mpill.active { background: linear-gradient(135deg, var(--blue), color-mix(in srgb, var(--blue) 70%, var(--noir))); color: var(--blue-ink); box-shadow: 0 4px 12px color-mix(in srgb, var(--blue) 28%, transparent); }
+
+/* The plan comes first: four numbers in a row, the blue one is what is left. */
+.plan-card .stat-grid { grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 40rem) { .plan-card .stat-grid { grid-template-columns: repeat(4, 1fr); } }
+.plan-card .stat { min-height: 5.2rem; display: grid; align-content: space-between; }
+
+/* The four headline tiles under it: glass panes with serif figures. */
+.kpi-card { border-radius: 1.2rem; }
+.kpi-value { font-family: var(--serif); font-size: 1.6rem; font-weight: 600; letter-spacing: -0.02em; }
+.kpi-label { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.66rem; font-weight: 700; }
+.kpi-card:hover { box-shadow: var(--shadow), 0 12px 26px color-mix(in srgb, var(--blue) 18%, transparent); }
+
+.savings-card { border: 1px solid var(--edge); box-shadow: inset 0 1px 0 var(--gloss); }
+.savings-amount { font-family: var(--serif); font-size: 1.5rem; font-weight: 600; }
+.callout { border: 1px solid var(--edge); border-left: 4px solid var(--finance); }
+.callout.ok { border-left-color: var(--ok); }
+.callout.bad { border-left-color: var(--danger); }
+.stack > .card { scroll-margin-top: 4.5rem; }
+@media (prefers-reduced-motion: reduce) { .kpi-card:hover { box-shadow: var(--shadow); } }

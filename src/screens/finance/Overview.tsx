@@ -63,6 +63,37 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
 
   return (
     <>
+      <section className="card wide plan-card">
+        <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>The plan for {monthLabel(month)}</h2></div></div>
+        <div className="stat-grid">
+          {readOnly ? (
+            <div className="stat"><span className="cap">Income</span><span className="num">{money(totalIncome)}</span></div>
+          ) : (
+            <button type="button" className="stat" onClick={() => { setIncomeDraft(String(totalIncome)); setIncomeOpen(true) }}>
+              <span className="cap">Income (tap to edit)</span>
+              <span className="num">{money(totalIncome)}</span>
+            </button>
+          )}
+          <div className="stat"><span className="cap">Monthly bills</span><span className="num">{money(view.recurring)}</span></div>
+          <div className="stat"><span className="cap">One-time this month</span><span className="num">{money(view.oneTime)}</span></div>
+          <div className="stat accent">
+            <span className="cap">Left after bills</span>
+            <span className="num" style={{ color: view.available < 0 ? 'var(--danger)' : undefined }}>{money(view.available)}</span>
+          </div>
+        </div>
+        <div className="mt"><SavingsBar savings={projected} target={target} /></div>
+        {flex.spent > 0 && <p className="muted small">Includes {money(flex.spent)} of extra spending logged this month.</p>}
+        {totalIncome === 0 ? (
+          <p className="callout">Add your monthly income (tap the Income box) to see what's left each month.</p>
+        ) : view.deficit > 0 ? (
+          <p className="callout bad">Over by {money(view.deficit)} — move a one-time payment to another month.</p>
+        ) : projected < target ? (
+          <p className="callout">{money(target - projected)} below the savings target — move a payoff or trim spending.</p>
+        ) : (
+          <p className="callout ok">Savings target on track this month 🎉</p>
+        )}
+      </section>
+
       <div className="kpi-row">
         {cards.map((c) => (
           <div key={c.label} className="kpi-card">
@@ -138,37 +169,6 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
         <p className="muted small mt">
           {cancel.couldCancel > 0 ? `If you cancel everything marked 'could cancel', you save ${money(cancel.annualPotential)} a year.` : "Mark subscriptions you could cancel in the Bills tab and the yearly saving shows here."}
         </p>
-      </section>
-
-      <section className="card">
-        <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>The plan for {monthLabel(month)}</h2></div></div>
-        <div className="stat-grid">
-          {readOnly ? (
-            <div className="stat"><span className="cap">Income</span><span className="num">{money(totalIncome)}</span></div>
-          ) : (
-            <button type="button" className="stat" onClick={() => { setIncomeDraft(String(totalIncome)); setIncomeOpen(true) }}>
-              <span className="cap">Income (tap to edit)</span>
-              <span className="num">{money(totalIncome)}</span>
-            </button>
-          )}
-          <div className="stat"><span className="cap">Monthly bills</span><span className="num">{money(view.recurring)}</span></div>
-          <div className="stat"><span className="cap">One-time this month</span><span className="num">{money(view.oneTime)}</span></div>
-          <div className="stat accent">
-            <span className="cap">Left after bills</span>
-            <span className="num" style={{ color: view.available < 0 ? 'var(--danger)' : undefined }}>{money(view.available)}</span>
-          </div>
-        </div>
-        <div className="mt"><SavingsBar savings={projected} target={target} /></div>
-        {flex.spent > 0 && <p className="muted small">Includes {money(flex.spent)} of extra spending logged this month.</p>}
-        {totalIncome === 0 ? (
-          <p className="callout">Add your monthly income (tap the Income box) to see what's left each month.</p>
-        ) : view.deficit > 0 ? (
-          <p className="callout bad">Over by {money(view.deficit)} — move a one-time payment to another month.</p>
-        ) : projected < target ? (
-          <p className="callout">{money(target - projected)} below the savings target — move a payoff or trim spending.</p>
-        ) : (
-          <p className="callout ok">Savings target on track this month 🎉</p>
-        )}
       </section>
 
       <section className="card">
