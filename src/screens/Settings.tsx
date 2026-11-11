@@ -21,6 +21,7 @@ import { SharedCopyNotice } from '../ui/SharedCopyNotice'
 import { SyncCard } from '../ui/SyncCard'
 import { StarterPlanLoader } from '../ui/StarterPlanLoader'
 import { useThemeChoice } from '../ui/ThemeToggle'
+import { AMBIENTS, getAmbient, setAmbient, type AmbientId } from '../lib/ambient'
 import { ACCENTS, getAccent, setAccent, type AccentId } from '../lib/accent'
 import { useToast } from '../ui/Toast'
 
@@ -41,6 +42,7 @@ export default function Settings() {
   const [confirmErase, setConfirmErase] = useState(false)
   const pinOn = useSyncExternalStore(subscribePin, pinSignature) !== 'null'
   const theme = useThemeChoice()
+  const [ambient, setAmbientState] = useState<AmbientId>(getAmbient)
   const [accent, setAccentState] = useState<AccentId>(getAccent)
   const [lockAfter, setLockAfter] = useState(() => localStorage.getItem('lp.lockAfter') ?? '1')
   const [pin1, setPin1] = useState('')
@@ -212,6 +214,10 @@ export default function Settings() {
           <option value="system">Match my phone</option>
           <option value="light">Light</option>
           <option value="dark">Dark</option>
+        </select>
+        <label className="label mt" htmlFor="ambient-choice">Background</label>
+        <select id="ambient-choice" className="input" value={ambient} onChange={(e) => { setAmbient(e.target.value as AmbientId); setAmbientState(e.target.value as AmbientId) }}>
+          {AMBIENTS.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
         </select>
         <p className="label mt" id="accent-label">Colour</p>
         <div className="accent-row" role="group" aria-labelledby="accent-label">

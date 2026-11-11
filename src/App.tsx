@@ -1,3 +1,4 @@
+import { Ambient } from './ui/Ambient'
 import { useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { HouseholdProvider, useHousehold } from './data/household'
@@ -33,6 +34,7 @@ function Shell({ boot }: { boot: BootResult }) {
   const { readOnly } = useHousehold()
   return (
     <>
+      <Ambient />
       <main className="app">
         {readOnly && <ViewBanner createdAt={boot.createdAt} />}
         <Routes>

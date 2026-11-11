@@ -153,7 +153,7 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
           )}
           <div className="stat"><span className="cap">Monthly bills</span><span className="num">{money(view.recurring)}</span></div>
           <div className="stat"><span className="cap">One-time this month</span><span className="num">{money(view.oneTime)}</span></div>
-          <div className="stat">
+          <div className="stat accent">
             <span className="cap">Left after bills</span>
             <span className="num" style={{ color: view.available < 0 ? 'var(--danger)' : undefined }}>{money(view.available)}</span>
           </div>

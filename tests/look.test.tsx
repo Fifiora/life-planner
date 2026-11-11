@@ -120,3 +120,30 @@ describe('colour themes', () => {
     expect(localStorage.getItem('lp.accent')).toBeNull()
   })
 })
+
+describe('background picture', () => {
+  beforeEach(() => localStorage.clear())
+  it('floats flowers by default, swims fish on request, and can be switched off', async () => {
+    const { Ambient } = await import('../src/ui/Ambient')
+    const { setAmbient } = await import('../src/lib/ambient')
+    const { act } = await import('@testing-library/react')
+    const { container } = render(<Ambient />)
+    expect(container.querySelectorAll('.amb-flower').length).toBeGreaterThan(0)
+    expect(container.querySelector('.ambient')).toHaveAttribute('aria-hidden', 'true')
+    act(() => setAmbient('fish'))
+    await waitFor(() => expect(container.querySelectorAll('.amb-fish').length).toBeGreaterThan(0))
+    expect(container.querySelector('.amb-flower')).toBeNull()
+    act(() => setAmbient('off'))
+    await waitFor(() => expect(container.querySelector('.ambient')).toBeNull())
+  })
+  it('Settings offers the three choices', async () => {
+    seedPlanner()
+    renderScreen(<Settings />)
+    const select = (await screen.findByLabelText('Background')) as HTMLSelectElement
+    expect([...select.options].map((o) => o.value)).toEqual(['flowers', 'fish', 'off'])
+  })
+  it('stands still and never takes a tap', () => {
+    expect(css).toMatch(/\.ambient \{[^}]*pointer-events: none/)
+    expect(css).toMatch(/prefers-reduced-motion: reduce\) \{\s*\.amb-flower, \.amb-fish, \.amb-water \{ animation: none/)
+  })
+})
