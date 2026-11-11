@@ -10,7 +10,6 @@ import { monthLabel } from '../lib/format'
 import { reportFileName, reportToMarkdown } from '../lib/reportText'
 import { PageHead } from '../ui/PageHead'
 import { ReportView } from '../ui/ReportView'
-import { useStyleChoice } from '../ui/StyleSwitch'
 import { useToast } from '../ui/Toast'
 
 /** Everything that happened in a month, what went well and what to improve. `today` is only given by tests. */
@@ -19,7 +18,6 @@ export default function Report({ today }: { today?: string }) {
   const day = today ?? live
   const [params, setParams] = useSearchParams()
   const { members } = useHousehold()
-  const anime = useStyleChoice() === 'anime'
   const toast = useToast()
   const [manual, setManual] = useState<string | null>(null)
   const boxRef = useRef<HTMLTextAreaElement>(null)
@@ -39,7 +37,7 @@ export default function Report({ today }: { today?: string }) {
   return (
     <div className="stack">
       <PageHead title="Month-end report" sub={title} />
-      {anime && <p className="muted episode-title">{episodeTitle(month)}</p>}
+      <p className="muted episode-title">{episodeTitle(month)}</p>
       <div className="report-actions">
         <div>
           <label className="label" htmlFor="report-month">Month</label>

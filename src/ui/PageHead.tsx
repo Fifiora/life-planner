@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 import { useHousehold } from '../data/household'
 import type { Bucket } from '../types'
 import { BucketLevel } from './BucketLevel'
-import { StyleToggle } from './StyleSwitch'
 import { SyncStatus } from './SyncStatus'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -20,7 +19,6 @@ export function PageHead({ title, sub, bucket }: { title: string; sub?: string; 
         {readOnly && <span className="badge view-badge">👁 View-only</span>}
         <SyncStatus />
         <ThemeToggle />
-        <StyleToggle />
         {other && (
           <button type="button" className="chip" aria-label={`Switch person (now ${me.display_name})`} onClick={() => switchTo(other.id)}>
             👤 {me.display_name}

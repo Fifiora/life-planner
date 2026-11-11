@@ -1,6 +1,6 @@
 import { useGame } from '../data/useGame'
 
-/** This week's boss for the two of you, with how much health it has left. Anime style only. */
+/** This week's boss for the two of you, with how much health it has left. */
 export function BossCard({ today }: { today?: string }) {
   const game = useGame(today)
   if (!game.on) return null

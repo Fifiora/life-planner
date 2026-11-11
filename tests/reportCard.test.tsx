@@ -14,11 +14,6 @@ describe('ReportCard', () => {
     expect(await screen.findByText('Your October 2026 report is ready')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Open report' })).toHaveAttribute('href', '/report?month=2026-10')
   })
-  it('shows in Classic too', async () => {
-    localStorage.setItem('lp.style', 'classic')
-    renderScreen(<ReportCard today="2026-11-03" />)
-    expect(await screen.findByText('Your October 2026 report is ready')).toBeInTheDocument()
-  })
   it('is gone later in the month and before the plan began', async () => {
     const later = renderScreen(<ReportCard today="2026-11-12" />)
     await new Promise((r) => setTimeout(r, 30))

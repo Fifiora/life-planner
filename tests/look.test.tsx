@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
-import { render } from '@testing-library/react'
-import { waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { Confetti } from '../src/ui/Confetti'
+import Settings from '../src/screens/Settings'
+import { renderScreen, seedPlanner } from './seed'
 
 let css = ''
 beforeAll(async () => {
@@ -30,12 +31,12 @@ const contrast = (a: string, b: string) => {
 }
 
 const PALETTES = {
-  light: { selector: 'html[data-style="anime"]', want: { '--bg': '#fff1e6', '--card-solid': '#ffffff', '--ink': '#2b1a3a', '--muted': '#6b5577', '--brand': '#c2255c', '--brand-ink': '#ffffff', '--brand-2': '#0b7fa8' } },
-  dark: { selector: 'html[data-style="anime"][data-theme="dark"]', want: { '--bg': '#0d0b24', '--card-solid': '#1a1540', '--ink': '#f4f0ff', '--muted': '#b3a8d9', '--brand': '#ff6fa8', '--brand-ink': '#1a0b24', '--brand-2': '#3fe0ff' } },
+  light: { selector: ':root', want: { '--bg': '#f4f1ec', '--card-solid': '#fffdfa', '--ink': '#221e1a', '--brand': '#1d6b62' } },
+  dark: { selector: 'html[data-theme="dark"]', want: { '--bg': '#15130f', '--card-solid': '#1d1a16', '--ink': '#efeae2', '--brand': '#6fd3c1' } },
 }
 const PAIRS: [string, string][] = [['--ink', '--bg'], ['--ink', '--card-solid'], ['--muted', '--bg'], ['--muted', '--card-solid'], ['--brand-ink', '--brand'], ['--brand', '--bg'], ['--brand', '--card-solid']]
 
-describe.each(Object.entries(PALETTES))('anime palette (%s)', (_name, { selector, want }) => {
+describe.each(Object.entries(PALETTES))('calm glass palette (%s)', (_name, { selector, want }) => {
   it('declares the agreed colours', () => {
     const t = tokens(selector)
     for (const [k, v] of Object.entries(want)) expect(t[k], k).toBe(v)
@@ -46,7 +47,13 @@ describe.each(Object.entries(PALETTES))('anime palette (%s)', (_name, { selector
   })
 })
 
-describe('motion', () => {
+describe('the look', () => {
+  it('has no Anime theme left in the stylesheet', () => {
+    expect(css).not.toMatch(/data-style/)
+  })
+  it('puts grain over the glass', () => {
+    expect(css).toMatch(/body::after/)
+  })
   it('switches the sparkle off for people who asked for less motion', () => {
     const blocks = [...css.matchAll(/@media \(prefers-reduced-motion: reduce\) \{/g)].map((m) => {
       let depth = 0
@@ -64,15 +71,19 @@ describe('motion', () => {
 
 describe('Confetti', () => {
   beforeEach(() => localStorage.clear())
-  it('sparkles in the anime style', async () => {
+  it('sparkles', async () => {
     const { container } = render(<Confetti fire />)
     await waitFor(() => expect(container.querySelector('.confetti')).not.toBeNull())
     expect(container.querySelector('.confetti')).toHaveClass('spark')
   })
-  it('is the plain confetti in Classic', async () => {
-    localStorage.setItem('lp.style', 'classic')
-    const { container } = render(<Confetti fire />)
-    await waitFor(() => expect(container.querySelector('.confetti')).not.toBeNull())
-    expect(container.querySelector('.confetti')).not.toHaveClass('spark')
+})
+
+describe('There is one look', () => {
+  beforeEach(() => seedPlanner())
+  it('Settings has no Style choice but keeps Appearance and the Episodes', async () => {
+    renderScreen(<Settings />)
+    expect(await screen.findByLabelText('Appearance')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Style')).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Episodes' })).toBeInTheDocument()
   })
 })

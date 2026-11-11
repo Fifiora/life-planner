@@ -69,7 +69,6 @@ describe('Today with damaged event rows', () => {
 
 describe('Today progress headline', () => {
   it('counts what is done today and the streak', async () => {
-    localStorage.setItem('lp.style', 'classic') // Classic keeps the plain look and the routine streak chip
     const t = todayCT()
     localStorage.setItem('lp.data.routine_logs', JSON.stringify([log('x1', 'r1', t), log('x2', 'r1', addDays(t, -1)), log('x3', 'r1', addDays(t, -2))]))
     renderScreen(<Today />)
@@ -103,7 +102,6 @@ describe('Today hero card', () => {
   })
 
   it('says something encouraging that matches the day', async () => {
-    localStorage.setItem('lp.style', 'classic')
     renderScreen(<Today />)
     expect(await screen.findByText(/A fresh day|Keep going|All done today/)).toBeInTheDocument()
   })

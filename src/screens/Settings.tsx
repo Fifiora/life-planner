@@ -21,13 +21,11 @@ import { SharedCopyNotice } from '../ui/SharedCopyNotice'
 import { SyncCard } from '../ui/SyncCard'
 import { StarterPlanLoader } from '../ui/StarterPlanLoader'
 import { useThemeChoice } from '../ui/ThemeToggle'
-import { useStyleChoice } from '../ui/StyleSwitch'
 import { Trophies } from '../ui/Trophies'
 import { EpisodeCard } from '../ui/EpisodeCard'
 import { finishedMonths } from '../lib/episode'
 import { monthLabel } from '../lib/format'
 import { useToday } from '../data/useToday'
-import { setStyleChoice, type StyleChoice } from '../lib/style'
 import { useToast } from '../ui/Toast'
 
 
@@ -47,7 +45,6 @@ export default function Settings() {
   const [confirmErase, setConfirmErase] = useState(false)
   const pinOn = useSyncExternalStore(subscribePin, pinSignature) !== 'null'
   const theme = useThemeChoice()
-  const style = useStyleChoice()
   const todayKey = useToday()
   const months = finishedMonths(todayKey)
   const [episodeMonth, setEpisodeMonth] = useState('')
@@ -216,21 +213,19 @@ export default function Settings() {
 
       <Trophies />
 
-      {style === 'anime' && (
-        <section className="card">
-          <h2>Episodes</h2>
-          {months.length === 0 ? (
-            <p className="muted small">No finished months yet. The first episode arrives after the month ends.</p>
-          ) : (
-            <>
-              <label className="label" htmlFor="episode-month">Episode month</label>
-              <select id="episode-month" className="input" value={episodeMonth || months[0]} onChange={(e) => setEpisodeMonth(e.target.value)}>
-                {months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
-              </select>
-              <EpisodeCard month={episodeMonth || months[0]} />
-            </>
-          )}
-        </section>
+      <section className="card">
+        <h2>Episodes</h2>
+        {months.length === 0 ? (
+          <p className="muted small">No finished months yet. The first episode arrives after the month ends.</p>
+        ) : (
+          <>
+            <label className="label" htmlFor="episode-month">Episode month</label>
+            <select id="episode-month" className="input" value={episodeMonth || months[0]} onChange={(e) => setEpisodeMonth(e.target.value)}>
+              {months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
+            </select>
+            <EpisodeCard month={episodeMonth || months[0]} />
+          </>
+          </section>
       )}
 
       <section className="card">
@@ -240,11 +235,6 @@ export default function Settings() {
           <option value="system">Match my phone</option>
           <option value="light">Light</option>
           <option value="dark">Dark</option>
-        </select>
-        <label className="label" htmlFor="style-choice">Style</label>
-        <select id="style-choice" className="input" value={style} onChange={(e) => setStyleChoice(e.target.value as StyleChoice)}>
-          <option value="anime">Anime</option>
-          <option value="classic">Classic</option>
         </select>
       </section>
 

@@ -60,13 +60,6 @@ describe('BossCard', () => {
     expect(screen.getByRole('progressbar', { name: 'Boss HP' })).toHaveAttribute('aria-valuenow', '0')
   })
 
-  it('is hidden in Classic', async () => {
-    localStorage.setItem('lp.style', 'classic')
-    renderScreen(<BossCard today="2026-11-04" />)
-    await new Promise((r) => setTimeout(r, 50))
-    expect(screen.queryByText('The Couch Colossus')).toBeNull()
-  })
-
   it('has all four bosses in the rotation', () => {
     expect(new Set(BOSSES.map((b) => b.unit)).size).toBe(4)
   })

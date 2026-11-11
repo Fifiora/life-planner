@@ -21,12 +21,6 @@ describe('EpisodeCard', () => {
     expect(screen.getByText('Best streak: 2 days')).toBeInTheDocument()
     expect(screen.getByText('Spent: $42')).toBeInTheDocument()
   })
-  it('is hidden in Classic', async () => {
-    localStorage.setItem('lp.style', 'classic')
-    renderScreen(<EpisodeCard month="2026-10" />)
-    await new Promise((r) => setTimeout(r, 50))
-    expect(screen.queryByRole('heading', { name: /^Arc/ })).toBeNull()
-  })
 })
 
 describe('Settings episodes', () => {

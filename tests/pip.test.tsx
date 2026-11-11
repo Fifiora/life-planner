@@ -40,13 +40,8 @@ describe('Pip in the hero', () => {
       <TodayHero rings={[]} done={3} total={3} streak={0} part="afternoon" />
     </MemoryRouter>
   )
-  it('shows in the anime style', () => {
+  it('shows', () => {
     render(hero())
     expect(screen.getByRole('img', { name: 'Pip is proud' })).toBeInTheDocument()
-  })
-  it('is gone in Classic', () => {
-    localStorage.setItem('lp.style', 'classic')
-    render(hero())
-    expect(screen.queryByRole('img', { name: /^Pip/ })).toBeNull()
   })
 })

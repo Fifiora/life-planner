@@ -85,16 +85,9 @@ describe('Report screen', () => {
     renderScreen(<Report today="2026-11-03" />, '/report?month=2026-11')
     expect(await screen.findByText('Sat walk (Ada): 0 of 0 (—)')).toBeInTheDocument()
   })
-  it('shows the episode title in Anime and not in Classic', async () => {
+  it('shows the episode title', async () => {
     page()
     expect(await screen.findByText('Arc 2: The Savings Push')).toBeInTheDocument()
-  })
-  it('has no episode title and no game lines in Classic', async () => {
-    localStorage.setItem('lp.style', 'classic')
-    page()
-    await screen.findByRole('heading', { name: 'Scorecard' })
-    expect(screen.queryByText(/^Arc \d/)).toBeNull()
-    expect(screen.queryByText(/Level now/)).toBeNull()
   })
 })
 
@@ -150,7 +143,7 @@ describe('Report sections', () => {
     expect(within(await card('Improve next month')).getByText('Savings reached $500 against the $10,000 target.')).toBeInTheDocument()
     expect(within(await card('Wins')).getByText('Cleared: Card payoff.')).toBeInTheDocument()
   })
-  it('Anime shows level and bosses; Classic shows neither', async () => {
+  it('shows level and bosses', async () => {
     page()
     const c = await card('Scorecard')
     expect(within(c).getByText(/^Level now: Ada \d+, Ben \d+$/)).toBeInTheDocument()

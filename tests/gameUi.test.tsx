@@ -42,23 +42,6 @@ describe('Today game layer (anime)', () => {
   })
 })
 
-describe('Classic hides the game layer', () => {
-  beforeEach(() => localStorage.setItem('lp.style', 'classic'))
-  it('Today has no levels, no trophies, and the old streak', async () => {
-    const t = todayCT()
-    setLogs([log('x1', 'r1', t), log('x2', 'r2', addDays(t, -1)), log('x3', 'r1', addDays(t, -2))])
-    renderScreen(<Today />)
-    await screen.findByRole('progressbar', { name: 'Done today' })
-    expect(screen.queryByText(/Party Lv/)).toBeNull()
-    expect(screen.queryByRole('heading', { name: 'Trophies' })).toBeNull()
-    expect(screen.queryByText('🔥 3-day streak')).toBeNull()
-  })
-  it('bucket screens have no level chip', async () => {
-    renderScreen(<Health />)
-    await screen.findByRole('heading', { name: 'Health' })
-    expect(screen.queryByLabelText(/^Health level/)).toBeNull()
-  })
-})
 
 describe('Bucket levels and Settings', () => {
   it('Health shows its own level', async () => {

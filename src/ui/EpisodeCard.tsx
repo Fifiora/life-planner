@@ -7,7 +7,7 @@ import type { Expense } from '../types'
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
-/** A finished month told as an episode of the series. Anime style only. */
+/** A finished month told as an episode of the series. */
 export function EpisodeCard({ month }: { month: string }) {
   const game = useGame()
   const { members } = useHousehold()

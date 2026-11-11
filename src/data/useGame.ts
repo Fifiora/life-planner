@@ -3,7 +3,6 @@ import { earnedBadges } from '../lib/badges'
 import { addDays, PLAN_START, weekStart } from '../lib/dates'
 import { levelFor, levelProgress, memberTicks, memberXp, partyXp, BUCKETS, type BucketXp, type GameData } from '../lib/xp'
 import type { Activity, Bill, BillPayment, Cheer, Milestone, Routine, RoutineLog, TriviaAttempt } from '../types'
-import { useStyleChoice } from '../ui/StyleSwitch'
 import { useHousehold } from './household'
 import { useTable } from './useTable'
 import { useToday } from './useToday'
@@ -48,11 +47,10 @@ function shared(deps: unknown[], make: () => Game): Game {
 
 /** XP, levels and badges for me and for the two of us, worked out from what is already saved and synced. */
 export function useGame(today?: string): Game {
-  const style = useStyleChoice()
   const { me, members, readOnly } = useHousehold()
   const liveToday = useToday()
   const day = today ?? liveToday
-  const on = style === 'anime' && !readOnly
+  const on = !readOnly
   const routines = useTable<Routine>('routines').rows
   const logs = useTable<RoutineLog>('routine_logs').rows
   const activities = useTable<Activity>('activities').rows

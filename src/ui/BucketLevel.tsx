@@ -3,7 +3,7 @@ import { cap } from '../lib/format'
 import { levelProgress } from '../lib/xp'
 import type { Bucket } from '../types'
 
-/** My level in one area (Health, Study...) as a small chip. Anime style only. */
+/** My level in one area (Health, Study...) as a small chip. */
 export function BucketLevel({ bucket }: { bucket: Bucket }) {
   const game = useGame()
   if (!game.on) return null

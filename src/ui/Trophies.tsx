@@ -1,7 +1,7 @@
 import { useGame } from '../data/useGame'
 import { BADGES } from '../lib/badges'
 
-/** Every badge: earned ones lit, locked ones greyed with a hint. Anime style only. */
+/** Every badge: earned ones lit, locked ones greyed with a hint. */
 export function Trophies() {
   const game = useGame()
   if (!game.on) return null
