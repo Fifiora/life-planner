@@ -112,24 +112,57 @@ export default function Today() {
 
       <WeekStrip today={data.today} events={events.events} />
 
-      <TodayHero rings={rings} done={doneToday} total={todayItems.length} streak={bestStreak} part={daypart(new Date().getHours())} host={host?.display_name} />
+      <div className="wide today-layout">
+        <div className="today-col today-main">
+          <TodayHero rings={rings} done={doneToday} total={todayItems.length} streak={bestStreak} part={daypart(new Date().getHours())} host={host?.display_name} />
 
-      <ReportCard today={data.today} />
+          <ReportCard today={data.today} />
 
-      <UpNext today={data.today} events={events.events} />
 
-      <MoneyCard f={money} />
+        {nothing && !data.loading ? (
+          <section className="card">
+            <EmptyState
+              title="Nothing to track yet"
+              description="Add your first routine, or load your starter plan from Settings."
+              actionLabel="Add a routine"
+              onAction={() => setCreating(true)}
+            />
+            <StarterPlanLoader />
+          </section>
+        ) : (
+          <>
+            <section className="card">
+              <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--brand)' }} /><h2>Today</h2></div><button type="button" className="add-btn" aria-label="Add routine" onClick={() => setCreating(true)}>+</button></div>
+              {todayItems.length === 0 ? <p className="muted small">Nothing scheduled for today.</p> : <RoutineRows routines={todayItems} data={data} onEdit={setEditing} />}
+            </section>
+            {laterItems.length > 0 && (
+              <section className="card">
+                <div className="card-head"><h2>Still to do this period</h2></div>
+                <RoutineRows routines={laterItems} data={data} onEdit={setEditing} showDue />
+              </section>
+            )}
+          </>
+        )}
+        </div>
+        <div className="today-col today-side">
+          <UpNext today={data.today} events={events.events} />
 
-      {(recap.total > 0 || milestonesDone > 0) && (
-        <section className="card" aria-label="This week's wins">
-          <h2>This week's wins 🎉</h2>
-          <p>
-            {`${recap.total} thing${recap.total === 1 ? '' : 's'} ticked off`}
-            {members.length > 1 && ` (${members.map((m) => `${m.display_name} ${recap.byMember[m.id] ?? 0}`).join(' · ')})`}
-            {milestonesDone > 0 && ` · ${milestonesDone} study milestone${milestonesDone === 1 ? '' : 's'} done`}
-          </p>
-        </section>
-      )}
+
+          <MoneyCard f={money} />
+
+
+        {(recap.total > 0 || milestonesDone > 0) && (
+          <section className="card" aria-label="This week's wins">
+            <h2>This week's wins 🎉</h2>
+            <p>
+              {`${recap.total} thing${recap.total === 1 ? '' : 's'} ticked off`}
+              {members.length > 1 && ` (${members.map((m) => `${m.display_name} ${recap.byMember[m.id] ?? 0}`).join(' · ')})`}
+              {milestonesDone > 0 && ` · ${milestonesDone} study milestone${milestonesDone === 1 ? '' : 's'} done`}
+            </p>
+          </section>
+        )}
+        </div>
+      </div>
 
       <p className="muted small"><Link to="/report">Month-end report</Link></p>
 
@@ -137,31 +170,6 @@ export default function Today() {
         <section className="card">
           <p>💾 Your planner is saved only on this phone. <Link to="/settings">Download a backup</Link> so it can't be lost.</p>
         </section>
-      )}
-
-      {nothing && !data.loading ? (
-        <section className="card">
-          <EmptyState
-            title="Nothing to track yet"
-            description="Add your first routine, or load your starter plan from Settings."
-            actionLabel="Add a routine"
-            onAction={() => setCreating(true)}
-          />
-          <StarterPlanLoader />
-        </section>
-      ) : (
-        <>
-          <section className="card">
-            <div className="card-head"><h2>Today</h2><button type="button" className="add-btn" aria-label="Add routine" onClick={() => setCreating(true)}>+</button></div>
-            {todayItems.length === 0 ? <p className="muted small">Nothing scheduled for today.</p> : <RoutineRows routines={todayItems} data={data} onEdit={setEditing} />}
-          </section>
-          {laterItems.length > 0 && (
-            <section className="card">
-              <div className="card-head"><h2>Still to do this period</h2></div>
-              <RoutineRows routines={laterItems} data={data} onEdit={setEditing} showDue />
-            </section>
-          )}
-        </>
       )}
 
       <QuickAdd />

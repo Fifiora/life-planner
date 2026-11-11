@@ -147,3 +147,22 @@ describe('background picture', () => {
     expect(css).toMatch(/prefers-reduced-motion: reduce\) \{\s*\.amb-flower, \.amb-fish, \.amb-water \{ animation: none/)
   })
 })
+
+describe('one whole background and an organised Today', () => {
+  it('draws the stone once over the whole page, not as tiles', () => {
+    const rule = css.slice(css.lastIndexOf('body::before {'), css.indexOf('}', css.lastIndexOf('body::before {')))
+    expect(rule).toMatch(/100% 100% no-repeat/)
+    expect(rule).not.toMatch(/520px/)
+  })
+  it('Today has a main column with the checklist and a side column with the rest', async () => {
+    seedPlanner()
+    const Today = (await import('../src/screens/Today')).default
+    const { container } = renderScreen(<Today />)
+    await screen.findByRole('heading', { name: 'Today' })
+    const main = container.querySelector('.today-main')!
+    const side = container.querySelector('.today-side')!
+    expect(main.querySelector('.hero')).not.toBeNull()
+    expect(main.textContent).toContain('Today')
+    expect(side.querySelector('.hero')).toBeNull()
+  })
+})
