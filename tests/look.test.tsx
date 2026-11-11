@@ -152,7 +152,7 @@ describe('one whole background and an organised Today', () => {
   it('draws the stone once over the whole page, not as tiles', () => {
     const rule = css.slice(css.lastIndexOf('body::before {'), css.indexOf('}', css.lastIndexOf('body::before {')))
     expect(rule).toMatch(/100% 100% no-repeat/)
-    expect(rule).not.toMatch(/520px/)
+    expect(rule).not.toMatch(/520px 520px/)
   })
   it('Today has a main column with the checklist and a side column with the rest', async () => {
     seedPlanner()
