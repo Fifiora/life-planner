@@ -21,7 +21,7 @@ export default function Health() {
   return (
     <div className="stack">
       <PageHead title="Health" sub="Body, mind and spirit — together." />
-      <Scorecard data={data} />
+      <Scorecard data={data} bucket="health" />
       {SECTIONS.map((s) => (
         <div key={s.key} className="stack">
           {s.key === 'physical' && (
