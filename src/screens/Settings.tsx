@@ -21,11 +21,7 @@ import { SharedCopyNotice } from '../ui/SharedCopyNotice'
 import { SyncCard } from '../ui/SyncCard'
 import { StarterPlanLoader } from '../ui/StarterPlanLoader'
 import { useThemeChoice } from '../ui/ThemeToggle'
-import { Trophies } from '../ui/Trophies'
-import { EpisodeCard } from '../ui/EpisodeCard'
-import { finishedMonths } from '../lib/episode'
-import { monthLabel } from '../lib/format'
-import { useToday } from '../data/useToday'
+import { ACCENTS, getAccent, setAccent, type AccentId } from '../lib/accent'
 import { useToast } from '../ui/Toast'
 
 
@@ -45,9 +41,7 @@ export default function Settings() {
   const [confirmErase, setConfirmErase] = useState(false)
   const pinOn = useSyncExternalStore(subscribePin, pinSignature) !== 'null'
   const theme = useThemeChoice()
-  const todayKey = useToday()
-  const months = finishedMonths(todayKey)
-  const [episodeMonth, setEpisodeMonth] = useState('')
+  const [accent, setAccentState] = useState<AccentId>(getAccent)
   const [lockAfter, setLockAfter] = useState(() => localStorage.getItem('lp.lockAfter') ?? '1')
   const [pin1, setPin1] = useState('')
   const [pin2, setPin2] = useState('')
@@ -211,23 +205,6 @@ export default function Settings() {
         <Link to="/report">Month-end report</Link>
       </section>
 
-      <Trophies />
-
-      <section className="card">
-        <h2>Episodes</h2>
-        {months.length === 0 ? (
-          <p className="muted small">No finished months yet. The first episode arrives after the month ends.</p>
-        ) : (
-          <>
-            <label className="label" htmlFor="episode-month">Episode month</label>
-            <select id="episode-month" className="input" value={episodeMonth || months[0]} onChange={(e) => setEpisodeMonth(e.target.value)}>
-              {months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
-            </select>
-            <EpisodeCard month={episodeMonth || months[0]} />
-          </>
-        )}
-      </section>
-
       <section className="card">
         <h2>Appearance</h2>
         <label className="label" htmlFor="theme-choice">Appearance</label>
@@ -236,6 +213,15 @@ export default function Settings() {
           <option value="light">Light</option>
           <option value="dark">Dark</option>
         </select>
+        <p className="label mt" id="accent-label">Colour</p>
+        <div className="accent-row" role="group" aria-labelledby="accent-label">
+          {ACCENTS.map((a) => (
+            <button key={a.id} type="button" className="accent-swatch" aria-pressed={accent === a.id} onClick={() => { setAccent(a.id); setAccentState(a.id) }}>
+              <i style={{ background: a.swatch }} aria-hidden="true" />
+              {a.label}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="card">

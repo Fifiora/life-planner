@@ -16,11 +16,3 @@ export function heroLine(done: number, total: number): string {
   if (done > 0) return say('encourage.some')
   return say('encourage.fresh')
 }
-
-// Lines for the game layer.
-export const levelUpLine = (n: number): string => `LEVEL UP! You reached level ${n}!`
-export const partyLevelLine = (n: number): string => `Party level ${n}! Together you are unstoppable.`
-export const badgeLine = (name: string): string => `Badge unlocked: ${name}`
-export const cheerLine = (name: string): string => `${name} cheered you on today!`
-export const bossLine = (name: string): string => `Boss defeated: ${name}!`
-export const restUsedLine = 'Rest day used. The streak lives on.'

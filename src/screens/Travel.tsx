@@ -47,7 +47,7 @@ export default function Travel() {
 
   return (
     <div className="stack">
-      <PageHead title="Travel" bucket="travel" sub="A trip within 6 hours each month, a bigger one every 3." />
+      <PageHead title="Travel" sub="A trip within 6 hours each month, a bigger one every 3." />
 
       <section className="card">
         <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--travel)' }} /><h2>Trip rhythm</h2></div></div>

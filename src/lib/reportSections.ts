@@ -7,7 +7,7 @@ import { scorecard, timeStats } from './habits'
 import { budgetFor, budgetRows, monthActuals } from './ledger'
 import type { CalendarSection, FinanceSection, FoodSection, HealthSection, MonthRange, ReportInput, RoutineRow, Scorecard, StudySection, TravelSection } from './reportTypes'
 import { streakLengths } from './streak'
-import { memberTickDates, memberTicks, type GameData } from './xp'
+import { memberTickDates, memberTicks, type TickData } from './ticks'
 
 export function monthRange(month: string, today: string, planStart: string = PLAN_START): MonthRange {
   const first = `${month}-01`
@@ -22,7 +22,7 @@ const inRange = (r: MonthRange, date: string) => date >= r.start && date <= r.la
 /** The month before, always a whole month (from the plan start on). */
 const previous = (r: MonthRange, input: ReportInput) => monthRange(shiftMonthKey(r.month, -1), r.first, input.planStart)
 const prevAvailable = (r: MonthRange, input: ReportInput) => shiftMonthKey(r.month, -1) >= input.planStart.slice(0, 7)
-const gameData = (i: ReportInput): GameData => ({ routines: i.routines, logs: i.logs, activities: i.activities, milestones: i.milestones, attempts: i.attempts, payments: i.payments, bills: i.bills })
+const tickData = (i: ReportInput): TickData => ({ routines: i.routines, logs: i.logs, activities: i.activities, milestones: i.milestones, attempts: i.attempts, payments: i.payments, bills: i.bills })
 const peopleFor = (i: ReportInput, routine: Routine) => (routine.applies_to === 'both' ? i.members.map((m) => m.id) : i.members.filter((m) => m.id === routine.applies_to).map((m) => m.id))
 const pctOf = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : null)
 
@@ -44,7 +44,7 @@ export function routinesSection(r: MonthRange, input: ReportInput): RoutineRow[]
 }
 
 export function scorecardSection(r: MonthRange, input: ReportInput): Scorecard {
-  const data = gameData(input)
+  const data = tickData(input)
   const prev = previous(r, input)
   const rows = routinesSection(r, input)
   const doneTotal = rows.reduce((s, x) => s + Math.min(x.count, x.expected), 0)

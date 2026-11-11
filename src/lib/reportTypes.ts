@@ -136,7 +136,6 @@ export interface Report {
   food: FoodSection
   finance: FinanceSection
   calendar: CalendarSection
-  game: { levels: Record<string, number>; bossesBeaten: number } | null
   focus: FocusGoal[]
   insights: { wins: Insight[]; improve: Insight[] }
 }

@@ -28,7 +28,6 @@ export function reportSections(report: Report, members: MemberRef[]): TextSectio
     `Spent: ${money(s.spent)}${s.prevAvailable ? ` (last month ${money(s.prevSpent)})` : ''}`,
   ]
   if (report.focus.length > 0) scoreLines.push(`Focus goals: ${report.focus.filter((g) => g.done).length} of ${report.focus.length} done`)
-  if (report.game) scoreLines.push(`Level now: ${members.map((m) => `${m.display_name} ${report.game?.levels[m.id] ?? 1}`).join(', ')}`, `Bosses beaten: ${report.game.bossesBeaten}`)
   section('Scorecard', scoreLines)
 
   const known = report.routines.filter((r) => r.pct !== null)

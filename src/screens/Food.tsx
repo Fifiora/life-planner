@@ -16,7 +16,7 @@ export default function Food() {
   const dates = countByType(nights.rows, monthKeyCT(), 'date')
   return (
     <div className="stack">
-      <PageHead title="Food" bucket="food" sub="Shop with a plan, eat out on date nights." />
+      <PageHead title="Food" sub="Shop with a plan, eat out on date nights." />
       <RoutineList
         title="Shopping rhythm"
         color="var(--food)"

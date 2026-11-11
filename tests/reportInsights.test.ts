@@ -135,11 +135,6 @@ describe('wins', () => {
     expect(streak(6)).toEqual([])
     expect(texts(streak(7))).toEqual(['Best streak: 7 days (Ada).'])
   })
-  it('a boss beaten, only when the game is given', () => {
-    expect(texts(insightsFor({ ...base(), game: { bossesBeaten: 2 } }).wins)).toEqual(['Boss beaten 2 times.'])
-    expect(texts(insightsFor({ ...base(), game: { bossesBeaten: 1 } }).wins)).toEqual(['Boss beaten 1 time.'])
-    expect(insightsFor({ ...base(), game: { bossesBeaten: 0 } }).wins).toEqual([])
-  })
 })
 
 describe('order and caps', () => {

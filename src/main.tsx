@@ -6,11 +6,13 @@ import { startup } from './data/startup'
 import { resumeSync } from './data/syncRuntime'
 import { migrateOwnData } from './lib/migrate'
 import { migrateLocalPin } from './lib/pinStore'
+import { startAccent } from './lib/accent'
 import { startTheme } from './lib/theme'
 import './index.css'
 
 async function main() {
   startTheme()
+  startAccent()
   // Ask the browser not to clear this site's saved data when space is tight (ignored if unsupported).
   void navigator.storage?.persist?.()
   migrateOwnData()

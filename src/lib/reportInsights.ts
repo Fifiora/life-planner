@@ -11,7 +11,6 @@ export interface InsightInput {
   travel: TravelSection
   finance: FinanceSection
   calendar?: CalendarSection
-  game?: { bossesBeaten: number }
 }
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many)
@@ -77,10 +76,6 @@ export function insightsFor(input: InsightInput): { wins: Insight[]; improve: In
   if (finance.payoffsCleared.length > 0) wins.push({ area: 'finance', text: `Cleared: ${finance.payoffsCleared.join(', ')}.` })
   const best = Object.entries(input.scorecard.bestStreakByMember).sort((a, b) => b[1] - a[1])[0]
   if (best && best[1] >= 7) wins.push({ area: 'general', text: `Best streak: ${best[1]} days (${person(best[0])}).` })
-  if (input.game && input.game.bossesBeaten > 0) {
-    const n = input.game.bossesBeaten
-    wins.push({ area: 'general', text: `Boss beaten ${n} ${plural(n, 'time', 'times')}.` })
-  }
 
   return {
     wins: wins.slice(0, 5),

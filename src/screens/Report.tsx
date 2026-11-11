@@ -4,7 +4,7 @@ import { useHousehold } from '../data/household'
 import { useReport } from '../data/useReport'
 import { useToday } from '../data/useToday'
 import { copyText } from '../lib/clipboard'
-import { episodeTitle, finishedMonths } from '../lib/episode'
+import { finishedMonths } from '../lib/months'
 import { downloadText } from '../lib/files'
 import { monthLabel } from '../lib/format'
 import { reportFileName, reportToMarkdown } from '../lib/reportText'
@@ -37,7 +37,6 @@ export default function Report({ today }: { today?: string }) {
   return (
     <div className="stack">
       <PageHead title="Month-end report" sub={title} />
-      <p className="muted episode-title">{episodeTitle(month)}</p>
       <div className="report-actions">
         <div>
           <label className="label" htmlFor="report-month">Month</label>

@@ -49,12 +49,6 @@ describe('reportToMarkdown', () => {
     expect(text).toContain('- [x] Walk daily')
     expect(text).toContain('- [ ] Pay bills early')
   })
-  it('shows the game lines only when the report has them', () => {
-    expect(md()).not.toContain('Level now')
-    const text = md(buildReport('2026-10', full(), { game: { levels: { a: 4, b: 3 }, bossesBeaten: 1 } }))
-    expect(text).toContain('- Level now: Ada 4, Ben 3')
-    expect(text).toContain('- Bosses beaten: 1')
-  })
   it('never prints NaN, undefined or Infinity', () => {
     expect(md(buildReport('2026-10', reportInput()))).not.toMatch(/NaN|undefined|Infinity/)
     expect(md()).not.toMatch(/NaN|undefined|Infinity/)

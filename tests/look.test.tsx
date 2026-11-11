@@ -80,10 +80,43 @@ describe('Confetti', () => {
 
 describe('There is one look', () => {
   beforeEach(() => seedPlanner())
-  it('Settings has no Style choice but keeps Appearance and the Episodes', async () => {
+  it('Settings has no Style choice but keeps Appearance', async () => {
     renderScreen(<Settings />)
     expect(await screen.findByLabelText('Appearance')).toBeInTheDocument()
     expect(screen.queryByLabelText('Style')).toBeNull()
-    expect(screen.getByRole('heading', { name: 'Episodes' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Episodes' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Trophies' })).toBeNull()
+  })
+})
+
+describe('colour themes', () => {
+  const ACCENTS = ['ocean', 'rose', 'plum', 'forest', 'sunset', 'slate']
+  const PAIRS: [string, string][] = [['--brand-ink', '--brand'], ['--brand', '--bg'], ['--brand', '--card-solid']]
+  const base = (dark: boolean) => tokens(dark ? 'html[data-theme="dark"]' : ':root')
+  describe.each([false, true])('dark=%s', (dark) => {
+    it.each(ACCENTS)('%s declares its colours and keeps them readable (AA 4.5:1)', (id) => {
+      const t = tokens(dark ? `html[data-theme="dark"][data-accent="${id}"]` : `html[data-accent="${id}"]`)
+      expect(t['--brand'], 'brand').toMatch(/^#[0-9a-f]{6}$/)
+      expect(t['--brand-ink'], 'brand-ink').toMatch(/^#[0-9a-f]{6}$/)
+      const all = { ...base(dark), ...t }
+      for (const [fg, bg] of PAIRS) expect(contrast(all[fg], all[bg]), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
+    })
+  })
+  beforeEach(() => {
+    localStorage.clear()
+    document.documentElement.removeAttribute('data-accent')
+  })
+  it('Settings picks a colour, applies it and remembers it', async () => {
+    seedPlanner()
+    renderScreen(<Settings />)
+    const rose = await screen.findByRole('button', { name: 'Rose' })
+    expect(screen.getByRole('button', { name: 'Teal' })).toHaveAttribute('aria-pressed', 'true')
+    rose.click()
+    await waitFor(() => expect(document.documentElement.getAttribute('data-accent')).toBe('rose'))
+    expect(localStorage.getItem('lp.accent')).toBe('rose')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Rose' })).toHaveAttribute('aria-pressed', 'true'))
+    screen.getByRole('button', { name: 'Teal' }).click()
+    await waitFor(() => expect(document.documentElement.hasAttribute('data-accent')).toBe(false))
+    expect(localStorage.getItem('lp.accent')).toBeNull()
   })
 })

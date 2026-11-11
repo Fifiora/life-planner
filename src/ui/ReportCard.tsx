@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
-import { episodeMonthFor } from '../lib/episode'
+import { reportMonthFor } from '../lib/months'
 import { monthLabel } from '../lib/format'
 
 /** On the first seven days of a month: last month's report is ready. */
 export function ReportCard({ today }: { today: string }) {
-  const month = episodeMonthFor(today)
+  const month = reportMonthFor(today)
   if (!month) return null
   return (
     <section className="card" aria-label="Month-end report">

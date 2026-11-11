@@ -3,7 +3,7 @@ import { calendarSection, financeSection, foodSection, healthSection, monthRange
 import type { FocusGoal, Report, ReportInput } from './reportTypes'
 
 /** Everything about one month, as plain numbers. The page and the text export both read this. */
-export function buildReport(month: string, input: ReportInput, extra: { game?: { levels: Record<string, number>; bossesBeaten: number } | null; focus?: FocusGoal[] } = {}): Report {
+export function buildReport(month: string, input: ReportInput, extra: { focus?: FocusGoal[] } = {}): Report {
   const range = monthRange(month, input.today, input.planStart)
   const scorecard = scorecardSection(range, input)
   const routines = routinesSection(range, input)
@@ -13,7 +13,6 @@ export function buildReport(month: string, input: ReportInput, extra: { game?: {
   const food = foodSection(range, input)
   const finance = financeSection(range, input)
   const calendar = calendarSection(range, input)
-  const game = extra.game ?? null
   const routineIds = new Set(input.routines.map((r) => r.id))
   const inRange = (d: string) => d >= range.start && d <= range.last
   const hasData =
@@ -37,8 +36,7 @@ export function buildReport(month: string, input: ReportInput, extra: { game?: {
     food,
     finance,
     calendar,
-    game,
     focus: extra.focus ?? [],
-    insights: !hasData ? { wins: [], improve: [] } : insightsFor({ range, members: input.members, scorecard, routines, health, study, travel, finance, calendar, game: game ? { bossesBeaten: game.bossesBeaten } : undefined }),
+    insights: !hasData ? { wins: [], improve: [] } : insightsFor({ range, members: input.members, scorecard, routines, health, study, travel, finance, calendar }),
   }
 }

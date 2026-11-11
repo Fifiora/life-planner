@@ -62,21 +62,11 @@ npm run build   # typecheck + production build
 
 The app has a light and a dark palette (Settings → Appearance), frosted-glass cards with hover effects, and a wide-screen layout: on a laptop the bottom bar becomes a left sidebar and cards flow into two or three columns. Phones keep the single-column layout.
 
-## The look, XP and shared goals
+## The look and colour themes
 
-There is one look, called calm glass: frosted glass cards with a bright top edge and a fine grain texture over a warm porcelain (light) or deep charcoal (dark) background, one teal accent, Geist for the interface and Fraunces for page titles, aligned digits for money, clear focus rings and a press effect on buttons. Light, dark or match-my-phone is chosen in Settings. The game layer (the mascot Pip, XP, levels, streaks, badges, weekly boss, cheers and monthly episodes) is on for everyone; the earlier Anime/Classic switch is gone.
+There is one look, called calm glass: frosted glass cards with a bright top edge and a fine grain texture over a warm porcelain (light) or deep charcoal (dark) background, Geist for the interface and Fraunces for page titles, aligned digits for money. There is no game layer (no levels, XP, mascot, badges, weekly boss or cheers): Today shows plain progress rings, the checklist and a routine streak.
 
-Everything in the game layer is worked out from data that already syncs, so the two phones always agree and nothing needs repairing:
-
-| What you do | XP |
-|---|---|
-| Tick a routine | 10 (plus a streak bonus up to 20 a day) |
-| Log a health activity | 15, plus 1 per 10 minutes (up to 15 more) |
-| Finish a study milestone | 15 |
-| Answer a trivia question (pays once per question) | 3, or 8 if any attempt was right |
-| Tick a bill as paid (from this update on) | 20 |
-
-Level n needs `50 * n * (n - 1)` XP. Each area (Health, Study, Travel, Food, Finance) has its own level; you and the party have levels too. One empty day a week is forgiven in your streak. There are badges (Trophies card), a shared weekly boss, a monthly recap ("episode") and a daily cheer button. Cheers are the only new stored data (`cheers`), synced like everything else. Which celebrations you have already seen is kept on each phone only (`lp.seen`).
+Settings → Appearance has the light/dark choice and a **Colour** picker with seven themes: Teal (default), Ocean, Rose, Plum, Forest, Sunset and Slate. Each has its own light and dark version and a matching tint in the background glow. The choice is saved on each device (`lp.accent`), so each phone can have its own. The stylesheet's contrast tests check every theme against AA (4.5:1) in light and dark.
 
 ## Month-end report
 

@@ -1,7 +1,5 @@
 import { useMemo } from 'react'
-import { bossesBeatenIn } from '../lib/boss'
 import { PLAN_START } from '../lib/dates'
-import { levelFor, memberXp } from '../lib/xp'
 import { cleanEvent } from '../lib/calendar'
 import { focusKey, parseFocus } from '../lib/focus'
 import { buildReport } from '../lib/report'
@@ -9,7 +7,6 @@ import type { Report } from '../lib/reportTypes'
 import type { Activity, CalEvent, Milestone, NightLog, Place, Routine, RoutineLog, TripPlan, TriviaAttempt } from '../types'
 import { useHousehold } from './household'
 import { useFinance } from './useFinance'
-import { useGame } from './useGame'
 import { useTable } from './useTable'
 import { useToday } from './useToday'
 
@@ -28,7 +25,6 @@ export function useReport(month: string, today?: string): Report {
   const nights = useTable<NightLog>('night_log').rows
   const rawEvents = useTable<CalEvent>('events').rows
   const finance = useFinance(month)
-  const game = useGame(day)
   const focusRaw = finance.settings.get(focusKey(month))
   const events = useMemo(() => rawEvents.map(cleanEvent).filter((e): e is CalEvent => e !== null), [rawEvents])
 
@@ -58,8 +54,8 @@ export function useReport(month: string, today?: string): Report {
           planStart: PLAN_START,
           today: day,
         },
-        { game: game.on ? { levels: Object.fromEntries(members.map((m) => [m.id, levelFor(memberXp(game.data, m.id).total)])), bossesBeaten: bossesBeatenIn(month, game.data, game.memberIds) } : null, focus: parseFocus(focusRaw) },
+        { focus: parseFocus(focusRaw) },
       ),
-    [month, day, members, routines, logs, activities, milestones, attempts, trips, places, nights, events, finance.expenses.rows, finance.bills.rows, finance.payments.rows, finance.budgets.rows, finance.savings.rows, finance.totalIncome, finance.target, finance.savingsStart, game, focusRaw],
+    [month, day, members, routines, logs, activities, milestones, attempts, trips, places, nights, events, finance.expenses.rows, finance.bills.rows, finance.payments.rows, finance.budgets.rows, finance.savings.rows, finance.totalIncome, finance.target, finance.savingsStart, focusRaw],
   )
 }

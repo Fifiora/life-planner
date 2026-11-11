@@ -7,15 +7,7 @@ import { useEvents } from '../data/useEvents'
 import { useSettings } from '../data/useSettings'
 import { useTable } from '../data/useTable'
 import { periodProgress, scopedLogs, streak } from '../lib/cadence'
-import { dayStreak } from '../lib/streak'
-import { memberTickDates } from '../lib/xp'
-import { useGame } from '../data/useGame'
-import { Trophies } from '../ui/Trophies'
-import { BossCard } from '../ui/BossCard'
-import { CheerCard } from '../ui/CheerCard'
-import { EpisodeCard } from '../ui/EpisodeCard'
 import { ReportCard } from '../ui/ReportCard'
-import { episodeMonthFor } from '../lib/episode'
 import { monthKeyCT, weekStart } from '../lib/dates'
 import { Confetti } from '../ui/Confetti'
 import { useIncrease } from '../data/useIncrease'
@@ -63,7 +55,6 @@ function MoneyCard({ f }: { f: ReturnType<typeof useFinance> }) {
 
 export default function Today() {
   const data = useRoutineData()
-  const game = useGame()
   const { me, members, readOnly } = useHousehold()
   const milestones = useTable<Milestone>('milestones')
   const trips = useTable<TripPlan>('trip_plans')
@@ -107,9 +98,6 @@ export default function Today() {
   const doneToday = todayItems.filter(isDone).length
   const bestStreak = Math.max(0, ...data.routines.filter((r) => r.cadence === 'daily').map((r) => streak(r, scopedLogs(r, data.logs, me.id), data.today, data.anchor)))
 
-  const ds = dayStreak(memberTickDates(game.data, me.id), data.today)
-  const xp = game.on ? { label: me.display_name, level: game.me.progress.level, into: game.me.progress.into, needed: game.me.progress.needed, partyLevel: game.party.progress.level, partyInto: game.party.progress.into, partyNeeded: game.party.progress.needed } : undefined
-
   const nothing = data.routines.length === 0
   const lastBackup = Number(localStorage.getItem('lp.lastBackup')) || null
   const backupDue = !readOnly && needsBackup(lastBackup, Date.now(), data.routines.length > 0)
@@ -124,13 +112,9 @@ export default function Today() {
 
       <WeekStrip today={data.today} events={events.events} />
 
-      <TodayHero rings={rings} done={doneToday} total={todayItems.length} streak={game.on ? ds.days : bestStreak} restUsed={game.on && ds.restUsed} mascot={!readOnly} xp={xp} part={daypart(new Date().getHours())} host={host?.display_name} />
+      <TodayHero rings={rings} done={doneToday} total={todayItems.length} streak={bestStreak} part={daypart(new Date().getHours())} host={host?.display_name} />
 
       <ReportCard today={data.today} />
-
-      <CheerCard />
-
-      <BossCard />
 
       <UpNext today={data.today} events={events.events} />
 
@@ -146,10 +130,6 @@ export default function Today() {
           </p>
         </section>
       )}
-
-      {game.on && episodeMonthFor(data.today) && <EpisodeCard month={episodeMonthFor(data.today)!} />}
-
-      <Trophies />
 
       <p className="muted small"><Link to="/report">Month-end report</Link></p>
 

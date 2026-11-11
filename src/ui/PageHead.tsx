@@ -1,11 +1,9 @@
 import { Link } from 'react-router-dom'
 import { useHousehold } from '../data/household'
-import type { Bucket } from '../types'
-import { BucketLevel } from './BucketLevel'
 import { SyncStatus } from './SyncStatus'
 import { ThemeToggle } from './ThemeToggle'
 
-export function PageHead({ title, sub, bucket }: { title: string; sub?: string; bucket?: Bucket }) {
+export function PageHead({ title, sub }: { title: string; sub?: string }) {
   const { me, members, readOnly, switchTo } = useHousehold()
   const other = members.find((m) => m.id !== me.id)
   return (
@@ -13,7 +11,6 @@ export function PageHead({ title, sub, bucket }: { title: string; sub?: string; 
       <div>
         <h1>{title}</h1>
         {sub && <p className="sub">{sub}</p>}
-        {bucket && <BucketLevel bucket={bucket} />}
       </div>
       <div className="head-actions">
         {readOnly && <span className="badge view-badge">👁 View-only</span>}
