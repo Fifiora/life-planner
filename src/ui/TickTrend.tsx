@@ -21,7 +21,7 @@ export function TickTrend({ logs, today, members, meId }: { logs: RoutineLog[]; 
   const avg = mine.length ? Math.round((mine.reduce((a, b) => a + b, 0) / mine.length) * 10) / 10 : 0
   const todayN = mine[mine.length - 1] ?? 0
   const todayPt = { x: x(days - 1), y: y(todayN) }
-  const colour = (i: number) => (i === 0 ? 'var(--brand)' : 'var(--blue)')
+  const colour = (i: number) => (i === 0 ? 'var(--brand)' : 'var(--partner, #d9822b)')
   const order = [meId, ...ids.filter((id) => id !== meId)]
 
   return (
@@ -38,7 +38,7 @@ export function TickTrend({ logs, today, members, meId }: { logs: RoutineLog[]; 
           </select>
         </label>
       </div>
-      <svg className="trend-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`You ticked ${avg} things a day on average over the last ${days} days`} preserveAspectRatio="none">
+      <svg className="trend-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`You ticked ${avg} things a day on average over the last ${days} days${order.length > 1 ? `; lines for ${order.map((id) => members.find((mm) => mm.id === id)?.display_name).filter(Boolean).join(' (solid) and ').replace(/ \(solid\) and /, ' (solid) and ')} (dashed)` : ''}`} preserveAspectRatio="none">
         <defs>
           <linearGradient id={`fill${gid}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="var(--brand)" stopOpacity="0.28" />
@@ -48,7 +48,7 @@ export function TickTrend({ logs, today, members, meId }: { logs: RoutineLog[]; 
         {[0, 1, 2, 3].map((g) => (
           <line key={g} x1={PAD.l} x2={W - PAD.r} y1={PAD.t + (g / 3) * (H - PAD.t - PAD.b)} y2={PAD.t + (g / 3) * (H - PAD.t - PAD.b)} stroke="var(--line)" strokeDasharray="2 6" />
         ))}
-        {order.slice(1).map((id, i) => <path key={id} d={smoothPath(pts(id))} fill="none" stroke={colour(i + 1)} strokeWidth="2.5" strokeLinecap="round" opacity="0.8" vectorEffect="non-scaling-stroke" />)}
+        {order.slice(1).map((id, i) => <path key={id} d={smoothPath(pts(id))} fill="none" stroke={colour(i + 1)} strokeWidth="2.5" strokeLinecap="round" strokeDasharray="7 5" opacity="0.9" vectorEffect="non-scaling-stroke" />)}
         <path d={`${smoothPath(pts(meId))} L${x(days - 1)} ${H - PAD.b} L${x(0)} ${H - PAD.b} Z`} fill={`url(#fill${gid})`} />
         <path d={smoothPath(pts(meId))} fill="none" stroke="var(--brand)" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         <circle cx={todayPt.x} cy={todayPt.y} r="6" fill="var(--card-solid)" stroke="var(--brand)" strokeWidth="3" vectorEffect="non-scaling-stroke" />

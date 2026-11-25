@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useFinance } from '../data/useFinance'
 import { monthKeyCT } from '../lib/dates'
 import { monthWindow } from '../lib/ledger'
@@ -22,19 +22,34 @@ export default function Finance() {
   const [month, setMonth] = useState(monthKeyCT())
   const [tab, setTab] = useState<Tab>('Overview')
   const f = useFinance(month)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  // keep the chosen tab in view on a narrow phone, and let the arrow keys move between tabs
+  useEffect(() => {
+    listRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView?.({ block: 'nearest', inline: 'center' })
+  }, [tab])
+  function onKeys(e: KeyboardEvent<HTMLDivElement>) {
+    const i = TABS.indexOf(tab)
+    const next = e.key === 'ArrowRight' ? (i + 1) % TABS.length : e.key === 'ArrowLeft' ? (i + TABS.length - 1) % TABS.length : e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1 : -1
+    if (next < 0) return
+    e.preventDefault()
+    setTab(TABS[next])
+    listRef.current?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus()
+  }
 
   return (
     <div className="stack">
       <PageHead title="Finance" sub="Plan the month, clear the debts, hit the savings goal." />
 
-      <div role="tablist" aria-label="Finance sections" className="tabs">
+      <div role="tablist" aria-label="Finance sections" className="tabs" ref={listRef} onKeyDown={onKeys}>
         {TABS.map((t) => (
-          <button key={t} type="button" role="tab" aria-selected={tab === t} className={`seg${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>{t}</button>
+          <button key={t} type="button" role="tab" id={`fin-tab-${t.replace(/ /g, '-')}`} aria-controls="finance-panel" tabIndex={tab === t ? 0 : -1} aria-selected={tab === t} className={`seg${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>{t}</button>
         ))}
       </div>
 
       {BY_MONTH.includes(tab) && <MonthPills months={monthWindow(monthKeyCT(), 3, 4)} value={month} onChange={setMonth} />}
 
+      <div id="finance-panel" role="tabpanel" aria-labelledby={`fin-tab-${tab.replace(/ /g, '-')}`} style={{ display: 'contents' }}>
       {tab === 'Overview' && <Overview f={f} month={month} />}
       {tab === 'Transactions' && <Transactions f={f} month={month} />}
       {tab === 'Month vs Month' && <MonthVsMonth f={f} />}
@@ -44,6 +59,7 @@ export default function Finance() {
       {tab === 'Savings' && <Savings f={f} month={month} />}
       {tab === 'Plan' && <Plan f={f} />}
       {tab === 'Insights' && <Insights f={f} />}
+      </div>
     </div>
   )
 }

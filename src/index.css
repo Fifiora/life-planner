@@ -365,7 +365,7 @@ code { background: var(--line); padding: 0.1rem 0.35rem; border-radius: 0.4rem; 
 .backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(10, 12, 11, 0.45); display: flex; align-items: flex-end; justify-content: center; }
 .sheet { width: 100%; max-width: 34rem; max-height: 90vh; overflow-y: auto; background: var(--card); border-radius: 1.5rem 1.5rem 0 0; padding: 1rem 1rem calc(1.2rem + env(safe-area-inset-bottom)); animation: slide-up 0.25s ease; }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; }
-.toast-region { position: fixed; left: 0; right: 0; bottom: 5.5rem; display: flex; justify-content: center; z-index: 50; pointer-events: none; }
+.toast-region { position: fixed; left: 0; right: 0; bottom: calc(6.5rem + env(safe-area-inset-bottom)); display: flex; justify-content: center; z-index: 50; pointer-events: none; }
 .toast { background: var(--ink); color: var(--bg); padding: 0.6rem 1rem; border-radius: 1rem; font-weight: 600; font-size: 0.9rem; }
 .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
 .confetti span { position: absolute; top: -10px; width: 8px; height: 14px; border-radius: 2px; animation: fall 1.8s ease-in forwards; }
@@ -429,7 +429,7 @@ code { background: var(--line); padding: 0.1rem 0.35rem; border-radius: 0.4rem; 
 .fbar.short { background: var(--food); }
 .fbar-target { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--muted); opacity: 0.6; }
 .fbar-label { font-size: 0.68rem; color: var(--muted); font-weight: 600; }
-.tick { width: 1.4rem; height: 1.4rem; accent-color: var(--brand); flex: none; }
+.tick { width: 1.65rem; height: 1.65rem; accent-color: var(--brand); flex: none; }
 .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .view-only input[type='checkbox'] { pointer-events: none; }
 
@@ -1079,3 +1079,8 @@ body::after { display: none !important; }
 /* The hero and the one saturated block follow the chosen accent (Navy keeps the NGX blues above) */
 html[data-accent] { --hero-bg: linear-gradient(160deg, color-mix(in srgb, var(--brand) 62%, #000) 0%, color-mix(in srgb, var(--brand) 46%, #000) 55%, color-mix(in srgb, var(--brand) 62%, #000) 100%); }
 html[data-accent] .stat.accent, html[data-accent] .hero { --brand: color-mix(in srgb, var(--brand-2) 55%, white); --brand-2: color-mix(in srgb, var(--brand-2) 75%, white); background: radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--brand-2) 26%, transparent), transparent 55%), var(--hero-bg) !important; }
+
+/* Finance tabs: fade the edges so it is clear there are more, and keep focus rings inside the scroller */
+.stack > .tabs[aria-label="Finance sections"] { -webkit-mask: linear-gradient(90deg, transparent, #000 1.1rem, #000 calc(100% - 1.6rem), transparent); mask: linear-gradient(90deg, transparent, #000 1.1rem, #000 calc(100% - 1.6rem), transparent); }
+.tabs .seg:focus-visible { outline-offset: -3px; }
+@media (min-width: 48rem) { .stack > .tabs[aria-label="Finance sections"] { -webkit-mask: none; mask: none; } }
