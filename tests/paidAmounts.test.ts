@@ -162,7 +162,7 @@ describe('paying more than planned', () => {
     const bills = [rent, power, payoff]
     const payments = [pay('r1', '2026-11', 2150), pay('r2', '2026-11', 60)]
     expect(overpaid(bills, payments, '2026-11')).toEqual({ total: 300, items: [{ name: 'Rent', over: 150 }, { name: 'Card', over: 150 }] })
-    expect(overpaid(bills, [pay('r1', '2026-11')], '2026-11').total).toBe(0)
+    expect(overpaid([rent, power], [pay('r1', '2026-11')], '2026-11').total).toBe(0)
   })
   it('counts the higher amount as spent and never as money still to pay', () => {
     const payments = [pay('r1', '2026-11', 2150)]
