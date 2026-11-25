@@ -180,10 +180,9 @@ describe('Finance is organised', () => {
     const Finance = (await import('../src/screens/Finance')).default
     const { container } = renderScreen(<Finance />)
     await screen.findByText(/The plan for/)
-    const kids = [...container.querySelector('.stack')!.children]
-    const plan = kids.findIndex((el) => el.classList.contains('plan-card'))
-    const kpi = kids.findIndex((el) => el.classList.contains('kpi-row'))
-    expect(plan).toBeGreaterThan(-1)
-    expect(plan).toBeLessThan(kpi)
+    const plan = container.querySelector('.plan-card')
+    const kpi = container.querySelector('.kpi-row')
+    expect(plan).not.toBeNull()
+    expect(plan!.compareDocumentPosition(kpi!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })
