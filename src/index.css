@@ -775,9 +775,9 @@ html[data-theme="dark"] body::after { opacity: 0.10; mix-blend-mode: screen; }
 }
 @media print { body::after { display: none !important; } }
 
-/* ---------- Glass depth: stone backdrop, blue/wood/black touches, big numbers, motion ---------- */
-html { --blue: #2f6fdb; --wood: #9a6a3d; --noir: #14161a; --blue-ink: #ffffff; }
-html[data-theme="dark"] { --blue: #7fb0ff; --wood: #c79a68; --noir: #0a0b0d; --blue-ink: #08142b; }
+/* ---------- Glass depth: big numbers, inner panes, motion ---------- */
+html { --blue: #2f6fdb; --blue-ink: #ffffff; }
+html[data-theme="dark"] { --blue: #7fb0ff; --blue-ink: #08142b; }
 
 /* A quiet mottled stone under the glow: it is what the glass blurs, so the cards read as glass. */
 body::before {
@@ -807,11 +807,9 @@ body::before {
 
 /* The one saturated block per screen: blue glass. */
 .stat.accent {
-  background: linear-gradient(150deg, color-mix(in srgb, var(--blue) 92%, #fff 0%), color-mix(in srgb, var(--blue) 70%, var(--noir)));
   border-color: color-mix(in srgb, var(--blue) 60%, #fff);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 26px color-mix(in srgb, var(--blue) 32%, transparent);
 }
-.stat.accent .cap, .stat.accent .num { color: var(--blue-ink); }
 .stat.accent .num { font-size: 2.05rem; }
 
 /* Segmented control: a light pill on a frosted track. */
@@ -819,7 +817,7 @@ body::before {
 .seg { border-radius: 999px; }
 .seg.active { background: var(--card-solid); box-shadow: 0 2px 8px color-mix(in srgb, var(--ink) 14%, transparent), inset 0 1px 0 var(--gloss); }
 
-/* Wood and black, in sprinkles: a grain strip under each page title, a dark main button, a wood hairline on the tab bar. */
+/* The short accent strip under each page title. */
 .page-head h1::after {
   content: '';
   display: block;
@@ -827,10 +825,8 @@ body::before {
   height: 0.22rem;
   margin-top: 0.45rem;
   border-radius: 1rem;
-  background: repeating-linear-gradient(100deg, var(--wood) 0 7px, color-mix(in srgb, var(--wood) 70%, var(--noir)) 7px 9px, var(--wood) 9px 17px);
+  background: linear-gradient(90deg, var(--brand), var(--brand-2));
 }
-.btn-primary { background: linear-gradient(180deg, color-mix(in srgb, var(--noir) 82%, var(--brand)), var(--noir)); color: #f4f1ec; box-shadow: 0 6px 16px color-mix(in srgb, var(--noir) 35%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.18); }
-.tabbar { border-top: 2px solid color-mix(in srgb, var(--wood) 55%, transparent); }
 
 /* A sheen that sweeps across a card when you point at it. */
 .card {
@@ -841,7 +837,7 @@ body::before {
   .card:hover { background-position: -40% 0, 0 0, 0 0; }
   .stat:hover, .tile:hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 var(--gloss), 0 12px 26px color-mix(in srgb, var(--blue) 20%, transparent); }
   .stat, .tile { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 26px color-mix(in srgb, var(--noir) 45%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+  .btn-primary:hover { transform: translateY(-2px); }
   .seg:not(.active):hover { transform: translateY(-1px); }
 }
 
@@ -899,7 +895,6 @@ body::before {
 /* The week strip is one glass bar; today is the lit pill. */
 .weekstrip { padding: 0.3rem; border-radius: 1.4rem; background: color-mix(in srgb, var(--card-solid) 40%, transparent); border: 1px solid var(--edge); box-shadow: inset 0 1px 0 var(--gloss), var(--shadow); -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%); }
 .weekstrip .wday { background: transparent; border-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; border-radius: 1.1rem; }
-.weekstrip .wday.today { background: linear-gradient(180deg, color-mix(in srgb, var(--noir) 80%, var(--brand)), var(--noir)); color: #f4f1ec; border-color: transparent; box-shadow: 0 6px 16px color-mix(in srgb, var(--noir) 30%, transparent); }
 
 /* The hero: the big number, the headline, and the five areas as little glass tiles. */
 .hero { padding: 1.2rem; }
@@ -922,10 +917,8 @@ body::before {
 .stack > .tabs[aria-label="Finance sections"] { position: sticky; top: 0.5rem; z-index: 6; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%); box-shadow: var(--shadow), inset 0 1px 0 var(--gloss); }
 .tabs::-webkit-scrollbar { display: none; }
 .tabs .seg { flex: none; scroll-snap-align: center; padding-inline: 0.95rem; white-space: nowrap; }
-.tabs .seg.active { background: linear-gradient(180deg, color-mix(in srgb, var(--noir) 80%, var(--brand)), var(--noir)); color: #f4f1ec; box-shadow: 0 4px 12px color-mix(in srgb, var(--noir) 30%, transparent); }
 .mpills { padding: 0.25rem; border-radius: 999px; background: color-mix(in srgb, var(--card-solid) 38%, transparent); border: 1px solid var(--edge); }
 .mpill { border-radius: 999px; border-color: transparent; background: transparent; }
-.mpill.active { background: linear-gradient(135deg, var(--blue), color-mix(in srgb, var(--blue) 70%, var(--noir))); color: var(--blue-ink); box-shadow: 0 4px 12px color-mix(in srgb, var(--blue) 28%, transparent); }
 
 /* The plan comes first: four numbers in a row, the blue one is what is left. */
 .plan-card .stat-grid { grid-template-columns: repeat(2, 1fr); }
