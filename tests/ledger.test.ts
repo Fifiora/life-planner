@@ -47,10 +47,10 @@ describe('monthActuals', () => {
     expect(a).toMatchObject({ income: 5000, transferOut: 900, spent: 40, spentByCategory: { dining: 40 } })
   })
   it('trusts imported bank transactions over ticked-off bills, so nothing is counted twice', () => {
-    const bank = tx('b1', '2026-11-01', 2000, 'housing', { source: 'bank' })
-    const a = monthActuals(bills, [pay('r1', '2026-11')], [bank], '2026-11')
+    const bank = [tx('b1', '2026-11-01', 2000, 'housing', { source: 'bank' }), tx('b2', '2026-11-01', 500, 'debt', { source: 'bank' })]
+    const a = monthActuals(bills, [pay('r1', '2026-11')], bank, '2026-11')
     expect(a.hasBank).toBe(true)
-    expect(a.spentByCategory).toEqual({ housing: 2000 })
+    expect(a.spentByCategory).toEqual({ housing: 2000, debt: 500 })
   })
   it('ignores ticks for bills that no longer exist', () => {
     expect(monthActuals(bills, [pay('gone', '2026-11')], [], '2026-11').spent).toBe(500)
@@ -292,7 +292,7 @@ describe('categoryBreakdown', () => {
   it('does not count paid bills again once bank transactions exist', () => {
     const bills = [b({ id: 'meal', name: 'Meal plan', amount: 50, category: 'dining' })]
     const payments = [{ id: 'p', bill_id: 'meal', month: '2026-11', paid_on: '2026-11-02' }]
-    const expenses = [exp({ id: 'e1', amount: 40, note: 'Dinner', source: 'bank' })]
+    const expenses = [exp({ id: 'e1', amount: 50, note: 'Dinner', source: 'bank' })]
     const d = categoryBreakdown({ category: 'dining', bills, payments, expenses, month: '2026-11', planned: false })
     expect(d.rows.map((r) => r.label)).toEqual(['Dinner'])
   })
