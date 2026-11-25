@@ -59,9 +59,10 @@ export const payoffPatch = (bill: Bill, amount: number): Partial<Bill> =>
 export function paidPerBill(bills: Bill[], payments: BillPayment[], month: string): Map<string, number> {
   const byId = new Map(bills.map((b) => [b.id, b]))
   const out = new Map<string, number>()
+  // A bill is paid once a month: if two phones both ticked it, the bigger amount stands rather than adding up.
   for (const p of payments) {
     const bill = byId.get(p.bill_id)
-    if (p.month === month && bill && bill.kind === 'recurring') out.set(bill.id, (out.get(bill.id) ?? 0) + paymentAmount(bill, p))
+    if (p.month === month && bill && bill.kind === 'recurring') out.set(bill.id, Math.max(out.get(bill.id) ?? 0, paymentAmount(bill, p)))
   }
   return out
 }

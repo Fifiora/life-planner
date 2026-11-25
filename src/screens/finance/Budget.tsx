@@ -59,7 +59,7 @@ export function Budget({ f }: { f: FinanceData }) {
           <div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Budget vs actual</h2></div>
           <span className="muted small">{readOnly ? '' : 'Budgets editable here'}</span>
         </div>
-        <p className="muted small">Actual = bills ticked off as paid + spending logged or imported. A category's budget is what its monthly bills add up to. Change it and those bills change to match (shared in proportion), so the plan, charts and report all agree; earlier months keep what was really paid, while this month's ticked bills follow the new amount. A category with no bills keeps your number as a plain limit. Averages cover months with activity.</p>
+        <p className="muted small">Actual = bills ticked off as paid + spending logged or imported. A category's budget is what its monthly bills add up to. Change it and those bills change to match (shared in proportion), so the plan, charts and report all agree; earlier months keep what was really paid, and this month's ticked bills follow the new amount unless you typed a different paid amount, which stays. A category with no bills keeps your number as a plain limit. Averages cover months with activity.</p>
         <div className="table-wrap">
           <table className="ftable budget">
             <thead>

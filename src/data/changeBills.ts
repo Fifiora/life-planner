@@ -15,11 +15,14 @@ export async function pinPayments(f: Pick<FinanceData, 'payments'> & Partial<Pic
 /**
  * Make this month's and later payments of the bill follow the bill again, dropping any amount saved on them
  * that differs from it. Returns whether anything changed.
+ *
+ * `onlyIfWas` limits that to payments saved at the plan's OLD amount (a redundant copy of the plan). A payment
+ * the person typed at some other amount is what really left the account, so a plan change leaves it alone.
  */
-export async function followBill(f: Pick<FinanceData, 'payments'>, bill: Bill, thisMonth: string, amount = bill.amount): Promise<boolean> {
+export async function followBill(f: Pick<FinanceData, 'payments'>, bill: Bill, thisMonth: string, amount = bill.amount, onlyIfWas?: number[]): Promise<boolean> {
   let changed = false
   for (const p of f.payments.rows) {
-    if (p.bill_id === bill.id && p.month >= thisMonth && p.amount != null && p.amount !== amount) {
+    if (p.bill_id === bill.id && p.month >= thisMonth && p.amount != null && p.amount !== amount && (onlyIfWas === undefined || onlyIfWas.includes(p.amount))) {
       await f.payments.update(p.id, { amount: null })
       changed = true
     }
@@ -48,7 +51,7 @@ export async function setBillAmounts(f: Changing, changes: { bill: Bill; amount:
       await f.bills.update(bill.id, { amount })
     }
     await clearMonthAmounts(f, bill, thisMonth)
-    await followBill(f, bill, thisMonth, amount)
+    await followBill(f, bill, thisMonth, amount, [base, bill.amount])
   }
 }
 
@@ -64,5 +67,6 @@ export async function setMonthAmount(f: Changing, bill: Bill, month: string, amo
   } else if (own) await f.monthAmounts.update(own.id, { amount })
   else await f.monthAmounts.insert({ bill_id: bill.id, month, amount })
   const payment = f.payments.rows.find((p) => p.bill_id === bill.id && p.month === month)
-  if (payment && payment.amount != null && payment.amount !== amount) await f.payments.update(payment.id, { amount: null })
+  // Only a payment saved at the old planned amount follows; an amount typed as really paid stays.
+  if (payment && payment.amount != null && payment.amount !== amount && payment.amount === (own?.amount ?? base)) await f.payments.update(payment.id, { amount: null })
 }

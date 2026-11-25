@@ -32,6 +32,8 @@ import { TickTrend } from '../ui/TickTrend'
 import { WeekStrip } from '../ui/WeekStrip'
 
 const ratio = (done: number, total: number) => (total === 0 ? 0 : done / total)
+/** The savings ring: with no target set there is nothing to miss, so it is full. */
+const savingsRatio = (projected: number, target: number) => (target > 0 ? ratio(projected, target) : 1)
 
 function greeting(): string {
   const h = new Date().getHours()
@@ -85,7 +87,7 @@ export default function Today() {
     { key: 'study', label: 'Study', icon: '📚', color: 'var(--study)', value: ratio(studyDone, weekMs.length), caption: count(studyDone, weekMs.length), to: '/study' },
     { key: 'travel', label: 'Travel', icon: '🧭', color: 'var(--travel)', value: ratio(tripsDone, monthTrips.length), caption: count(tripsDone, monthTrips.length), to: '/travel' },
     { key: 'food', label: 'Food', icon: '🍲', color: 'var(--food)', value: ratio(foodDone, food.length), caption: count(foodDone, food.length), to: '/food' },
-    { key: 'finance', label: 'Finance', icon: '💰', color: 'var(--finance)', value: ratio(money.projected, money.target), caption: `${Math.round(Math.max(0, Math.min(1, ratio(money.projected, money.target))) * 100)}%`, to: '/finance' },
+    { key: 'finance', label: 'Finance', icon: '💰', color: 'var(--finance)', value: savingsRatio(money.projected, money.target), caption: `${Math.round(Math.max(0, Math.min(1, savingsRatio(money.projected, money.target))) * 100)}%`, to: '/finance' },
   ]
 
   const complete = rings.filter((r) => r.value >= 1).length

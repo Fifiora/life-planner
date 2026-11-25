@@ -106,7 +106,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
                 <input type="checkbox" className="tick" checked={b.paid} disabled={readOnly} aria-label={`${b.name} paid`} onChange={() => void markPayoff(b)} />
                 <span className="grow">
                   <button type="button" className="plain-btn" onClick={() => setEditing(b)}>{b.name}</button>
-                  <span className="muted small block-text">{cap(normCategory(b.category))}{!b.paid && payoffPaid(b) > 0 ? ` · ${money(payoffPaid(b))} paid` : ''}</span>
+                  <span className="muted small block-text">{cap(normCategory(b.category))}{b.paid ? (payoffPaid(b) !== b.amount ? ` · ${money(payoffPaid(b))} paid` : '') : payoffPaid(b) > 0 ? ` · ${money(payoffPaid(b))} paid` : ''}</span>
                 </span>
                 <span style={{ fontWeight: 600 }}>{money(b.amount)}</span>
                 {!readOnly && <button type="button" className="icon-btn" aria-label={`Edit amount paid for ${b.name}`} onClick={() => setPaying({ bill: b })}>✎</button>}
@@ -248,6 +248,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
             onSave={async (values) => {
               const base = f.billsBase.rows.find((b) => b.id === editing.id)?.amount ?? editing.amount
               const patch = { ...values }
+              if (editing.kind === 'one_time' && values.amount !== editing.amount && payoffPaid(editing) > 0) Object.assign(patch, payoffPatch({ ...editing, amount: values.amount as number }, payoffPaid(editing)))
               if (values.amount === editing.amount) patch.amount = base
               else if (editing.kind === 'recurring') {
                 await pinPayments(f, { ...editing, amount: base }, monthKeyCT())
