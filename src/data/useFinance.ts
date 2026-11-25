@@ -1,5 +1,5 @@
 import { monthView } from '../lib/finance'
-import { flexView, projectedSavings, trackingStart } from '../lib/finance2'
+import { flexView, normCategory, overpaid, projectedSavings, trackingStart } from '../lib/finance2'
 import { monthActuals } from '../lib/ledger'
 import { effectiveBills } from '../lib/monthBills'
 import { monthPay, type PaySchedule } from '../lib/pay'
@@ -36,7 +36,9 @@ export function useFinance(month: string) {
   // The bills as they stand in the month on screen: a monthly bill may have its own amount for just this month.
   const bills = { ...billsBase, rows: effectiveBills(billsBase.rows, monthAmounts.rows, month) }
   const view = monthView(totalIncome, bills.rows, target, month)
-  const flex = flexView(flexBudget, expenses.rows, month)
+  const flex = flexView(flexBudget, expenses.rows, month, new Set(bills.rows.map((b) => normCategory(b.category))))
+  const monthHasBank = expenses.rows.some((e) => e.date.slice(0, 7) === month && e.source === 'bank')
+  const overPlan = monthHasBank ? 0 : overpaid(bills.rows, payments.rows, month).total
 
   return {
     bills,
@@ -60,7 +62,7 @@ export function useFinance(month: string) {
     totalIncome,
     view,
     flex,
-    projected: projectedSavings(view.available, flex.spent, target),
+    projected: projectedSavings(view.available - overPlan, flex.spent, target),
   }
 }
 

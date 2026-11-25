@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FinanceData } from '../../data/useFinance'
 import { monthKeyCT } from '../../lib/dates'
+import { effectiveBills } from '../../lib/monthBills'
 import { normCategory } from '../../lib/finance2'
 import { cap, money, monthLabel } from '../../lib/format'
 import { categoryTrend, monthSeries, monthWindow } from '../../lib/ledger'
@@ -11,7 +12,7 @@ import { Verse } from '../../ui/Verse'
 export function MonthVsMonth({ f }: { f: FinanceData }) {
   const months = monthWindow(monthKeyCT(), 3, 4)
   const actuals = months.map((m) => f.actualsFor(m))
-  const series = monthSeries({ months, actuals, income: f.totalIncome, bills: f.bills.rows, savings: f.savings.rows })
+  const series = monthSeries({ months, actuals, income: f.totalIncome, bills: f.bills.rows, savings: f.savings.rows, incomeFor: f.pay.incomeFor, billsFor: (m) => effectiveBills(f.billsBase.rows, f.monthAmounts.rows, m) })
 
   const names = new Set<string>()
   for (const b of f.bills.rows) if (b.kind === 'recurring') names.add(normCategory(b.category))

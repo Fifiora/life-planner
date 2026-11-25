@@ -273,12 +273,13 @@ export interface SeriesRow {
   hasData: boolean
 }
 
-export function monthSeries(input: { months: string[]; actuals: MonthActuals[]; income: number; bills: Bill[]; savings: SavingsEntry[] }): SeriesRow[] {
+export function monthSeries(input: { months: string[]; actuals: MonthActuals[]; income: number; bills: Bill[]; savings: SavingsEntry[]; incomeFor?: (month: string) => number; billsFor?: (month: string) => Bill[] }): SeriesRow[] {
   return input.months.map((month, i) => {
     const a = input.actuals[i]
-    const view = monthView(input.income, input.bills, 0, month)
+    const expected = input.incomeFor ? input.incomeFor(month) : input.income
+    const view = monthView(expected, input.billsFor ? input.billsFor(month) : input.bills, 0, month)
     const saved = input.savings.filter((s) => s.month === month).reduce((s, e) => s + e.amount, 0)
-    const income = a.income > 0 ? a.income : input.income
+    const income = a.income > 0 ? a.income : expected
     return {
       month,
       income,
@@ -352,12 +353,14 @@ export function ledgerRows(input: { month: string; expenses: Expense[]; payments
       amountEditable: true,
     })
   }
+  // Once bank lines exist for the month they stand for the bills, so ticked bills are not listed again.
+  const hasBank = expenses.some((x) => x.date.slice(0, 7) === month && x.source === 'bank')
   const byId = new Map(bills.map((b) => [b.id, b]))
-  for (const p of payments.filter((x) => x.month === month)) {
+  for (const p of hasBank ? [] : payments.filter((x) => x.month === month)) {
     const bill = byId.get(p.bill_id)
     if (bill) rows.push({ id: `pay-${p.id}`, date: p.paid_on, description: bill.name, category: normCategory(bill.category), amount: -(p.amount ?? bill.amount), kind: 'bill', editable: false, rawId: p.id, amountEditable: true })
   }
-  for (const b of bills.filter((x) => x.kind === 'one_time' && x.due_month === month && payoffPaid(x) > 0)) {
+  for (const b of hasBank ? [] : bills.filter((x) => x.kind === 'one_time' && x.due_month === month && payoffPaid(x) > 0)) {
     rows.push({ id: `payoff-${b.id}`, date: `${month}-01`, description: b.name, category: normCategory(b.category), amount: -payoffPaid(b), kind: 'payoff', editable: false, rawId: b.id, amountEditable: true })
   }
   for (const s of savings.filter((x) => x.month === month)) {

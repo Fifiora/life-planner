@@ -97,7 +97,7 @@ export function payoffProgress(bills: Bill[], today: string, deadline: string): 
     total,
     paid,
     remaining: list.reduce((s, b) => s + Math.max(0, b.amount - payoffPaid(b)), 0),
-    pct: total === 0 ? 100 : Math.min(100, Math.round((paid / total) * 100)),
+    pct: total === 0 ? 100 : Math.min(100, Math.round(((total - list.reduce((s, b) => s + Math.max(0, b.amount - payoffPaid(b)), 0)) / total) * 100)),
     daysLeft: daysBetween(today, deadline),
     overdue: items.filter((i) => i.status === 'overdue').map((i) => i.bill),
     items,
@@ -140,17 +140,23 @@ export function monthPaidProgress(bills: Bill[], payments: BillPayment[], month:
   const paid = summary.paidAmount + due.reduce((s, b) => s + payoffPaid(b), 0)
   const planned = summary.totalAmount + due.reduce((s, b) => s + b.amount, 0)
   const toGo = summary.toGoAmount + due.reduce((s, b) => s + Math.max(0, b.amount - payoffPaid(b)), 0)
-  return { paid, planned, toGo, pct: planned > 0 ? Math.min(100, Math.round((paid / planned) * 100)) : 0 }
+  // The bar counts each bill only up to its own amount, so paying one bill extra never hides another that is unpaid.
+  const credited = planned - toGo
+  return { paid, planned, toGo, pct: planned > 0 ? Math.min(100, Math.max(0, Math.round((credited / planned) * 100))) : 0 }
 }
 
 /** This month's extra spending against its budget; groceries are tracked apart (they have their own bill). */
-export function flexView(budget: number, expenses: Expense[], month: string) {
-  const inMonth = expenses.filter((e) => e.date.slice(0, 7) === month)
+export function flexView(budget: number, expenses: Expense[], month: string, billCategories?: Set<string>) {
+  // Only real spending counts: not income or transfers, and not bank lines for categories the bills already cover.
+  const inMonth = expenses.filter(
+    (e) => e.date.slice(0, 7) === month && (e.kind ?? 'expense') === 'expense' && !(e.source === 'bank' && billCategories?.has(normCategory(e.category))),
+  )
   const byCat = new Map<string, number>()
   let groceries = 0
   for (const e of inMonth) {
-    if (e.category === 'groceries') groceries += e.amount
-    else byCat.set(e.category, (byCat.get(e.category) ?? 0) + e.amount)
+    const key = normCategory(e.category)
+    if (key === 'groceries') groceries += e.amount
+    else byCat.set(key, (byCat.get(key) ?? 0) + e.amount)
   }
   const spent = [...byCat.values()].reduce((s, n) => s + n, 0)
   return {

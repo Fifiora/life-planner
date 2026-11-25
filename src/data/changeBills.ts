@@ -3,8 +3,13 @@ import type { Bill } from '../types'
 import type { FinanceData } from './useFinance'
 
 /** Freeze what payments before `thisMonth` were, before the bill's amount changes. */
-export async function pinPayments(f: Pick<FinanceData, 'payments'>, bill: Bill, thisMonth: string) {
-  for (const pin of paymentsToPin(f.payments.rows, bill, thisMonth)) await f.payments.update(pin.id, { amount: pin.amount })
+export async function pinPayments(f: Pick<FinanceData, 'payments'> & Partial<Pick<FinanceData, 'monthAmounts'>>, bill: Bill, thisMonth: string) {
+  for (const pin of paymentsToPin(f.payments.rows, bill, thisMonth)) {
+    // A month that had its own planned amount keeps THAT amount, not the bill's usual one.
+    const month = f.payments.rows.find((p) => p.id === pin.id)?.month
+    const own = f.monthAmounts?.rows.find((o) => o.bill_id === bill.id && o.month === month)
+    await f.payments.update(pin.id, { amount: own ? own.amount : pin.amount })
+  }
 }
 
 /**

@@ -1,5 +1,6 @@
 import type { FinanceData } from '../../data/useFinance'
 import { monthKeyCT } from '../../lib/dates'
+import { effectiveBills } from '../../lib/monthBills'
 import { categoryTotals } from '../../lib/finance2'
 import { buildLedgerInsights, cancelTracker, monthSeries, monthWindow, topSpikes } from '../../lib/ledger'
 import { Callouts } from '../../ui/Callouts'
@@ -8,7 +9,7 @@ import { Verse } from '../../ui/Verse'
 export function Insights({ f }: { f: FinanceData }) {
   const months = monthWindow(monthKeyCT(), 5, 0)
   const actuals = months.map((m) => f.actualsFor(m))
-  const series = monthSeries({ months, actuals, income: f.totalIncome, bills: f.bills.rows, savings: f.savings.rows })
+  const series = monthSeries({ months, actuals, income: f.totalIncome, bills: f.bills.rows, savings: f.savings.rows, incomeFor: f.pay.incomeFor, billsFor: (m) => effectiveBills(f.billsBase.rows, f.monthAmounts.rows, m) })
   const giving = categoryTotals(f.bills.rows, f.totalIncome).find((c) => c.category === 'giving')
   const sections = buildLedgerInsights({
     series,

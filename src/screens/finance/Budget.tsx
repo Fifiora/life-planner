@@ -83,7 +83,14 @@ export function Budget({ f }: { f: FinanceData }) {
                         inputMode="decimal"
                         aria-label={`Budget for ${r.category}`}
                         defaultValue={r.budget}
-                        onBlur={(e) => { const box = e.target; void saveBudget(r.category, box.value, r.budget).then((changed) => { if (!changed) box.value = String(r.budget) }) }}
+                        onChange={(e) => { e.target.dataset.dirty = '1' }}
+                        onBlur={(e) => {
+                          const box = e.target
+                          // Clicking into the box and away again changes nothing; only a typed edit counts.
+                          if (box.dataset.dirty !== '1') return
+                          box.dataset.dirty = ''
+                          void saveBudget(r.category, box.value, r.budget).then((changed) => { if (!changed) box.value = String(r.budget) })
+                        }}
                       />
                     )}
                   </td>
