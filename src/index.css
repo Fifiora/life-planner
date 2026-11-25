@@ -192,7 +192,9 @@ html[data-theme="dark"], html[data-theme="dark"] body { color-scheme: dark; }
 @media (hover: hover) { .tab:hover { color: var(--ink); } }
 
 /* ---------- Rings ---------- */
-.rings { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.25rem; }
+.rings { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.25rem; }
+.rings .ring-link { min-width: 0; }
+.rings .prog-ring { max-width: 100%; height: auto; }
 .prog-ring { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
 .prog-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; }
 .prog-pct.prog-icon { color: var(--muted); }

@@ -6,7 +6,7 @@ Live site: `https://<your-github-username>.github.io/life-planner/`
 
 ## How it works
 
-- **No login, no server.** The planner opens straight away and saves your data in your own phone's browser (local storage). Your data is never sent anywhere; the only outside request the site makes is for the Nunito and Roboto fonts from Google Fonts.
+- **No login, no server.** The planner opens straight away and saves your data in your own phone's browser (local storage). Your data is never sent anywhere; the only outside request the site makes is for the Figtree and Instrument Serif fonts from Google Fonts.
 - **Hosting:** this repo is deployed to GitHub Pages by `.github/workflows/deploy.yml` on every push to `main`. The workflow runs the tests first and only deploys if they pass.
 - **Privacy:** this repo contains code only — no names, amounts or tokens.
 - **Sharing:** *Settings → Share with your partner* makes a **view-only** copy: a link (or a file) with a snapshot of your planner inside it. The snapshot sits after the `#` in the link, which browsers never send to any server. Anyone who opens the link can look but not change anything, with no login. Anyone who has the link can read it, so send it privately, and send a new link whenever you want fresh progress to show.
@@ -60,17 +60,17 @@ npm run build   # typecheck + production build
 
 ## Look and layout
 
-The app has a light and a dark palette (Settings → Appearance), frosted-glass cards with hover effects, and a wide-screen layout: on a laptop the bottom bar becomes a left sidebar and cards flow into two or three columns. Phones keep the single-column layout.
+The app has a light and a dark palette (Settings → Appearance), quiet flat cards, and a wide-screen layout: on a laptop the bottom bar becomes a left sidebar and cards flow into two or three columns. Phones keep the single-column layout.
 
 ## The look and colour themes
 
-There is one look, taken from the NGX Paper-Trading page: navy (#000080) and electric cyan (#00bfff), milky glass cards by day and navy glass by night, a bright gradient rim and a specular light that follows the pointer, a drifting orb layer behind everything, rounded headings and big numbers, small uppercase monospace labels, a navy hero card, and a floating tab bar on phones (a sidebar on laptops). There is no game layer (no levels, XP, mascot, badges, weekly boss or cheers): Today shows plain progress rings, the checklist, Up next and a momentum chart.
+There is one look, made with the unslop skill by Damir Sokolovsky (CC BY 4.0): quiet warm-grey paper surfaces, one accent colour (navy by default, seven other themes in Settings), no glass, glow or gradients, one set of line icons instead of emoji, Figtree text with Instrument Serif headings, and sentence-case labels. The progress ring is the one rich element. There is no game layer (no levels, XP, mascot, badges, weekly boss or cheers): Today shows plain progress rings, the checklist, Up next and a momentum chart.
 
 Settings → Appearance has the light/dark choice, a **Background** picker (Off by default, floating flowers or swimming fish) and a **Colour** picker with eight themes: Navy (default), Teal, Ocean, Rose, Plum, Forest, Sunset and Slate. The hero card, the heading underline and the partner colour follow the chosen theme. Choices are saved on each device (`lp.accent`, `lp.ambient`). The stylesheet's contrast tests check every theme against AA (4.5:1) in light and dark.
 
 Touch screens on phones use plain card fills instead of blur, and reduced-transparency, reduced-motion and print settings are respected.
 
-Settings → Appearance → **Background** picks the picture behind the glass, per device (`lp.ambient`): floating flowers (default), swimming fish over gently flowing water lines, or off. It is decorative only (hidden from screen readers, never takes a tap, hidden when printing, still for people who ask for less motion).
+Settings → Appearance → **Background** picks an optional picture behind the page, per device (`lp.ambient`): off (default), floating flowers, or swimming fish over gently flowing water lines. It is decorative only (hidden from screen readers, never takes a tap, hidden when printing, still for people who ask for less motion).
 
 ## Month-end report
 
