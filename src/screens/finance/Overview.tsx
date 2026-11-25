@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { FinanceData } from '../../data/useFinance'
 import { useHousehold } from '../../data/household'
 import { todayCT } from '../../lib/dates'
-import { categoryTotals, monthPaidProgress, payoffProgress } from '../../lib/finance2'
+import { categoryTotals, monthPaidProgress, overpaid, payoffProgress } from '../../lib/finance2'
 import { money, monthLabel } from '../../lib/format'
 import { budgetFor, cancelTracker, categoryBreakdown, monthCallouts, monthKpis, remainingByCategory, spendShares, transfersToMake, withRemaining } from '../../lib/ledger'
 import { AmountSheet } from '../../ui/AmountSheet'
@@ -28,6 +28,7 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
   const donutShares = withRemaining(paidShares, remaining)
   const toGoTotal = Object.values(remaining).reduce((s, n) => s + n, 0)
   const progress = monthPaidProgress(f.bills.rows, f.payments.rows, month)
+  const over = actuals.hasBank ? { total: 0, items: [] } : overpaid(f.bills.rows, f.payments.rows, month)
   const cancel = cancelTracker(f.bills.rows)
   const payoff = payoffProgress(f.bills.rows, todayCT(), f.deadline)
   const subscriptions = categoryTotals(f.bills.rows, totalIncome).find((c) => c.category === 'subscriptions')
@@ -82,6 +83,9 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
           </div>
         </div>
         <div className="mt"><SavingsBar savings={projected} target={target} /></div>
+        {over.total > 0 && (
+          <p className="callout">{`You paid ${money(over.total)} more than planned (${over.items.map((i) => `${i.name} +${money(i.over)}`).join(', ')}), so what is really left after bills is ${money(view.available - over.total)}.`}</p>
+        )}
         {flex.spent > 0 && <p className="muted small">Includes {money(flex.spent)} of extra spending logged this month.</p>}
         {totalIncome === 0 ? (
           <p className="callout">Add your monthly income (tap the Income box, or set up Pay) to see what's left each month.</p>

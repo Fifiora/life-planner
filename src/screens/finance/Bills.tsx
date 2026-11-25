@@ -187,6 +187,7 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
                         <button type="button" className="plain-btn" style={{ fontWeight: 600, opacity: 0.8 }} aria-label={`Edit amount paid for ${b.name}`} onClick={() => setPaying({ bill: b, payment })}>{text}</button>
                       )}
                       {paid < b.amount && <span className="muted small block-text">{money(b.amount - paid)} to go</span>}
+                      {paid > b.amount && <span className="muted small block-text">{money(paid - b.amount)} over plan</span>}
                     </span>
                   )
                 })()}

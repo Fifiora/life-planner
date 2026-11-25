@@ -33,6 +33,34 @@ describe('Bills: amounts that mirror real life', () => {
     expect(screen.getByRole('progressbar', { name: /bills paid this month/i })).toHaveAttribute('aria-valuenow', '34')
   })
 
+  it('lets a ticked bill be paid for MORE, then for less again, and every figure follows', async () => {
+    renderScreen(<Finance />)
+    await openTab('Bills')
+    await userEvent.click(screen.getByRole('checkbox', { name: /rent paid/i }))
+    await vi.waitFor(() => expect(saved('bill_payments')).toHaveLength(1))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Edit amount paid for Rent' }))
+    await editAmount('Amount paid: Rent', '1900')
+    await vi.waitFor(() => expect(saved('bill_payments')[0].amount).toBe(1900))
+    expect(await screen.findByText(/\$200 over plan/)).toBeInTheDocument()
+    expect(screen.getByText(/\$1,900 of \$4,407/)).toBeInTheDocument()
+    expect(screen.queryByText(/to go/)).toBeNull()
+
+    await openTab('Overview')
+    expect(await screen.findByText(/You paid \$200 more than planned \(Rent \+\$200\)/)).toBeInTheDocument()
+    await openTab('Transactions')
+    expect(await screen.findAllByText(/1,900/)).not.toHaveLength(0)
+
+    await openTab('Bills')
+    await userEvent.click(screen.getByRole('button', { name: 'Edit amount paid for Rent' }))
+    await editAmount('Amount paid: Rent', '1600')
+    await vi.waitFor(() => expect(saved('bill_payments')[0].amount).toBe(1600))
+    expect(await screen.findByText(/\$100 to go/)).toBeInTheDocument()
+    expect(screen.queryByText(/over plan/)).toBeNull()
+    await openTab('Overview')
+    expect(screen.queryByText(/You paid .* more than planned/)).toBeNull()
+  })
+
   it('offers no amount edit on a bill that is not paid yet', async () => {
     renderScreen(<Finance />)
     await openTab('Bills')

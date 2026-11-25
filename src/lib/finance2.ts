@@ -121,6 +121,18 @@ export function billsPaidSummary(bills: Bill[], payments: BillPayment[], month: 
   }
 }
 
+/** Bills paid for MORE than planned in `month` (monthly bills with a bigger amount typed in, payoffs cleared above their amount). */
+export function overpaid(bills: Bill[], payments: BillPayment[], month: string): { total: number; items: { name: string; over: number }[] } {
+  const paidBy = paidPerBill(bills, payments, month)
+  const items: { name: string; over: number }[] = []
+  for (const b of bills) {
+    const over =
+      b.kind === 'recurring' ? (paidBy.get(b.id) ?? 0) - b.amount : b.due_month === month && b.paid ? payoffPaid(b) - b.amount : 0
+    if (over > 0.004) items.push({ name: b.name, over: Math.round(over * 100) / 100 })
+  }
+  return { total: Math.round(items.reduce((s, i) => s + i.over, 0) * 100) / 100, items }
+}
+
 /** Money paid against everything due in `month`: the monthly bills plus the payoffs due that month. */
 export function monthPaidProgress(bills: Bill[], payments: BillPayment[], month: string) {
   const summary = billsPaidSummary(bills, payments, month)
