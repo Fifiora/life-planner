@@ -24,6 +24,7 @@ const previous = (r: MonthRange, input: ReportInput) => monthRange(shiftMonthKey
 const prevAvailable = (r: MonthRange, input: ReportInput) => shiftMonthKey(r.month, -1) >= input.planStart.slice(0, 7)
 const tickData = (i: ReportInput): TickData => ({ routines: i.routines, logs: i.logs, activities: i.activities, milestones: i.milestones, attempts: i.attempts, payments: i.payments, bills: i.bills })
 const peopleFor = (i: ReportInput, routine: Routine) => (routine.applies_to === 'both' ? i.members.map((m) => m.id) : i.members.filter((m) => m.id === routine.applies_to).map((m) => m.id))
+const billsIn = (i: ReportInput, month: string) => (i.billsFor ? i.billsFor(month) : i.bills)
 const pctOf = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : null)
 
 export function routinesSection(r: MonthRange, input: ReportInput): RoutineRow[] {
@@ -65,8 +66,8 @@ export function scorecardSection(r: MonthRange, input: ReportInput): Scorecard {
     doneTotal,
     completionPct: pctOf(doneTotal, expectedTotal),
     bestStreakByMember,
-    spent: monthActuals(input.bills, input.payments, input.expenses, r.month).spent,
-    prevSpent: monthActuals(input.bills, input.payments, input.expenses, prev.month).spent,
+    spent: monthActuals(billsIn(input, r.month), input.payments, input.expenses, r.month).spent,
+    prevSpent: monthActuals(billsIn(input, prev.month), input.payments, input.expenses, prev.month).spent,
     prevAvailable: prevAvailable(r, input),
   }
 }
@@ -135,10 +136,11 @@ export function foodSection(r: MonthRange, input: ReportInput): FoodSection {
 }
 
 export function financeSection(r: MonthRange, input: ReportInput): FinanceSection {
-  const actual = monthActuals(input.bills, input.payments, input.expenses, r.month)
-  const before = monthActuals(input.bills, input.payments, input.expenses, shiftMonthKey(r.month, -1))
-  const summary = billsPaidSummary(input.bills, input.payments, r.month)
-  const categories = budgetRows({ bills: input.bills, budgets: input.budgets, months: [r.month], actuals: [actual] })
+  const bills = billsIn(input, r.month)
+  const actual = monthActuals(bills, input.payments, input.expenses, r.month)
+  const before = monthActuals(billsIn(input, shiftMonthKey(r.month, -1)), input.payments, input.expenses, shiftMonthKey(r.month, -1))
+  const summary = billsPaidSummary(bills, input.payments, r.month)
+  const categories = budgetRows({ bills, budgets: input.budgets, months: [r.month], actuals: [actual] })
     .map((row) => {
       const spent = row.perMonth[0] ?? 0
       return { category: row.category, budget: row.budget, spent, ratio: row.budget > 0 ? spent / row.budget : null }

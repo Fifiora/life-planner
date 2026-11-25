@@ -6,6 +6,7 @@ import { buildReport } from '../lib/report'
 import type { Report } from '../lib/reportTypes'
 import type { Activity, CalEvent, Milestone, NightLog, Place, Routine, RoutineLog, TripPlan, TriviaAttempt } from '../types'
 import { useHousehold } from './household'
+import { effectiveBills } from '../lib/monthBills'
 import { useFinance } from './useFinance'
 import { useTable } from './useTable'
 import { useToday } from './useToday'
@@ -45,6 +46,7 @@ export function useReport(month: string, today?: string): Report {
           events,
           expenses: finance.expenses.rows,
           bills: finance.bills.rows,
+          billsFor: (m: string) => effectiveBills(finance.billsBase.rows, finance.monthAmounts.rows, m),
           payments: finance.payments.rows,
           budgets: finance.budgets.rows,
           savings: finance.savings.rows,
@@ -56,6 +58,6 @@ export function useReport(month: string, today?: string): Report {
         },
         { focus: parseFocus(focusRaw) },
       ),
-    [month, day, members, routines, logs, activities, milestones, attempts, trips, places, nights, events, finance.expenses.rows, finance.bills.rows, finance.payments.rows, finance.budgets.rows, finance.savings.rows, finance.totalIncome, finance.target, finance.savingsStart, focusRaw],
+    [month, day, members, routines, logs, activities, milestones, attempts, trips, places, nights, events, finance.expenses.rows, finance.bills.rows, finance.billsBase.rows, finance.monthAmounts.rows, finance.payments.rows, finance.budgets.rows, finance.savings.rows, finance.totalIncome, finance.target, finance.savingsStart, focusRaw],
   )
 }

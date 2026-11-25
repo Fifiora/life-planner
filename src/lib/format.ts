@@ -1,8 +1,11 @@
 import { addDays, shiftMonths } from './dates'
 
+/** Dollars, with cents shown only when there are some: $120, $119.60. */
 export function money(n: number): string {
-  const sign = n < 0 ? '-' : ''
-  return `${sign}$${Math.abs(Math.round(n)).toLocaleString('en-US')}`
+  const cents = Math.round(Math.abs(n) * 100)
+  const sign = n < 0 && cents > 0 ? '-' : ''
+  const rest = cents % 100
+  return `${sign}$${Math.floor(cents / 100).toLocaleString('en-US')}${rest ? `.${String(rest).padStart(2, '0')}` : ''}`
 }
 
 /** '2026-11' -> 'November 2026' */

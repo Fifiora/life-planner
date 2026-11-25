@@ -19,6 +19,8 @@ export interface ReportInput {
   events: CalEvent[]
   expenses: Expense[]
   bills: Bill[]
+  /** The bills as planned in a given month (a month may have its own amounts). Without it every month uses `bills`. */
+  billsFor?: (month: string) => Bill[]
   payments: BillPayment[]
   budgets: Budget[]
   savings: SavingsEntry[]

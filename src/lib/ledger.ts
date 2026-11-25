@@ -15,9 +15,46 @@ export interface MonthActuals {
 
 const kindOf = (e: Expense) => e.kind ?? 'expense'
 
+export interface PaidItem {
+  bill: Bill
+  /** What this bill's payment adds that the bank lines do not already show. */
+  amount: number
+  /** What was really paid on the bill in all. */
+  full: number
+  payment?: BillPayment
+}
+
+/**
+ * Bills ticked as paid and payoffs paid for `month`. With no bank lines every one counts in full. Once the month has bank lines
+ * they stand for the bills in the same category (up to what they add up to), so only what the bank does not show is left,
+ * and one stray bank line no longer hides every ticked bill.
+ */
+export function paidItems(bills: Bill[], payments: BillPayment[], expenses: Expense[], month: string): PaidItem[] {
+  const byPayment = new Map(payments.filter((p) => p.month === month).map((p) => [p.bill_id, p]))
+  const paidBy = paidPerBill(bills, payments, month)
+  const items: PaidItem[] = []
+  for (const b of bills) {
+    const full = b.kind === 'one_time' ? (b.due_month === month ? payoffPaid(b) : 0) : (paidBy.get(b.id) ?? 0)
+    if (full > 0) items.push({ bill: b, amount: full, full, payment: b.kind === 'recurring' ? byPayment.get(b.id) : undefined })
+  }
+  const bank = expenses.filter((e) => e.date.slice(0, 7) === month && e.source === 'bank' && kindOf(e) === 'expense')
+  if (!expenses.some((e) => e.date.slice(0, 7) === month && e.source === 'bank')) return items
+  const room = new Map<string, number>()
+  for (const e of bank) room.set(normCategory(e.category), (room.get(normCategory(e.category)) ?? 0) + e.amount)
+  return items
+    .sort((a, b) => b.full - a.full)
+    .map((item) => {
+      const key = normCategory(item.bill.category)
+      const covered = Math.min(room.get(key) ?? 0, item.full)
+      room.set(key, (room.get(key) ?? 0) - covered)
+      return { ...item, amount: Math.round((item.full - covered) * 100) / 100 }
+    })
+    .filter((item) => item.amount > 0)
+}
+
 /**
  * What actually happened in `month`: logged and imported items, plus bills ticked off as paid and paid
- * payoffs. Once bank transactions exist for a month they are trusted on their own (so nothing counts twice).
+ * payoffs. Bank lines stand for the bills in their category (so nothing counts twice).
  */
 export function monthActuals(bills: Bill[], payments: BillPayment[], expenses: Expense[], month: string): MonthActuals {
   const inMonth = expenses.filter((e) => e.date.slice(0, 7) === month)
@@ -35,11 +72,7 @@ export function monthActuals(bills: Bill[], payments: BillPayment[], expenses: E
     else if (kind === 'transfer') transferOut += e.amount
     else add(e.category, e.amount)
   }
-  if (!hasBank) {
-    const byId = new Map(bills.map((b) => [b.id, b]))
-    for (const [id, amount] of paidPerBill(bills, payments, month)) add((byId.get(id) as Bill).category, amount)
-    for (const b of bills) if (b.kind === 'one_time' && b.due_month === month && payoffPaid(b) > 0) add(b.category, payoffPaid(b))
-  }
+  for (const item of paidItems(bills, payments, expenses, month)) add(item.bill.category, item.amount)
   return { income, spent: Object.values(by).reduce((s, n) => s + n, 0), transferOut, hasBank, spentByCategory: by }
 }
 
@@ -144,14 +177,19 @@ function breakdownRows(category: string, bills: Bill[], payments: BillPayment[],
     for (const e of inMonth) {
       if (kindOf(e) === 'expense' && normCategory(e.category) === category) rows.push({ label: e.note?.trim() || cap(category), amount: e.amount, kind: 'spent' })
     }
-    if (!inMonth.some((e) => e.source === 'bank')) {
+    const hasBank = inMonth.some((e) => e.source === 'bank')
+    for (const item of paidItems(bills, payments, expenses, month)) {
+      if (normCategory(item.bill.category) !== category) continue
+      const kind = item.bill.kind === 'one_time' ? 'payoff' : 'bill'
+      rows.push(item.amount < item.bill.amount ? { label: item.bill.name, amount: item.amount, kind, of: item.bill.amount } : { label: item.bill.name, amount: item.amount, kind })
+    }
+    if (!hasBank) {
       const paidBy = paidPerBill(bills, payments, month)
       for (const b of bills) {
         if (normCategory(b.category) !== category) continue
         const kind = b.kind === 'one_time' ? 'payoff' : 'bill'
         if (b.kind === 'one_time' && b.due_month !== month) continue
         const paid = b.kind === 'one_time' ? payoffPaid(b) : (paidBy.get(b.id) ?? 0)
-        if (paid > 0) rows.push(paid < b.amount ? { label: b.name, amount: paid, kind, of: b.amount } : { label: b.name, amount: paid, kind })
         if (paid < b.amount) toGo.push({ label: b.name, amount: b.amount - paid, kind })
       }
     }
@@ -353,15 +391,11 @@ export function ledgerRows(input: { month: string; expenses: Expense[]; payments
       amountEditable: true,
     })
   }
-  // Once bank lines exist for the month they stand for the bills, so ticked bills are not listed again.
-  const hasBank = expenses.some((x) => x.date.slice(0, 7) === month && x.source === 'bank')
-  const byId = new Map(bills.map((b) => [b.id, b]))
-  for (const p of hasBank ? [] : payments.filter((x) => x.month === month)) {
-    const bill = byId.get(p.bill_id)
-    if (bill) rows.push({ id: `pay-${p.id}`, date: p.paid_on, description: bill.name, category: normCategory(bill.category), amount: -(p.amount ?? bill.amount), kind: 'bill', editable: false, rawId: p.id, amountEditable: true })
-  }
-  for (const b of hasBank ? [] : bills.filter((x) => x.kind === 'one_time' && x.due_month === month && payoffPaid(x) > 0)) {
-    rows.push({ id: `payoff-${b.id}`, date: `${month}-01`, description: b.name, category: normCategory(b.category), amount: -payoffPaid(b), kind: 'payoff', editable: false, rawId: b.id, amountEditable: true })
+  // Bank lines stand for the bills in their category; only what they do not show is listed from the ticks.
+  for (const item of paidItems(bills, payments, expenses, month)) {
+    const whole = item.amount === item.full
+    if (item.bill.kind === 'one_time') rows.push({ id: `payoff-${item.bill.id}`, date: `${month}-01`, description: item.bill.name, category: normCategory(item.bill.category), amount: -item.amount, kind: 'payoff', editable: false, rawId: item.bill.id, amountEditable: whole })
+    else if (item.payment) rows.push({ id: `pay-${item.payment.id}`, date: item.payment.paid_on, description: item.bill.name, category: normCategory(item.bill.category), amount: -item.amount, kind: 'bill', editable: false, rawId: item.payment.id, amountEditable: whole })
   }
   for (const s of savings.filter((x) => x.month === month)) {
     rows.push({ id: `save-${s.id}`, date: `${month}-01`, description: s.note ? `Savings: ${s.note}` : 'Savings', category: 'savings', amount: -s.amount, kind: 'savings', editable: false, rawId: s.id, amountEditable: true })

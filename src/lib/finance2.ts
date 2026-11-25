@@ -118,6 +118,8 @@ export function billsPaidSummary(bills: Bill[], payments: BillPayment[], month: 
     totalAmount: recurring.reduce((s, b) => s + b.amount, 0),
     toGoAmount: recurring.reduce((s, b) => s + Math.max(0, b.amount - paidOf(b)), 0),
     partial: recurring.filter((b) => paidOf(b) > 0 && paidOf(b) < b.amount),
+    /** What is still owed on the part-paid bills only. */
+    partialToGo: recurring.filter((b) => paidOf(b) > 0 && paidOf(b) < b.amount).reduce((s, b) => s + (b.amount - paidOf(b)), 0),
     unpaid: recurring.filter((b) => !(paidBy.has(b.id) && paidOf(b) >= b.amount)),
   }
 }

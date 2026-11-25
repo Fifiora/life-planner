@@ -14,8 +14,10 @@ import { SavingsBar } from '../../ui/SavingsBar'
 import { Sheet } from '../../ui/Sheet'
 import { Verse } from '../../ui/Verse'
 
+const SAVINGS_TRANSFER_NOTE = 'Monthly transfer'
+
 export function Overview({ f, month }: { f: FinanceData; month: string }) {
-  const { readOnly } = useHousehold()
+  const { readOnly, me } = useHousehold()
   const [incomeOpen, setIncomeOpen] = useState(false)
   const [incomeDraft, setIncomeDraft] = useState('')
   const { view, totalIncome, target, projected, flex } = f
@@ -40,10 +42,20 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
   const [sending, setSending] = useState<{ key: string; title: string; planned: number; sent: number } | null>(null)
   const row = (key: string) => f.checklist.rows.find((c) => c.month === month && c.key === key)
   const done = (key: string) => row(key)?.done === true
+  // Ticking "Move to savings" puts that money into the savings figures (one entry for the month, kept in step with the tick and amount).
+  const savingsEntry = () => f.savings.rows.find((e) => e.month === month && e.note === SAVINGS_TRANSFER_NOTE)
+  async function syncSavings(isDone: boolean, amount: number) {
+    const entry = savingsEntry()
+    if (!isDone) {
+      if (entry) await f.savings.remove(entry.id)
+    } else if (entry) await f.savings.update(entry.id, { amount })
+    else await f.savings.insert({ month, amount, member_id: me.id, note: SAVINGS_TRANSFER_NOTE })
+  }
   async function toggleTransfer(key: string) {
     const existing = f.checklist.rows.find((c) => c.month === month && c.key === key)
     if (existing) await f.checklist.update(existing.id, { done: !existing.done, amount: null })
     else await f.checklist.insert({ month, key, done: true })
+    if (key === 'savings') await syncSavings(!(existing?.done ?? false), transfers.find((t) => t.key === 'savings')?.amount ?? target)
   }
 
   async function saveIncome() {
@@ -207,6 +219,7 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
           onSave={async (n) => {
             const existing = row(sending.key)
             if (existing) await f.checklist.update(existing.id, { amount: n === sending.planned ? null : n })
+            if (sending.key === 'savings' && existing?.done) await syncSavings(true, n)
             setSending(null)
           }}
         />

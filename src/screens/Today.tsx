@@ -43,7 +43,9 @@ function greeting(): string {
 function MoneyCard({ f }: { f: ReturnType<typeof useFinance> }) {
   const month = monthKeyCT()
   if (f.bills.rows.length === 0) return null
-  const unpaid = billsPaidSummary(f.bills.rows, f.payments.rows, month).unpaid.length
+  const summary = billsPaidSummary(f.bills.rows, f.payments.rows, month)
+  const unpaid = summary.unpaid.length - summary.partial.length
+  const part = summary.partial.length
   return (
     <section className="card">
       <div className="card-head">
@@ -51,7 +53,7 @@ function MoneyCard({ f }: { f: ReturnType<typeof useFinance> }) {
         <Link to="/finance">Open</Link>
       </div>
       <SavingsBar savings={f.projected} target={f.target} />
-      <p className="muted small">{unpaid} monthly bill{unpaid === 1 ? '' : 's'} not ticked off yet · {f.flex.left >= 0 ? `${money(f.flex.left)} left for extras` : `${money(-f.flex.left)} over on extras`}</p>
+      <p className="muted small">{unpaid} monthly bill{unpaid === 1 ? '' : 's'} not ticked off yet{part > 0 ? `, ${part} part-paid (${money(summary.partialToGo)} to go)` : ''} · {f.flex.left >= 0 ? `${money(f.flex.left)} left for extras` : `${money(-f.flex.left)} over on extras`}</p>
     </section>
   )
 }
