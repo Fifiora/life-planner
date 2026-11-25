@@ -1,6 +1,7 @@
 import { useId, useState, type FormEvent } from 'react'
 import type { Member, NightOption, NightVote } from '../types'
 import { pickWinner } from '../lib/nights'
+import { Icon, type IconName } from './Icon'
 
 export interface NewIdea {
   type: NightOption['type']
@@ -8,7 +9,7 @@ export interface NewIdea {
   snack: string
 }
 
-const ICONS: Record<NightOption['type'], string> = { game: '🎲', painting: '🎨', date: '🌹', movie: '🎬' }
+const ICONS: Record<NightOption['type'], IconName> = { game: 'dice', painting: 'palette', date: 'heart', movie: 'film' }
 
 export function NightsView({
   options,
@@ -64,7 +65,7 @@ export function NightsView({
             const count = votes.filter((v) => v.option_id === o.id).length
             return (
               <li key={o.id} className="list-row">
-                <span aria-hidden className="emoji">{ICONS[o.type]}</span>
+                <span aria-hidden className="emoji"><Icon name={ICONS[o.type]} size="lg" /></span>
                 <span className="grow">
                   <strong>{o.activity}</strong>
                   <span className="muted small block">Snack: {o.snack}</span>

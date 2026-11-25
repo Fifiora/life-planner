@@ -1,15 +1,18 @@
+import type { ReactNode } from 'react'
+import { Icon } from './Icon'
+
 export function EmptyState({
   title,
   description,
   actionLabel,
   onAction,
-  icon = '🌱',
+  icon = <Icon name="leaf" size="xl" />,
 }: {
   title: string
   description?: string
   actionLabel?: string
   onAction?: () => void
-  icon?: string
+  icon?: ReactNode
 }) {
   return (
     <div className="empty">

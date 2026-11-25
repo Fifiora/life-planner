@@ -1,4 +1,4 @@
-import { useId, type CSSProperties } from 'react'
+import { useId, type CSSProperties, type ReactNode } from 'react'
 
 export function Ring({
   value,
@@ -15,7 +15,7 @@ export function Ring({
   color: string
   size?: number
   /** Shown in the middle instead of the percent. */
-  icon?: string
+  icon?: ReactNode
   /** Small text under the label, e.g. "2/5". */
   caption?: string
   /** Your own text in the middle (wins over the icon and the percent). */
@@ -43,19 +43,13 @@ export function Ring({
         style={{ width: size, height: size, position: 'relative' }}
       >
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
-          <defs>
-            <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" style={{ stopColor: color }} />
-              <stop offset="1" style={{ stopColor: `color-mix(in srgb, ${color} 55%, white)` }} />
-            </linearGradient>
-          </defs>
           {seg ? (
             <>
               <mask id={`m${gid}`}>
-                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#fff" strokeWidth={stroke + 2} strokeDasharray={c} strokeDashoffset={c * (1 - v)} transform={`rotate(-90 ${size / 2} ${size / 2})`} style={{ transition: 'stroke-dashoffset .6s ease' }} />
+                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#fff" strokeWidth={stroke + 2} strokeDasharray={c} strokeDashoffset={c * (1 - v)} transform={`rotate(-90 ${size / 2} ${size / 2})`} style={{ transition: 'stroke-dashoffset .4s cubic-bezier(0.2, 0, 0, 1)' }} />
               </mask>
               <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--line)" strokeWidth={stroke} strokeDasharray={pattern} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
-              <circle className="prog-arc prog-seg" cx={size / 2} cy={size / 2} r={r} fill="none" stroke={`url(#${gid})`} strokeWidth={stroke} strokeDasharray={pattern} mask={`url(#m${gid})`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+              <circle className="prog-arc prog-seg" cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={pattern} mask={`url(#m${gid})`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
             </>
           ) : (
             <>
@@ -66,13 +60,13 @@ export function Ring({
                 cy={size / 2}
                 r={r}
                 fill="none"
-                stroke={`url(#${gid})`}
+                stroke={color}
                 strokeWidth={stroke}
                 strokeLinecap="round"
                 strokeDasharray={c}
                 strokeDashoffset={c * (1 - v)}
                 transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                style={{ transition: 'stroke-dashoffset .6s ease' }}
+                style={{ transition: 'stroke-dashoffset .4s cubic-bezier(0.2, 0, 0, 1)' }}
               />
             </>
           )}

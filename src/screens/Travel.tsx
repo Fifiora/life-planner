@@ -10,6 +10,7 @@ import { PageHead } from '../ui/PageHead'
 import { PlaceForm } from '../ui/PlaceForm'
 import { Sheet } from '../ui/Sheet'
 import { TripTimeline } from '../ui/TripTimeline'
+import { Icon } from '../ui/Icon'
 
 export default function Travel() {
   const places = useTable<Place>('places')
@@ -71,7 +72,7 @@ export default function Travel() {
       <section className="card">
         <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--travel)' }} /><h2>This month</h2></div></div>
         {thisMonth.length > 0 ? (
-          <p>🧳 {thisMonth.map((t) => places.rows.find((p) => p.id === t.place_id)?.name).filter(Boolean).join(', ')}</p>
+          <p><Icon name="suitcase" /> {thisMonth.map((t) => places.rows.find((p) => p.id === t.place_id)?.name).filter(Boolean).join(', ')}</p>
         ) : (
           <p className="muted">No trip planned this month yet.</p>
         )}
@@ -88,7 +89,7 @@ export default function Travel() {
           <button type="button" className="add-btn" aria-label="Add place" onClick={() => setAdding(true)}>+</button>
         </div>
         {places.rows.length === 0 ? (
-          <EmptyState icon="📍" title="Start your wishlist" description="Add places and how long they are to drive." actionLabel="Add a place" onAction={() => setAdding(true)} />
+          <EmptyState icon={<Icon name="pin" size="xl" />} title="Start your wishlist" description="Add places and how long they are to drive." actionLabel="Add a place" onAction={() => setAdding(true)} />
         ) : (
           <>
             <h3 className="mt">Monthly · up to 6 hours</h3>

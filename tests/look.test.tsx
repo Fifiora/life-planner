@@ -31,12 +31,12 @@ const contrast = (a: string, b: string) => {
 }
 
 const PALETTES = {
-  light: { selector: ':root', want: { '--bg': '#fafafb', '--card-solid': '#ffffff', '--ink': '#0a0a14', '--brand': '#000080' } },
-  dark: { selector: 'html[data-theme="dark"]', want: { '--bg': '#06060f', '--card-solid': '#0b0b1c', '--ink': '#ffffff', '--brand': '#00bfff' } },
+  light: { selector: ':root', want: { '--bg': '#f7f4ee', '--card-solid': '#fdfbf7', '--ink': '#1f1b16', '--brand': '#000080' } },
+  dark: { selector: 'html[data-theme="dark"]', want: { '--bg': '#161513', '--card-solid': '#1c1a18', '--ink': '#efe9de', '--brand': '#7cc4ff' } },
 }
 const PAIRS: [string, string][] = [['--ink', '--bg'], ['--ink', '--card-solid'], ['--muted', '--bg'], ['--muted', '--card-solid'], ['--brand-ink', '--brand'], ['--brand', '--bg'], ['--brand', '--card-solid']]
 
-describe.each(Object.entries(PALETTES))('calm glass palette (%s)', (_name, { selector, want }) => {
+describe.each(Object.entries(PALETTES))('quiet palette (%s)', (_name, { selector, want }) => {
   it('declares the agreed colours', () => {
     const t = tokens(selector)
     for (const [k, v] of Object.entries(want)) expect(t[k], k).toBe(v)
@@ -51,8 +51,8 @@ describe('the look', () => {
   it('has no Anime theme left in the stylesheet', () => {
     expect(css).not.toMatch(/data-style/)
   })
-  it('no longer paints a grain layer over everything', () => {
-    expect(css).toMatch(/body::after \{ display: none !important; \}/)
+  it('has no glass, glow, orbs or gradient text', () => {
+    expect(css).not.toMatch(/backdrop-filter|background-clip: text|\.orbs|\.card::after/)
   })
   it('switches the sparkle off for people who asked for less motion', () => {
     const blocks = [...css.matchAll(/@media \(prefers-reduced-motion: reduce\) \{/g)].map((m) => {
@@ -150,17 +150,7 @@ describe('background picture', () => {
   })
 })
 
-describe('one whole background and an organised Today', () => {
-  it('uses the NGX orb layer and glass rim, not a tiled texture', async () => {
-    expect(css).toMatch(/\.orbs \{[^}]*position: fixed/)
-    expect(css).not.toMatch(/body::before \{ background:[^}]*var\(--bg\)\s*;?\s*\}/)
-    expect(css).toMatch(/\.card::after[^{]*\{[^}]*mask/)
-    expect(css).not.toMatch(/520px 520px/)
-    const { Orbs } = await import('../src/ui/Orbs')
-    const { container } = render(<Orbs />)
-    expect(container.querySelector('.orbs')).toHaveAttribute('aria-hidden', 'true')
-    expect(container.querySelectorAll('.o').length).toBe(4)
-  })
+describe('an organised Today', () => {
   it('Today has a main column with the checklist and a side column with the rest', async () => {
     seedPlanner()
     const Today = (await import('../src/screens/Today')).default
@@ -188,43 +178,17 @@ describe('Finance is organised', () => {
 })
 
 
-// The navy hero and the one saturated block: white text has to stay readable on every colour theme, in light and dark.
+// The one solid accent block: its text has to stay readable on every colour theme, in light and dark.
 const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
-const lumRgb = (c: number[]) => {
-  const [r, g, b] = c.map((v) => v / 255).map((x) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4))
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b
-}
-const contrastRgb = (a: number[], b: number[]) => {
-  const [hi, lo] = [lumRgb(a), lumRgb(b)].sort((x, y) => y - x)
-  return (hi + 0.05) / (lo + 0.05)
-}
-describe('text on the navy hero (final colours, not the first rule)', () => {
-  it('is readable on the default navy gradient, even over a white page', () => {
-    const m = css.match(/--hero-bg: linear-gradient\(160deg, ([^;]+)\); \}/)
-    expect(m).not.toBeNull()
-    const stops = [...m![1].matchAll(/rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/g)].map((x) => ({ c: [Number(x[1]), Number(x[2]), Number(x[3])], a: Number(x[4]) }))
-    expect(stops.length).toBeGreaterThan(1)
-    for (const { c, a } of stops) {
-      const onWhite = c.map((v) => Math.round(v * a + 255 * (1 - a)))
-      expect(contrastRgb([255, 255, 255], onWhite), 'white text').toBeGreaterThanOrEqual(4.5)
-      const muted = [255, 255, 255].map((v, i) => Math.round(v * 0.78 + onWhite[i] * 0.22))
-      expect(contrastRgb(muted, onWhite), 'muted text').toBeGreaterThanOrEqual(4.5)
-    }
-  })
-  it('is readable on every accent theme (light and dark), at the lightest stop of the gradient', () => {
-    const found = [...css.matchAll(/html(\[data-theme="dark"\])?\[data-accent="(\w+)"\] \{\s*--brand: (#[0-9a-f]{6});/gi)]
+describe('text on the accent block', () => {
+  it('is readable on every accent theme, light and dark', () => {
+    const found = [...css.matchAll(/html(\[data-theme="dark"\])?\[data-accent="(\w+)"\] \{([^}]*)\}/g)]
     expect(found.length).toBeGreaterThanOrEqual(14)
-    const stop = css.match(/html\[data-accent\] \{ --hero-bg: linear-gradient\(160deg, color-mix\(in srgb, var\(--brand\) (\d+)%, #000\)/)
-    expect(stop).not.toBeNull()
-    const k = Number(stop![1]) / 100
-    for (const [, dark, name, brand] of found) {
-      const bg = rgb(brand).map((v) => Math.round(v * k))
-      expect(contrastRgb([255, 255, 255], bg), `${name} ${dark ? 'dark' : 'light'}`).toBeGreaterThanOrEqual(4.5)
+    for (const [, dark, name, body] of found) {
+      const brand = body.match(/--brand:\s*(#[0-9a-f]{6})/i)![1]
+      const ink = body.match(/--brand-ink:\s*(#[0-9a-f]{6})/i)![1]
+      expect(contrast(ink, brand), `${name} ${dark ? 'dark' : 'light'}`).toBeGreaterThanOrEqual(4.5)
     }
-  })
-  it('keeps the negative-money red readable on the navy block', () => {
-    const m = css.match(/\.stat\.accent, \.hero \{[^}]*--danger: (#[0-9a-f]{6})/i)
-    expect(m).not.toBeNull()
-    expect(contrastRgb(rgb(m![1]), [0, 0, 128])).toBeGreaterThanOrEqual(4.5)
+    expect(rgb('#000080')).toEqual([0, 0, 128])
   })
 })

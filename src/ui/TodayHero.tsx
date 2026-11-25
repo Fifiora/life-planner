@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { Daypart } from '../lib/daypart'
 import { heroLine } from '../lib/voice'
@@ -6,7 +7,7 @@ import { Ring } from './Ring'
 export interface HeroRing {
   key: string
   label: string
-  icon: string
+  icon: ReactNode
   color: string
   value: number
   caption: string
@@ -17,14 +18,13 @@ export interface HeroRing {
 export function TodayHero({ rings, done, total, streak, part, host }: { rings: HeroRing[]; done: number; total: number; streak: number; part: Daypart; host?: string }) {
   return (
     <section className={`card hero hero-${part}`} aria-label="Progress">
-      <span className="hero-sun" aria-hidden>{part === 'morning' ? '☀️' : part === 'afternoon' ? '🌤️' : '🌙'}</span>
       <div className="hero-top">
         <Ring label="Done today" color="var(--brand)" size={136} segments={total > 1 && total <= 24 ? total : undefined} value={total > 0 ? done / total : 0} centre={total > 0 ? `${done}/${total}` : '—'} />
         <div className="hero-text">
           {(total > 0 || streak >= 2) && (
             <p className="headline">
               {total > 0 && <span>{`${done} of ${total} done today`}</span>}
-              {streak >= 2 && <span className="streak-chip">{`🔥 ${streak}-day streak`}</span>}
+              {streak >= 2 && <span className="streak-chip">{`${streak}-day streak`}</span>}
             </p>
           )}
           <p className="muted">{heroLine(done, total)}</p>
@@ -37,7 +37,7 @@ export function TodayHero({ rings, done, total, streak, part, host }: { rings: H
           </Link>
         ))}
       </div>
-      {host && <p className="muted small mt">🎲 Next night in is hosted by <strong>{host}</strong></p>}
+      {host && <p className="muted small mt">Next night in is hosted by <strong>{host}</strong></p>}
     </section>
   )
 }

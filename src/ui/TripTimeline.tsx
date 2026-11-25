@@ -1,6 +1,7 @@
 import { monthLabel } from '../lib/format'
 import type { Place, TripPlan } from '../types'
 import { EmptyState } from './EmptyState'
+import { Icon } from './Icon'
 
 export function TripTimeline({
   trips,
@@ -14,7 +15,7 @@ export function TripTimeline({
   onRemove: (t: TripPlan) => void
 }) {
   if (trips.length === 0) {
-    return <EmptyState icon="🗺️" title="No trips planned" description="Pick a place below and give it a month." />
+    return <EmptyState icon={<Icon name="map" size="xl" />} title="No trips planned" description="Pick a place below and give it a month." />
   }
   const sorted = [...trips].sort((a, b) => a.planned_month.localeCompare(b.planned_month))
   return (

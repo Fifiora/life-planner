@@ -1,9 +1,10 @@
 import { useSyncExternalStore } from 'react'
+import { Icon, type IconName } from './Icon'
 import { getThemeChoice, setThemeChoice, THEME_EVENT, type ThemeChoice } from '../lib/theme'
 
 const ORDER: ThemeChoice[] = ['system', 'light', 'dark']
 const LABEL: Record<ThemeChoice, string> = { system: 'Match my phone', light: 'Light', dark: 'Dark' }
-const ICON: Record<ThemeChoice, string> = { system: '🌓', light: '☀️', dark: '🌙' }
+const ICON: Record<ThemeChoice, IconName> = { system: 'monitor', light: 'sun', dark: 'moon' }
 const SHORT: Record<ThemeChoice, string> = { system: 'Auto', light: 'Light', dark: 'Dark' }
 
 function subscribe(onChange: () => void) {
@@ -26,7 +27,7 @@ export function ThemeToggle() {
   const next = ORDER[(ORDER.indexOf(choice) + 1) % ORDER.length]
   return (
     <button type="button" className="icon-btn theme-btn" aria-label={`Appearance: ${LABEL[choice]}. Tap for ${LABEL[next]}.`} title={`Appearance: ${LABEL[choice]}`} onClick={() => setThemeChoice(next)}>
-      <span aria-hidden>{ICON[choice]}</span>
+      <Icon name={ICON[choice]} size="lg" />
     </button>
   )
 }

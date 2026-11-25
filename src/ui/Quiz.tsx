@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { gradeAnswer, scoreSummary } from '../lib/trivia'
 import type { TriviaQuestion } from '../types'
+import { Icon } from './Icon'
 
 export function Quiz({
   questions,
@@ -19,7 +20,7 @@ export function Quiz({
     const s = scoreSummary(results)
     return (
       <div className="empty">
-        <div className="empty-icon" aria-hidden>🏆</div>
+        <div className="empty-icon" aria-hidden><Icon name="trophy" size="xl" /></div>
         <h3>{s.correct} of {s.total} correct ({s.pct}%)</h3>
         <button type="button" className="btn btn-primary" onClick={() => { setIndex(0); setChosen(null); setResults([]) }}>Play again</button>
       </div>

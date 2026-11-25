@@ -11,7 +11,7 @@ export function PayoffCard({ payoff, deadlineLabel }: { payoff: PayoffProgress; 
         <div className="bar-fill" style={{ width: `${pct}%` }} />
       </div>
       {remaining === 0 ? (
-        <p className="callout ok">All cleared 🎉</p>
+        <p className="callout ok">All cleared</p>
       ) : (
         <p className="bar-text">Still to pay: <strong>{money(remaining)}</strong> of {money(total)} · {when}</p>
       )}

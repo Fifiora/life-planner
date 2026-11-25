@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Member, Routine, RoutineLog } from '../types'
 import { WEEKDAYS } from '../lib/format'
+import { Icon } from './Icon'
 
 const CADENCE_LABEL: Record<Routine['cadence'], string> = {
   daily: 'Daily',
@@ -93,7 +94,7 @@ export function RoutineRow({
           </span>
         )}
       </span>
-      {streakCount > 1 && <span className="streak" aria-label={`${streakCount} in a row`}>🔥 {streakCount}</span>}
+      {streakCount > 1 && <span className="streak" aria-label={`${streakCount} in a row`}><Icon name="flame" /> {streakCount}</span>}
     </li>
   )
 }

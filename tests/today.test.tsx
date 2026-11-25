@@ -73,7 +73,7 @@ describe('Today progress headline', () => {
     localStorage.setItem('lp.data.routine_logs', JSON.stringify([log('x1', 'r1', t), log('x2', 'r1', addDays(t, -1)), log('x3', 'r1', addDays(t, -2))]))
     renderScreen(<Today />)
     expect(await screen.findByText(/^1 of \d+ done today$/)).toBeInTheDocument()
-    expect(screen.getByText('🔥 3-day streak')).toBeInTheDocument()
+    expect(screen.getByText('3-day streak')).toBeInTheDocument()
   })
 })
 
@@ -82,11 +82,11 @@ describe('Today hero card', () => {
     renderScreen(<Today />)
     await screen.findByRole('navigation', { name: 'This week' })
     expect(screen.getByRole('progressbar', { name: 'Done today' })).toBeInTheDocument()
-    const areas: [string, string, string][] = [['Health', '💪', '/health'], ['Study', '📚', '/study'], ['Travel', '🧭', '/travel'], ['Food', '🍲', '/food'], ['Finance', '💰', '/finance']]
+    const areas: [string, string, string][] = [['Health', 'icon', '/health'], ['Study', 'icon', '/study'], ['Travel', 'icon', '/travel'], ['Food', 'icon', '/food'], ['Finance', 'icon', '/finance']]
     for (const [name, icon, href] of areas) {
       const link = screen.getByRole('link', { name: new RegExp(`^${name}`) })
       expect(link).toHaveAttribute('href', href)
-      expect(link).toHaveTextContent(icon)
+      expect(link.querySelector('svg.icon')).not.toBeNull()
       expect(within(link).getByRole('progressbar', { name })).toBeInTheDocument()
     }
   })

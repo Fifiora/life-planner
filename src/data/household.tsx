@@ -6,6 +6,7 @@ import { JoinForm } from '../ui/JoinForm'
 import { removeSharedCopy } from './startup'
 import { isReadOnly } from './tableStore'
 import { useTable } from './useTable'
+import { Icon } from '../ui/Icon'
 
 export interface HouseholdValue {
   householdId: string
@@ -78,7 +79,7 @@ function Onboarding({ onSave }: { onSave: (names: [string, string]) => void }) {
 
   return (
     <div className="app">
-      <div className="login-hero" aria-hidden style={{ textAlign: 'center' }}>🌿</div>
+      <div className="login-hero" aria-hidden style={{ textAlign: 'center' }}><Icon name="leaf" size="xl" /></div>
       <h1 style={{ textAlign: 'center' }}>Who's using this planner?</h1>
       <form className="card mt" onSubmit={submit} noValidate>
         <label className="label" htmlFor="first-person">First person</label>
@@ -98,7 +99,7 @@ function WhoAreYou({ members, onPick }: { members: Member[]; onPick: (id: string
   const loggedOut = localStorage.getItem('lp.loggedout') === '1'
   return (
     <div className="app">
-      <div className="login-hero" aria-hidden style={{ textAlign: 'center', marginTop: '2rem' }}>🌿</div>
+      <div className="login-hero" aria-hidden style={{ textAlign: 'center', marginTop: '2rem' }}><Icon name="leaf" size="xl" /></div>
       <h1 style={{ textAlign: 'center' }}>{loggedOut ? "You're logged out" : 'Who are you on this phone?'}</h1>
       {loggedOut && <p className="muted" style={{ textAlign: 'center' }}>Pick who you are to go back in.</p>}
       <div className="stack mt">

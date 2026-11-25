@@ -7,6 +7,7 @@ import { to12h } from '../lib/format'
 import type { CalEvent, NightOption, Routine } from '../types'
 import { EventForm } from './EventForm'
 import { Sheet } from './Sheet'
+import { Icon } from './Icon'
 
 const longDate = (date: string) =>
   new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
@@ -117,7 +118,7 @@ export function DaySheet({ date, onClose, data, events }: { date: string; onClos
                         checked={Array.isArray(e.done_on) && e.done_on.includes(date)}
                         onChange={() => void events.toggleDone(e.id, date)}
                       />
-                      <button type="button" className="icon-btn" aria-label={`Edit ${e.title}`} onClick={() => setMode(e)}>✏️</button>
+                      <button type="button" className="icon-btn" aria-label={`Edit ${e.title}`} onClick={() => setMode(e)}><Icon name="pencil" /></button>
                     </>
                   )}
                 </li>

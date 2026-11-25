@@ -4,6 +4,7 @@ import { adjustPlan } from '../lib/migrate'
 import { decryptPreload, type PreloadFile } from '../lib/preload'
 import { encodeSnapshot, parseSnapshotJson, type Snapshot } from '../lib/snapshot'
 import { JoinForm } from './JoinForm'
+import { Icon } from './Icon'
 
 const reload = () => window.location.reload()
 
@@ -70,7 +71,7 @@ export function UnlockPreload({
 
   return (
     <div className="app login">
-      <div className="login-hero" aria-hidden>🌿</div>
+      <div className="login-hero" aria-hidden><Icon name="leaf" size="xl" /></div>
       <h1>Life Planner</h1>
       {!snapshot ? (
         <>

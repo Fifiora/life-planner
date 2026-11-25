@@ -222,6 +222,6 @@ export function buildInsights(input: { rows: ForecastRow[]; categories: Category
     const when = payoff.daysLeft >= 0 ? `${payoff.daysLeft} days to go` : `${-payoff.daysLeft} days past the deadline`
     lines.push(`${money(payoff.remaining)} of payoffs still to pay, ${when}.`)
   }
-  else if (payoff.total > 0) lines.push('All payoffs cleared 🎉')
+  else if (payoff.total > 0) lines.push('All payoffs cleared')
   return lines
 }

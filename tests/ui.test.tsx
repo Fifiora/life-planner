@@ -13,8 +13,8 @@ describe('Ring look', () => {
     expect(container.querySelector('.prog-ring')).not.toBeNull()
   })
   it('can show an icon in the middle, text instead of a percent, and a caption underneath', () => {
-    render(<Ring value={0.4} label="Health" color="#16a34a" icon="💪" caption="2/5" />)
-    expect(screen.getByText('💪')).toBeInTheDocument()
+    render(<Ring value={0.4} label="Health" color="#16a34a" icon={<span data-testid="mid">m</span>} caption="2/5" />)
+    expect(screen.getByTestId('mid')).toBeInTheDocument()
     expect(screen.getByText('2/5')).toBeInTheDocument()
     expect(screen.queryByText('40%')).toBeNull()
     expect(screen.getByRole('progressbar', { name: 'Health' })).toHaveAttribute('aria-valuenow', '40')

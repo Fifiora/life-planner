@@ -1,5 +1,5 @@
 import { Ambient } from './ui/Ambient'
-import { Orbs } from './ui/Orbs'
+import { Icon } from './ui/Icon'
 import { useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { HouseholdProvider, useHousehold } from './data/household'
@@ -23,7 +23,7 @@ function ViewBanner({ createdAt }: { createdAt?: string }) {
   const when = createdAt ? new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''
   return (
     <div className="view-banner" role="note">
-      <span>👁 View-only copy{when ? ` · shared ${when}` : ''}</span>
+      <span><Icon name="eye" /> View-only copy{when ? ` · shared ${when}` : ''}</span>
       <button type="button" className="plain-btn" onClick={removeSharedCopy}>
         Remove this copy
       </button>
@@ -35,7 +35,6 @@ function Shell({ boot }: { boot: BootResult }) {
   const { readOnly } = useHousehold()
   return (
     <>
-      <Orbs />
       <Ambient />
       <main className="app">
         {readOnly && <ViewBanner createdAt={boot.createdAt} />}

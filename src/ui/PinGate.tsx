@@ -3,6 +3,7 @@ import { shouldLock } from '../lib/lockPolicy'
 import { isPinRecord, verifyPin, type PinRecord } from '../lib/pin'
 import { effectivePin, pinSignature, subscribePin } from '../lib/pinStore'
 import { eraseThisPhone, reloadApp } from '../lib/session'
+import { Icon } from './Icon'
 
 const eraseAndReload = () => {
   eraseThisPhone()
@@ -73,7 +74,7 @@ export function PinGate({
 
   return (
     <div className="app login">
-      <div className="login-hero" aria-hidden>🔒</div>
+      <div className="login-hero" aria-hidden><Icon name="lock" size="xl" /></div>
       <h1>Enter your PIN</h1>
       <form className="card" onSubmit={submit} noValidate>
         <label className="label" htmlFor="pin">PIN</label>

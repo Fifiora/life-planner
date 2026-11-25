@@ -106,7 +106,7 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
         ) : projected < target ? (
           <p className="callout">{money(target - projected)} below the savings target — move a payoff or trim spending.</p>
         ) : (
-          <p className="callout ok">Savings target on track this month 🎉</p>
+          <p className="callout ok">Savings target on track this month</p>
         )}
       </section>
 

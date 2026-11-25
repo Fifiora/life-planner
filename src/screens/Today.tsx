@@ -24,6 +24,7 @@ import { TodayHero, type HeroRing } from '../ui/TodayHero'
 import { daypart } from '../lib/daypart'
 import { RoutineForm } from '../ui/RoutineForm'
 import { RoutineRows } from '../ui/RoutineList'
+import { Icon } from '../ui/Icon'
 import { QuickAdd } from '../ui/QuickAdd'
 import { StarterPlanLoader } from '../ui/StarterPlanLoader'
 import { Sheet } from '../ui/Sheet'
@@ -85,11 +86,11 @@ export default function Today() {
   const tripsDone = monthTrips.filter((t) => t.status === 'done').length
   const foodDone = food.filter(isDone).length
   const rings: HeroRing[] = [
-    { key: 'health', label: 'Health', icon: '💪', color: 'var(--health)', value: ratio(healthDone, healthToday.length), caption: count(healthDone, healthToday.length), to: '/health' },
-    { key: 'study', label: 'Study', icon: '📚', color: 'var(--study)', value: ratio(studyDone, weekMs.length), caption: count(studyDone, weekMs.length), to: '/study' },
-    { key: 'travel', label: 'Travel', icon: '🧭', color: 'var(--travel)', value: ratio(tripsDone, monthTrips.length), caption: count(tripsDone, monthTrips.length), to: '/travel' },
-    { key: 'food', label: 'Food', icon: '🍲', color: 'var(--food)', value: ratio(foodDone, food.length), caption: count(foodDone, food.length), to: '/food' },
-    { key: 'finance', label: 'Finance', icon: '💰', color: 'var(--finance)', value: savingsRatio(money.projected, money.target), caption: `${Math.round(Math.max(0, Math.min(1, savingsRatio(money.projected, money.target))) * 100)}%`, to: '/finance' },
+    { key: 'health', label: 'Health', icon: <Icon name="heart" />, color: 'var(--health)', value: ratio(healthDone, healthToday.length), caption: count(healthDone, healthToday.length), to: '/health' },
+    { key: 'study', label: 'Study', icon: <Icon name="book" />, color: 'var(--study)', value: ratio(studyDone, weekMs.length), caption: count(studyDone, weekMs.length), to: '/study' },
+    { key: 'travel', label: 'Travel', icon: <Icon name="compass" />, color: 'var(--travel)', value: ratio(tripsDone, monthTrips.length), caption: count(tripsDone, monthTrips.length), to: '/travel' },
+    { key: 'food', label: 'Food', icon: <Icon name="utensils" />, color: 'var(--food)', value: ratio(foodDone, food.length), caption: count(foodDone, food.length), to: '/food' },
+    { key: 'finance', label: 'Finance', icon: <Icon name="wallet" />, color: 'var(--finance)', value: savingsRatio(money.projected, money.target), caption: `${Math.round(Math.max(0, Math.min(1, savingsRatio(money.projected, money.target))) * 100)}%`, to: '/finance' },
   ]
 
   const complete = rings.filter((r) => r.value >= 1).length
@@ -159,7 +160,7 @@ export default function Today() {
 
         {(recap.total > 0 || milestonesDone > 0) && (
           <section className="card" aria-label="This week's wins">
-            <h2>This week's wins 🎉</h2>
+            <h2>This week's wins</h2>
             <p>
               {`${recap.total} thing${recap.total === 1 ? '' : 's'} ticked off`}
               {members.length > 1 && ` (${members.map((m) => `${m.display_name} ${recap.byMember[m.id] ?? 0}`).join(' · ')})`}
@@ -174,7 +175,7 @@ export default function Today() {
 
       {backupDue && (
         <section className="card">
-          <p>💾 Your planner is saved only on this phone. <Link to="/settings">Download a backup</Link> so it can't be lost.</p>
+          <p>Your planner is saved only on this phone. <Link to="/settings">Download a backup</Link> so it can't be lost.</p>
         </section>
       )}
 
