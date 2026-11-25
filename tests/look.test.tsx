@@ -31,8 +31,8 @@ const contrast = (a: string, b: string) => {
 }
 
 const PALETTES = {
-  light: { selector: ':root', want: { '--bg': '#f4f1ec', '--card-solid': '#fffdfa', '--ink': '#221e1a', '--brand': '#1d6b62' } },
-  dark: { selector: 'html[data-theme="dark"]', want: { '--bg': '#15130f', '--card-solid': '#1d1a16', '--ink': '#efeae2', '--brand': '#6fd3c1' } },
+  light: { selector: ':root', want: { '--bg': '#fafafb', '--card-solid': '#ffffff', '--ink': '#0a0a14', '--brand': '#000080' } },
+  dark: { selector: 'html[data-theme="dark"]', want: { '--bg': '#06060f', '--card-solid': '#0b0b1c', '--ink': '#ffffff', '--brand': '#00bfff' } },
 }
 const PAIRS: [string, string][] = [['--ink', '--bg'], ['--ink', '--card-solid'], ['--muted', '--bg'], ['--muted', '--card-solid'], ['--brand-ink', '--brand'], ['--brand', '--bg'], ['--brand', '--card-solid']]
 
@@ -90,7 +90,7 @@ describe('There is one look', () => {
 })
 
 describe('colour themes', () => {
-  const ACCENTS = ['ocean', 'rose', 'plum', 'forest', 'sunset', 'slate']
+  const ACCENTS = ['teal', 'ocean', 'rose', 'plum', 'forest', 'sunset', 'slate']
   const PAIRS: [string, string][] = [['--brand-ink', '--brand'], ['--brand', '--bg'], ['--brand', '--card-solid']]
   const base = (dark: boolean) => tokens(dark ? 'html[data-theme="dark"]' : ':root')
   describe.each([false, true])('dark=%s', (dark) => {
@@ -110,12 +110,12 @@ describe('colour themes', () => {
     seedPlanner()
     renderScreen(<Settings />)
     const rose = await screen.findByRole('button', { name: 'Rose' })
-    expect(screen.getByRole('button', { name: 'Teal' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Navy' })).toHaveAttribute('aria-pressed', 'true')
     rose.click()
     await waitFor(() => expect(document.documentElement.getAttribute('data-accent')).toBe('rose'))
     expect(localStorage.getItem('lp.accent')).toBe('rose')
     await waitFor(() => expect(screen.getByRole('button', { name: 'Rose' })).toHaveAttribute('aria-pressed', 'true'))
-    screen.getByRole('button', { name: 'Teal' }).click()
+    screen.getByRole('button', { name: 'Navy' }).click()
     await waitFor(() => expect(document.documentElement.hasAttribute('data-accent')).toBe(false))
     expect(localStorage.getItem('lp.accent')).toBeNull()
   })
@@ -149,10 +149,14 @@ describe('background picture', () => {
 })
 
 describe('one whole background and an organised Today', () => {
-  it('draws the stone once over the whole page, not as tiles', () => {
-    const rule = css.slice(css.lastIndexOf('body::before {'), css.indexOf('}', css.lastIndexOf('body::before {')))
-    expect(rule).toMatch(/100% 100% no-repeat/)
-    expect(rule).not.toMatch(/520px 520px/)
+  it('uses the NGX orb layer and glass rim, not a tiled texture', async () => {
+    expect(css).toMatch(/\.orbs \{[^}]*position: fixed/)
+    expect(css).toMatch(/\.card::after[^{]*\{[^}]*mask/)
+    expect(css).not.toMatch(/520px 520px/)
+    const { Orbs } = await import('../src/ui/Orbs')
+    const { container } = render(<Orbs />)
+    expect(container.querySelector('.orbs')).toHaveAttribute('aria-hidden', 'true')
+    expect(container.querySelectorAll('.o').length).toBe(4)
   })
   it('Today has a main column with the checklist and a side column with the rest', async () => {
     seedPlanner()

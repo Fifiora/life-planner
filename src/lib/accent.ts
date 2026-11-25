@@ -1,5 +1,5 @@
 /** Colour themes: one accent set (the main colour and its partner) on top of the calm glass look. */
-export type AccentId = 'teal' | 'ocean' | 'rose' | 'plum' | 'forest' | 'sunset' | 'slate'
+export type AccentId = 'navy' | 'teal' | 'ocean' | 'rose' | 'plum' | 'forest' | 'sunset' | 'slate'
 
 export interface Accent {
   id: AccentId
@@ -9,6 +9,7 @@ export interface Accent {
 }
 
 export const ACCENTS: Accent[] = [
+  { id: 'navy', label: 'Navy', swatch: '#000080' },
   { id: 'teal', label: 'Teal', swatch: '#1d6b62' },
   { id: 'ocean', label: 'Ocean', swatch: '#1f5fa8' },
   { id: 'rose', label: 'Rose', swatch: '#b0365a' },
@@ -20,7 +21,7 @@ export const ACCENTS: Accent[] = [
 
 const KEY = 'lp.accent'
 export const ACCENT_EVENT = 'lp:accent'
-const DEFAULT: AccentId = 'teal'
+const DEFAULT: AccentId = 'navy'
 
 export function getAccent(): AccentId {
   try {
@@ -31,7 +32,7 @@ export function getAccent(): AccentId {
   }
 }
 
-/** Sets <html data-accent> (teal is the plain default, so it has no attribute) and the browser bar colour. */
+/** Sets <html data-accent> (navy is the plain default, so it has no attribute) and the browser bar colour. */
 export function applyAccent(id: AccentId, root: HTMLElement = document.documentElement): void {
   if (id === DEFAULT) root.removeAttribute('data-accent')
   else root.setAttribute('data-accent', id)
