@@ -160,18 +160,20 @@ export function Bills({ f, month }: { f: FinanceData; month: string }) {
                   aria-label={`${b.name} paid`}
                   onChange={() => void togglePaid(b)}
                 />
-                <button type="button" className="plain-btn grow" onClick={() => setEditing(b)}>{b.name}</button>
-                <select
-                  className="mini-select"
-                  aria-label={`Cancel status for ${b.name}`}
-                  value={b.cancel_status ?? ''}
-                  disabled={readOnly}
-                  onChange={(e) => void f.bills.update(b.id, { cancel_status: e.target.value as Bill['cancel_status'] })}
-                >
-                  <option value="">Keep</option>
-                  <option value="could">Could cancel</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
+                <span className="bill-main">
+                  <button type="button" className="plain-btn bill-name" onClick={() => setEditing(b)}>{b.name}</button>
+                  <select
+                    className={`mini-select status-select${b.cancel_status ? ` ${b.cancel_status}` : ''}`}
+                    aria-label={`Cancel status for ${b.name}`}
+                    value={b.cancel_status ?? ''}
+                    disabled={readOnly}
+                    onChange={(e) => void f.bills.update(b.id, { cancel_status: e.target.value as Bill['cancel_status'] })}
+                  >
+                    <option value="">Keep</option>
+                    <option value="could">Could cancel</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </span>
                 {(() => {
                   const payment = paymentFor(b)
                   if (!payment) return <span style={{ fontWeight: 600 }}>{money(b.amount)}</span>

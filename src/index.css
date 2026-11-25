@@ -1084,3 +1084,10 @@ html[data-accent] .stat.accent, html[data-accent] .hero { --brand: color-mix(in 
 .stack > .tabs[aria-label="Finance sections"] { -webkit-mask: linear-gradient(90deg, transparent, #000 1.1rem, #000 calc(100% - 1.6rem), transparent); mask: linear-gradient(90deg, transparent, #000 1.1rem, #000 calc(100% - 1.6rem), transparent); }
 .tabs .seg:focus-visible { outline-offset: -3px; }
 @media (min-width: 48rem) { .stack > .tabs[aria-label="Finance sections"] { -webkit-mask: none; mask: none; } }
+
+/* Bills rows: the name gets the room, the keep/cancel choice is a small chip underneath, the amount sits on the right */
+.bill-main { flex: 1 1 auto; min-width: 0; display: grid; gap: 0.3rem; justify-items: start; }
+.bill-name { text-align: left; font-weight: 600; overflow-wrap: anywhere; line-height: 1.25; }
+.status-select { height: 1.65rem; padding: 0 1.5rem 0 0.6rem; font-size: 0.72rem; border-radius: 999px; background-color: transparent; border: 1px solid var(--line); color: var(--muted); }
+.status-select.could { color: var(--food); border-color: color-mix(in srgb, var(--food) 55%, transparent); background-color: color-mix(in srgb, var(--food) 12%, transparent); }
+.status-select.cancelled { color: var(--muted); text-decoration: line-through; }
