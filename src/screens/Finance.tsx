@@ -43,13 +43,12 @@ export default function Finance() {
 
       <div role="tablist" aria-label="Finance sections" className="tabs" ref={listRef} onKeyDown={onKeys}>
         {TABS.map((t) => (
-          <button key={t} type="button" role="tab" id={`fin-tab-${t.replace(/ /g, '-')}`} aria-controls="finance-panel" tabIndex={tab === t ? 0 : -1} aria-selected={tab === t} className={`seg${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>{t}</button>
+          <button key={t} type="button" role="tab" id={`fin-tab-${t.replace(/ /g, '-')}`} tabIndex={tab === t ? 0 : -1} aria-selected={tab === t} className={`seg${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>{t}</button>
         ))}
       </div>
 
       {BY_MONTH.includes(tab) && <MonthPills months={monthWindow(monthKeyCT(), 3, 4)} value={month} onChange={setMonth} />}
 
-      <div id="finance-panel" role="tabpanel" aria-labelledby={`fin-tab-${tab.replace(/ /g, '-')}`} style={{ display: 'contents' }}>
       {tab === 'Overview' && <Overview f={f} month={month} />}
       {tab === 'Transactions' && <Transactions f={f} month={month} />}
       {tab === 'Month vs Month' && <MonthVsMonth f={f} />}
@@ -59,7 +58,6 @@ export default function Finance() {
       {tab === 'Savings' && <Savings f={f} month={month} />}
       {tab === 'Plan' && <Plan f={f} />}
       {tab === 'Insights' && <Insights f={f} />}
-      </div>
     </div>
   )
 }
