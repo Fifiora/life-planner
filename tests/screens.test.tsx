@@ -27,7 +27,7 @@ describe('Finance', () => {
     for (const label of ['Spent', 'Net', 'Moved to savings']) expect(screen.getAllByText(label).length).toBeGreaterThan(0)
     expect(screen.getByText('Spending by category')).toBeInTheDocument()
     expect(screen.getByText('Transfers to make')).toBeInTheDocument()
-    expect(screen.getByText('Savings tracker')).toBeInTheDocument()
+    expect(screen.getByText('Bills you could cancel')).toBeInTheDocument()
     expect(screen.getByText('Left after bills')).toBeInTheDocument()
     expect(screen.getByText('Debt payoff')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Overview', selected: true })).toBeInTheDocument()

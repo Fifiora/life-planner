@@ -153,7 +153,7 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
       </section>
 
       <section className="card">
-        <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Savings tracker</h2></div><span className="muted small">Yellow = could cancel · Green = already saved</span></div>
+        <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>Bills you could cancel</h2></div><span className="muted small">Yellow = could cancel · Green = already saved</span></div>
         <div className="row2">
           <div className="savings-card yellow">
             <div className="savings-label">Could cancel (potential)</div>

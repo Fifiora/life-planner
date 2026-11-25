@@ -47,7 +47,7 @@ export function Pay({ f, month }: { f: FinanceData; month: string }) {
     else await paychecks.insert({ slot: p.slot, date: p.date, amount: null, received: false, ...patch })
   }
 
-  const tick = (p: Payday) => change(p, p.received ? { received: false, amount: null } : { received: true, amount: p.amount })
+  const tick = (p: Payday) => change(p, p.received ? { received: false, ...(p.extra || p.amount !== schedule!.amount ? {} : { amount: null }) } : { received: true, amount: p.amount })
 
   async function saveExtra(e: FormEvent) {
     e.preventDefault()
