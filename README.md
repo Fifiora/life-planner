@@ -6,7 +6,7 @@ Live site: `https://<your-github-username>.github.io/life-planner/`
 
 ## How it works
 
-- **No login, no server.** The planner opens straight away and saves your data in your own phone's browser (local storage). Your data is never sent anywhere; the only outside request the site makes is for the Inter font from Google Fonts.
+- **No login, no server.** The planner opens straight away and saves your data in your own phone's browser (local storage). Your data is never sent anywhere; the only outside request the site makes is for the Nunito and Roboto fonts from Google Fonts.
 - **Hosting:** this repo is deployed to GitHub Pages by `.github/workflows/deploy.yml` on every push to `main`. The workflow runs the tests first and only deploys if they pass.
 - **Privacy:** this repo contains code only — no names, amounts or tokens.
 - **Sharing:** *Settings → Share with your partner* makes a **view-only** copy: a link (or a file) with a snapshot of your planner inside it. The snapshot sits after the `#` in the link, which browsers never send to any server. Anyone who opens the link can look but not change anything, with no login. Anyone who has the link can read it, so send it privately, and send a new link whenever you want fresh progress to show.
@@ -64,11 +64,11 @@ The app has a light and a dark palette (Settings → Appearance), frosted-glass 
 
 ## The look and colour themes
 
-There is one look, called calm glass: frosted glass cards with a bright top edge and a fine grain texture over a warm porcelain (light) or deep charcoal (dark) background, Geist for the interface and Fraunces for page titles, aligned digits for money. There is no game layer (no levels, XP, mascot, badges, weekly boss or cheers): Today shows plain progress rings, the checklist and a routine streak.
+There is one look, taken from the NGX Paper-Trading page: navy (#000080) and electric cyan (#00bfff), milky glass cards by day and navy glass by night, a bright gradient rim and a specular light that follows the pointer, a drifting orb layer behind everything, rounded headings and big numbers, small uppercase monospace labels, a navy hero card, and a floating tab bar on phones (a sidebar on laptops). There is no game layer (no levels, XP, mascot, badges, weekly boss or cheers): Today shows plain progress rings, the checklist, Up next and a momentum chart.
 
-Settings → Appearance has the light/dark choice and a **Colour** picker with seven themes: Teal (default), Ocean, Rose, Plum, Forest, Sunset and Slate. Each has its own light and dark version and a matching tint in the background glow. The choice is saved on each device (`lp.accent`), so each phone can have its own. The stylesheet's contrast tests check every theme against AA (4.5:1) in light and dark.
+Settings → Appearance has the light/dark choice, a **Background** picker (Off by default, floating flowers or swimming fish) and a **Colour** picker with eight themes: Navy (default), Teal, Ocean, Rose, Plum, Forest, Sunset and Slate. The hero card, the heading underline and the partner colour follow the chosen theme. Choices are saved on each device (`lp.accent`, `lp.ambient`). The stylesheet's contrast tests check every theme against AA (4.5:1) in light and dark.
 
-Glass depth (step 2): a quiet mottled stone sits under the glow so the blurred glass reads as glass; inner panes (stat boxes, tiles) are lighter glass with a bright top edge; money figures are large and set in Fraunces; "Left after bills" is the one saturated blue block on Finance; the tab strips are light pills on a frosted track. Blue, wood and black appear only in small touches (a wood-grain strip under each page title, a dark main button, a wood hairline on the tab bar). Hovering a card lifts it and sweeps a sheen across it; stat boxes and buttons lift too (only on devices that can hover, and not at all with reduced motion on).
+Touch screens on phones use plain card fills instead of blur, and reduced-transparency, reduced-motion and print settings are respected.
 
 Settings → Appearance → **Background** picks the picture behind the glass, per device (`lp.ambient`): floating flowers (default), swimming fish over gently flowing water lines, or off. It is decorative only (hidden from screen readers, never takes a tap, hidden when printing, still for people who ask for less motion).
 
