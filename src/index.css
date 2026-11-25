@@ -1070,7 +1070,7 @@ body::after { display: none !important; }
 }
 
 /* The hero and the one saturated block follow the chosen accent (Navy keeps the NGX blues above) */
-html[data-accent] { --hero-bg: linear-gradient(160deg, color-mix(in srgb, var(--brand) 62%, #000) 0%, color-mix(in srgb, var(--brand) 46%, #000) 55%, color-mix(in srgb, var(--brand) 62%, #000) 100%); }
+html[data-accent] { --hero-bg: linear-gradient(160deg, color-mix(in srgb, var(--brand) 54%, #000) 0%, color-mix(in srgb, var(--brand) 40%, #000) 55%, color-mix(in srgb, var(--brand) 54%, #000) 100%); }
 html[data-accent] .stat.accent, html[data-accent] .hero { --brand: color-mix(in srgb, var(--brand-2) 55%, white); --brand-2: color-mix(in srgb, var(--brand-2) 75%, white); background: radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--brand-2) 26%, transparent), transparent 55%), var(--hero-bg) !important; }
 
 /* Finance tabs: fade the edges so it is clear there are more, and keep focus rings inside the scroller */

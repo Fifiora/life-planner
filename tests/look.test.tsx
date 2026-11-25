@@ -51,8 +51,8 @@ describe('the look', () => {
   it('has no Anime theme left in the stylesheet', () => {
     expect(css).not.toMatch(/data-style/)
   })
-  it('puts grain over the glass', () => {
-    expect(css).toMatch(/body::after/)
+  it('no longer paints a grain layer over everything', () => {
+    expect(css).toMatch(/body::after \{ display: none !important; \}/)
   })
   it('switches the sparkle off for people who asked for less motion', () => {
     const blocks = [...css.matchAll(/@media \(prefers-reduced-motion: reduce\) \{/g)].map((m) => {
@@ -184,5 +184,47 @@ describe('Finance is organised', () => {
     const kpi = container.querySelector('.kpi-row')
     expect(plan).not.toBeNull()
     expect(plan!.compareDocumentPosition(kpi!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+})
+
+
+// The navy hero and the one saturated block: white text has to stay readable on every colour theme, in light and dark.
+const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
+const lumRgb = (c: number[]) => {
+  const [r, g, b] = c.map((v) => v / 255).map((x) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4))
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+const contrastRgb = (a: number[], b: number[]) => {
+  const [hi, lo] = [lumRgb(a), lumRgb(b)].sort((x, y) => y - x)
+  return (hi + 0.05) / (lo + 0.05)
+}
+describe('text on the navy hero (final colours, not the first rule)', () => {
+  it('is readable on the default navy gradient, even over a white page', () => {
+    const m = css.match(/--hero-bg: linear-gradient\(160deg, ([^;]+)\); \}/)
+    expect(m).not.toBeNull()
+    const stops = [...m![1].matchAll(/rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/g)].map((x) => ({ c: [Number(x[1]), Number(x[2]), Number(x[3])], a: Number(x[4]) }))
+    expect(stops.length).toBeGreaterThan(1)
+    for (const { c, a } of stops) {
+      const onWhite = c.map((v) => Math.round(v * a + 255 * (1 - a)))
+      expect(contrastRgb([255, 255, 255], onWhite), 'white text').toBeGreaterThanOrEqual(4.5)
+      const muted = [255, 255, 255].map((v, i) => Math.round(v * 0.78 + onWhite[i] * 0.22))
+      expect(contrastRgb(muted, onWhite), 'muted text').toBeGreaterThanOrEqual(4.5)
+    }
+  })
+  it('is readable on every accent theme (light and dark), at the lightest stop of the gradient', () => {
+    const found = [...css.matchAll(/html(\[data-theme="dark"\])?\[data-accent="(\w+)"\] \{\s*--brand: (#[0-9a-f]{6});/gi)]
+    expect(found.length).toBeGreaterThanOrEqual(14)
+    const stop = css.match(/html\[data-accent\] \{ --hero-bg: linear-gradient\(160deg, color-mix\(in srgb, var\(--brand\) (\d+)%, #000\)/)
+    expect(stop).not.toBeNull()
+    const k = Number(stop![1]) / 100
+    for (const [, dark, name, brand] of found) {
+      const bg = rgb(brand).map((v) => Math.round(v * k))
+      expect(contrastRgb([255, 255, 255], bg), `${name} ${dark ? 'dark' : 'light'}`).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+  it('keeps the negative-money red readable on the navy block', () => {
+    const m = css.match(/\.stat\.accent, \.hero \{[^}]*--danger: (#[0-9a-f]{6})/i)
+    expect(m).not.toBeNull()
+    expect(contrastRgb(rgb(m![1]), [0, 0, 128])).toBeGreaterThanOrEqual(4.5)
   })
 })
