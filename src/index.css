@@ -1091,3 +1091,10 @@ html[data-accent] .stat.accent, html[data-accent] .hero { --brand: color-mix(in 
 .status-select { height: 1.65rem; padding: 0 1.5rem 0 0.6rem; font-size: 0.72rem; border-radius: 999px; background-color: transparent; border: 1px solid var(--line); color: var(--muted); }
 .status-select.could { color: var(--food); border-color: color-mix(in srgb, var(--food) 55%, transparent); background-color: color-mix(in srgb, var(--food) 12%, transparent); }
 .status-select.cancelled { color: var(--muted); text-decoration: line-through; }
+
+/* Pay and Savings summaries: three big figures above the sentence */
+.stat-grid.three { grid-template-columns: repeat(3, 1fr); margin: 0.6rem 0 0.4rem; }
+.stat-grid.three .stat { padding: 0.7rem 0.8rem; display: grid; gap: 0.25rem; }
+.stat-grid.three .num { font-size: 1.35rem; font-weight: 700; }
+.stat-grid.three .num.green { color: var(--ok, #2fbf8a); }
+@media (max-width: 26rem) { .stat-grid.three .num { font-size: 1.1rem; } }

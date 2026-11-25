@@ -36,6 +36,11 @@ export function Savings({ f, month }: { f: FinanceData; month: string }) {
         <div className="bar" role="progressbar" aria-label="Saved compared with target so far" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, p.pct)}>
           <div className="bar-fill" style={{ width: `${Math.min(100, p.pct)}%` }} />
         </div>
+        <div className="stat-grid three" aria-hidden="true">
+          <div className="stat"><span className="cap">Put aside</span><span className="num green">{money(p.savedToDate)}</span></div>
+          <div className="stat"><span className="cap">Target so far</span><span className="num">{money(p.targetToDate)}</span></div>
+          <div className="stat"><span className="cap">{p.gap < 0 ? 'Ahead' : 'Behind'}</span><span className="num">{money(Math.abs(p.gap))}</span></div>
+        </div>
         <p className="bar-text">{money(p.savedToDate)} of {money(p.targetToDate)} target so far (since {monthLabel(f.savingsStart)})</p>
         <p className="callout">
           {p.gap > 0 ? `${money(p.gap)} behind the target` : p.gap < 0 ? `${money(-p.gap)} ahead of the target` : 'Exactly on target'} · {money(p.thisMonth)} put aside in {monthLabel(month)}

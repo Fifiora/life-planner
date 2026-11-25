@@ -63,6 +63,11 @@ export function Pay({ f, month }: { f: FinanceData; month: string }) {
     <>
       <section className="card">
         <h2>{`Paydays in ${monthLabel(month)}`}</h2>
+        <div className="stat-grid three" aria-hidden="true">
+          <div className="stat"><span className="cap">Expected</span><span className="num">{money(m.planned)}</span></div>
+          <div className="stat"><span className="cap">Received</span><span className="num green">{money(m.received)}</span></div>
+          <div className="stat"><span className="cap">To come</span><span className="num">{money(m.toCome)}</span></div>
+        </div>
         <p className="bar-text">{`Expected ${money(m.planned)} · Received ${money(m.received)} · ${money(m.toCome)} to come`}</p>
         {m.threeDeposits && <p className="muted small">{`${m.count} paydays fall in this month, so there is an extra paycheck.`}</p>}
         <p className="muted small">{`${money(schedule.amount)} every two weeks, counting from ${niceDate(schedule.anchor)}.`}</p>
