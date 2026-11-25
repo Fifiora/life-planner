@@ -66,8 +66,8 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
       <section className="card wide plan-card">
         <div className="card-head"><div className="card-title"><span className="accent-bar" style={{ background: 'var(--finance)' }} /><h2>The plan for {monthLabel(month)}</h2></div></div>
         <div className="stat-grid">
-          {readOnly ? (
-            <div className="stat"><span className="cap">Income</span><span className="num">{money(totalIncome)}</span></div>
+          {readOnly || f.pay.schedule ? (
+            <div className="stat"><span className="cap">{f.pay.schedule ? 'Income (from Pay)' : 'Income'}</span><span className="num">{money(totalIncome)}</span></div>
           ) : (
             <button type="button" className="stat" onClick={() => { setIncomeDraft(String(totalIncome)); setIncomeOpen(true) }}>
               <span className="cap">Income (tap to edit)</span>
@@ -84,7 +84,7 @@ export function Overview({ f, month }: { f: FinanceData; month: string }) {
         <div className="mt"><SavingsBar savings={projected} target={target} /></div>
         {flex.spent > 0 && <p className="muted small">Includes {money(flex.spent)} of extra spending logged this month.</p>}
         {totalIncome === 0 ? (
-          <p className="callout">Add your monthly income (tap the Income box) to see what's left each month.</p>
+          <p className="callout">Add your monthly income (tap the Income box, or set up Pay) to see what's left each month.</p>
         ) : view.deficit > 0 ? (
           <p className="callout bad">Over by {money(view.deficit)} — move a one-time payment to another month.</p>
         ) : projected < target ? (

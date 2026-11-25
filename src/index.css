@@ -80,10 +80,10 @@ html[data-theme="dark"] {
   --shadow: 0 1px 1px rgba(0, 0, 20, 0.5), 0 8px 20px -10px rgba(0, 0, 20, 0.7), 0 28px 56px -28px rgba(0, 0, 20, 0.9);
 }
 
-/* ---------- Colour themes: the accent and the glow tint. Teal is the default and needs no rule. ---------- */
+/* ---------- Colour themes: the accent and the glow tint. Navy is the default and needs no rule. ---------- */
 html[data-accent="teal"] {
   --brand: #1d6b62;
-  --brand-2: #9a6b2f;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #ffffff;
   --bg-glow-1: rgba(214, 170, 120, 0.24);
   --bg-glow-2: rgba(110, 150, 160, 0.18);
@@ -93,7 +93,7 @@ html[data-accent="teal"] {
 }
 html[data-theme="dark"][data-accent="teal"] {
   --brand: #6fd3c1;
-  --brand-2: #d6a560;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #0b1a17;
   --bg-glow-1: rgba(214, 160, 100, 0.16);
   --bg-glow-2: rgba(80, 140, 150, 0.14);
@@ -103,7 +103,7 @@ html[data-theme="dark"][data-accent="teal"] {
 }
 html[data-accent="ocean"] {
   --brand: #1f5fa8;
-  --brand-2: #9a6b2f;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #ffffff;
   --bg-glow-1: rgba(90,140,200,0.22);
   --bg-glow-2: rgba(120,170,190,0.16);
@@ -113,7 +113,7 @@ html[data-accent="ocean"] {
 }
 html[data-accent="rose"] {
   --brand: #b0365a;
-  --brand-2: #8a6a2f;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #ffffff;
   --bg-glow-1: rgba(220,130,150,0.24);
   --bg-glow-2: rgba(190,150,170,0.16);
@@ -123,7 +123,7 @@ html[data-accent="rose"] {
 }
 html[data-accent="plum"] {
   --brand: #6a49b5;
-  --brand-2: #a65f35;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #ffffff;
   --bg-glow-1: rgba(150,120,210,0.22);
   --bg-glow-2: rgba(120,150,200,0.15);
@@ -133,7 +133,7 @@ html[data-accent="plum"] {
 }
 html[data-accent="forest"] {
   --brand: #2c6a3a;
-  --brand-2: #9a6b2f;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #ffffff;
   --bg-glow-1: rgba(110,170,120,0.22);
   --bg-glow-2: rgba(190,170,110,0.16);
@@ -143,7 +143,7 @@ html[data-accent="forest"] {
 }
 html[data-accent="sunset"] {
   --brand: #ad4f19;
-  --brand-2: #2f6b7a;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #ffffff;
   --bg-glow-1: rgba(230,150,100,0.26);
   --bg-glow-2: rgba(200,120,120,0.16);
@@ -153,7 +153,7 @@ html[data-accent="sunset"] {
 }
 html[data-accent="slate"] {
   --brand: #3e4959;
-  --brand-2: #8a6a3a;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #ffffff;
   --bg-glow-1: rgba(130,150,180,0.22);
   --bg-glow-2: rgba(160,170,180,0.16);
@@ -163,7 +163,7 @@ html[data-accent="slate"] {
 }
 html[data-theme="dark"][data-accent="ocean"] {
   --brand: #7db7f0;
-  --brand-2: #e0a86a;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #0a1624;
   --bg-glow-1: rgba(80,130,200,0.18);
   --bg-glow-2: rgba(80,150,160,0.12);
@@ -173,7 +173,7 @@ html[data-theme="dark"][data-accent="ocean"] {
 }
 html[data-theme="dark"][data-accent="rose"] {
   --brand: #f29ab5;
-  --brand-2: #e2b878;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #2a0c16;
   --bg-glow-1: rgba(200,100,130,0.18);
   --bg-glow-2: rgba(150,100,130,0.12);
@@ -183,7 +183,7 @@ html[data-theme="dark"][data-accent="rose"] {
 }
 html[data-theme="dark"][data-accent="plum"] {
   --brand: #b9a3f5;
-  --brand-2: #e6a27a;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #1a1030;
   --bg-glow-1: rgba(130,100,200,0.20);
   --bg-glow-2: rgba(90,120,190,0.12);
@@ -193,7 +193,7 @@ html[data-theme="dark"][data-accent="plum"] {
 }
 html[data-theme="dark"][data-accent="forest"] {
   --brand: #86d493;
-  --brand-2: #dcb86e;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #0c1a10;
   --bg-glow-1: rgba(80,150,100,0.18);
   --bg-glow-2: rgba(170,150,90,0.12);
@@ -203,7 +203,7 @@ html[data-theme="dark"][data-accent="forest"] {
 }
 html[data-theme="dark"][data-accent="sunset"] {
   --brand: #f2a272;
-  --brand-2: #7fc0cf;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #2a1306;
   --bg-glow-1: rgba(220,120,70,0.20);
   --bg-glow-2: rgba(190,90,100,0.12);
@@ -213,7 +213,7 @@ html[data-theme="dark"][data-accent="sunset"] {
 }
 html[data-theme="dark"][data-accent="slate"] {
   --brand: #aebbd0;
-  --brand-2: #d6b98a;
+  --brand-2: color-mix(in srgb, var(--brand) 62%, white);
   --brand-ink: #0e141c;
   --bg-glow-1: rgba(110,130,170,0.18);
   --bg-glow-2: rgba(130,140,155,0.12);
@@ -617,7 +617,7 @@ html[data-theme="dark"] { color-scheme: dark; }
   .tabbar {
     top: 0; right: auto; width: var(--side-w); flex-direction: column; justify-content: flex-start; gap: 0.25rem;
     padding: 1.2rem 0.8rem; border-top: 0; border-right: 1px solid var(--line);
-    -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%);
   }
   .side-brand { display: block; padding: 0.4rem 0.9rem 1.2rem; font-size: 1.15rem; font-weight: 750; letter-spacing: -0.01em; }
   .tab { flex: none; flex-direction: row; justify-content: flex-start; gap: 0.75rem; padding: 0.55rem 0.9rem; font-size: 0.95rem; border-radius: 0.9rem; }
@@ -736,8 +736,8 @@ html[data-theme="dark"] body::after { opacity: 0.10; mix-blend-mode: screen; }
 .card, .kpi-card, .wday, .tile, .payoffs {
   border: 1px solid color-mix(in srgb, var(--edge) 70%, var(--line));
   box-shadow: inset 0 1px 0 var(--gloss), var(--shadow);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
 }
 .card { padding: 1.1rem 1.15rem; }
 .kpi-card, .tile, .stat { border-radius: 1rem; }
@@ -789,8 +789,8 @@ body::before {
 }
 
 .card, .kpi-card, .wday, .tile, .payoffs {
-  -webkit-backdrop-filter: blur(26px) saturate(180%);
-  backdrop-filter: blur(26px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
   box-shadow: var(--shadow), inset 0 1px 0 var(--edge), inset 0 -1px 0 color-mix(in srgb, var(--ink) 5%, transparent);
 }
 
@@ -897,7 +897,7 @@ body::before {
 }
 
 /* The week strip is one glass bar; today is the lit pill. */
-.weekstrip { padding: 0.3rem; border-radius: 1.4rem; background: color-mix(in srgb, var(--card-solid) 40%, transparent); border: 1px solid var(--edge); box-shadow: inset 0 1px 0 var(--gloss), var(--shadow); -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); }
+.weekstrip { padding: 0.3rem; border-radius: 1.4rem; background: color-mix(in srgb, var(--card-solid) 40%, transparent); border: 1px solid var(--edge); box-shadow: inset 0 1px 0 var(--gloss), var(--shadow); -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%); }
 .weekstrip .wday { background: transparent; border-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; border-radius: 1.1rem; }
 .weekstrip .wday.today { background: linear-gradient(180deg, color-mix(in srgb, var(--noir) 80%, var(--brand)), var(--noir)); color: #f4f1ec; border-color: transparent; box-shadow: 0 6px 16px color-mix(in srgb, var(--noir) 30%, transparent); }
 
@@ -919,7 +919,7 @@ body::before {
 
 /* ---------- Finance: one organised page ---------- */
 /* The nine section tabs stay in reach while you scroll, swipe sideways on a phone, and fade at the edges. */
-.stack > .tabs[aria-label="Finance sections"] { position: sticky; top: 0.5rem; z-index: 6; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); box-shadow: var(--shadow), inset 0 1px 0 var(--gloss); }
+.stack > .tabs[aria-label="Finance sections"] { position: sticky; top: 0.5rem; z-index: 6; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%); box-shadow: var(--shadow), inset 0 1px 0 var(--gloss); }
 .tabs::-webkit-scrollbar { display: none; }
 .tabs .seg { flex: none; scroll-snap-align: center; padding-inline: 0.95rem; white-space: nowrap; }
 .tabs .seg.active { background: linear-gradient(180deg, color-mix(in srgb, var(--noir) 80%, var(--brand)), var(--noir)); color: #f4f1ec; box-shadow: 0 4px 12px color-mix(in srgb, var(--noir) 30%, transparent); }
@@ -947,11 +947,6 @@ body::before {
 @media (prefers-reduced-motion: reduce) { .kpi-card:hover { box-shadow: var(--shadow); } }
 
 /* ---------- Today, after the dashboard inspiration: soft-gradient tiles, a trend line, a schedule list ---------- */
-.glow-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
-.glow-tile { position: relative; min-height: 11.5rem; padding: 1rem 1.1rem; border-radius: var(--radius); border: 1px solid var(--edge); box-shadow: var(--shadow), inset 0 1px 0 var(--gloss); display: grid; grid-template-rows: auto 1fr auto auto; overflow: hidden; transition: transform 0.25s ease, box-shadow 0.25s ease; }
-.glow-tile p { margin: 0; }
-.glow-a { background: radial-gradient(120% 90% at 85% 8%, color-mix(in srgb, var(--brand-2) 55%, transparent), transparent 60%), radial-gradient(110% 80% at 10% 100%, color-mix(in srgb, #e86aa6 42%, transparent), transparent 65%), radial-gradient(100% 100% at 0% 0%, color-mix(in srgb, var(--blue) 30%, transparent), transparent 70%), var(--card-solid); }
-.glow-b { background: radial-gradient(120% 90% at 85% 100%, color-mix(in srgb, var(--blue) 55%, transparent), transparent 60%), radial-gradient(110% 80% at 8% 5%, color-mix(in srgb, var(--brand) 45%, transparent), transparent 65%), radial-gradient(100% 100% at 100% 0%, color-mix(in srgb, #7be0e6 30%, transparent), transparent 70%), var(--card-solid); }
 .glow-title { font-size: 1rem; font-weight: 600; line-height: 1.2; }
 .glow-num { align-self: end; font-family: var(--serif); font-size: 3.2rem; font-weight: 600; letter-spacing: -0.04em; line-height: 1; margin-top: 1rem; }
 .glow-cap { font-size: 0.82rem; font-weight: 600; opacity: 0.8; margin-top: 0.15rem; }
@@ -1001,7 +996,7 @@ body::before {
 :root { --serif: ui-rounded, Nunito, 'SF Pro Rounded', system-ui, -apple-system, 'Segoe UI', sans-serif; --font-label: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace; --primary: var(--brand); --primary-2: color-mix(in srgb, var(--brand) 78%, #000); --on-primary: var(--brand-ink); --rim-1: rgba(255, 255, 255, 0.95); --rim-2: rgba(255, 255, 255, 0.35); --rim-3: rgba(0, 150, 220, 0.28); --spec: rgba(255, 255, 255, 0.85); --glow-c: 0, 110, 230; --orb-1: rgba(0, 191, 255, 0.45); --orb-2: rgba(61, 123, 255, 0.36); --orb-3: rgba(0, 0, 128, 0.10); --orb-4: rgba(255, 246, 228, 0.95); --orb-dot: rgba(0, 0, 92, 0.16); --orb-line: rgba(0, 0, 128, 0.11); --hero-bg: linear-gradient(160deg, rgba(0, 0, 92, 0.78) 0%, rgba(0, 0, 128, 0.72) 55%, rgba(0, 0, 92, 0.78) 100%); }
 html[data-theme="dark"] { --rim-1: rgba(150, 225, 255, 0.6); --rim-2: rgba(255, 255, 255, 0.12); --rim-3: rgba(0, 191, 255, 0.12); --spec: rgba(120, 210, 255, 0.22); --glow-c: 0, 150, 255; --orb-1: rgba(0, 191, 255, 0.30); --orb-2: rgba(61, 123, 255, 0.38); --orb-3: rgba(0, 0, 128, 0.55); --orb-4: rgba(255, 246, 228, 0.08); --orb-dot: rgba(160, 200, 255, 0.2); --orb-line: rgba(120, 200, 255, 0.26); --blue: #7fb0ff; }
 body { font-family: Roboto, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
-body::before { background: radial-gradient(70% 46% at 12% -4%, var(--bg-glow-1), transparent 70%), radial-gradient(52% 38% at 96% 6%, var(--bg-glow-2), transparent 72%), radial-gradient(60% 40% at 70% 108%, var(--bg-glow-3), transparent 70%), var(--bg); }
+body::before { background: radial-gradient(70% 46% at 12% -4%, var(--bg-glow-1), transparent 70%), radial-gradient(52% 38% at 96% 6%, var(--bg-glow-2), transparent 72%), radial-gradient(60% 40% at 70% 108%, var(--bg-glow-3), transparent 70%); }
 
 /* the orb layer: colour, dots, stripes and rings behind everything, so the glass has something to bend */
 .orbs { position: fixed; inset: -14vh -12vw; z-index: -2; pointer-events: none; overflow: hidden; contain: strict; }
@@ -1036,7 +1031,7 @@ body::before { background: radial-gradient(70% 46% at 12% -4%, var(--bg-glow-1),
 h1, h2, h3, .headline, .glow-num, .trend-big strong, .stat .num, .kpi-value, .savings-amount, .bar-text { font-family: var(--serif); }
 .stat .cap, .kpi-label, .tile-label, .savings-label, .glow-cap { font-family: var(--font-label); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.68rem; font-weight: 600; }
 .page-head h1 { background: none; color: var(--ink); -webkit-text-fill-color: currentColor; font-weight: 700; letter-spacing: -0.02em; }
-.page-head h1::after { background: linear-gradient(90deg, #000080, #00bfff); width: 2.6rem; }
+.page-head h1::after { background: linear-gradient(90deg, var(--brand), var(--brand-2)); width: 2.6rem; }
 
 /* one pill recipe for every selected thing: navy by day, cyan by night */
 .btn-primary, .weekstrip .wday.today, .tabs .seg.active, .mpill.active, .fab {
@@ -1051,7 +1046,7 @@ h1, h2, h3, .headline, .glow-num, .trend-big strong, .stat .num, .kpi-value, .sa
 /* the one saturated block per screen, and the Done today card: the navy hero gradient with cyan light */
 .stat.accent, .hero {
   --ink: #ffffff; --muted: rgba(255, 255, 255, 0.78); --line: rgba(255, 255, 255, 0.16); --edge: rgba(160, 200, 255, 0.22); --gloss: rgba(255, 255, 255, 0.10); --spec: rgba(120, 215, 255, 0.30);
-  --brand: #00bfff; --brand-2: #33ccff; --brand-ink: #00005c; --card-solid: #0b0b3a;
+  --danger: #ff9b92; --brand: #00bfff; --brand-2: #33ccff; --brand-ink: #00005c; --card-solid: #0b0b3a;
   color: #fff;
   background: radial-gradient(120% 80% at 100% 0%, rgba(0, 191, 255, 0.22), transparent 55%), radial-gradient(90% 70% at 0% 100%, rgba(61, 123, 255, 0.28), transparent 60%), var(--hero-bg) !important;
   border-color: rgba(160, 200, 255, 0.28);
@@ -1065,7 +1060,7 @@ h1, h2, h3, .headline, .glow-num, .trend-big strong, .stat .num, .kpi-value, .sa
 .hero a { color: #9fe3ff; }
 
 /* a floating glass pill for the tabs on a phone; the sidebar on wider screens stays a sidebar */
-.tabbar { left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); padding: 4px; border: 0; border-radius: 24px; background: linear-gradient(180deg, var(--gloss), transparent 60%), color-mix(in srgb, var(--card-solid) 70%, transparent); -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); box-shadow: inset 0 1px 0 var(--edge), 0 0 0 1px color-mix(in srgb, var(--line) 70%, transparent), 0 12px 32px -12px rgba(0, 0, 80, 0.5); }
+.tabbar { left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); padding: 4px; border: 0; border-radius: 24px; background: linear-gradient(180deg, var(--gloss), transparent 60%), color-mix(in srgb, var(--card-solid) 70%, transparent); -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%); box-shadow: inset 0 1px 0 var(--edge), 0 0 0 1px color-mix(in srgb, var(--line) 70%, transparent), 0 12px 32px -12px rgba(0, 0, 80, 0.5); }
 .tabbar::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; padding: 1px; background: linear-gradient(135deg, var(--rim-1), var(--rim-2) 45%, var(--rim-3)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
 .tab { border-radius: 20px; }
 @media (min-width: 48rem) { .tabbar { left: 0; right: auto; bottom: 0; padding: 1.2rem 0.8rem; border-radius: 0; border-right: 1px solid var(--line); } .tabbar::after { display: none; } .tab { border-radius: 0.9rem; } }
@@ -1074,3 +1069,13 @@ h1, h2, h3, .headline, .glow-num, .trend-big strong, .stat .num, .kpi-value, .sa
 @media (prefers-reduced-transparency: reduce) { .orbs { display: none; } .card, .kpi-card, .tabbar { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--card-solid); } }
 @media (prefers-contrast: more) { .orbs, .card::before, .card::after, .kpi-card::before, .kpi-card::after { display: none; } .card, .kpi-card { background: var(--card-solid); box-shadow: 0 0 0 1px var(--ink); } }
 @media print { .orbs { display: none !important; } }
+
+/* Lighter on the eyes and the battery: no grain layer, and plain card fills on touch screens where blur is costly */
+body::after { display: none !important; }
+@media (pointer: coarse) and (max-width: 48rem) {
+  .card, .kpi-card, .weekstrip, .tabbar, .stack > .tabs[aria-label="Finance sections"] { -webkit-backdrop-filter: none; backdrop-filter: none; background-color: var(--card-solid); }
+}
+
+/* The hero and the one saturated block follow the chosen accent (Navy keeps the NGX blues above) */
+html[data-accent] { --hero-bg: linear-gradient(160deg, color-mix(in srgb, var(--brand) 62%, #000) 0%, color-mix(in srgb, var(--brand) 46%, #000) 55%, color-mix(in srgb, var(--brand) 62%, #000) 100%); }
+html[data-accent] .stat.accent, html[data-accent] .hero { --brand: color-mix(in srgb, var(--brand-2) 55%, white); --brand-2: color-mix(in srgb, var(--brand-2) 75%, white); background: radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--brand-2) 26%, transparent), transparent 55%), var(--hero-bg) !important; }

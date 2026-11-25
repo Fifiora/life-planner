@@ -23,11 +23,11 @@ describe('smoothPath', () => {
 })
 describe('Today dashboard pieces', () => {
   beforeEach(() => seedPlanner())
-  it('shows the two gradient tiles, the momentum chart with a range, and a schedule-style Up next list', async () => {
+  it('shows the momentum chart with a range, and a schedule-style Up next list', async () => {
     renderScreen(<Today />)
     await screen.findByRole('progressbar', { name: 'Done today' })
-    expect(screen.getByLabelText("Today's tasks")).toBeInTheDocument()
-    expect(screen.getByLabelText('All areas')).toBeInTheDocument()
+    expect(screen.queryByLabelText("Today's tasks")).toBeNull()
+    expect(screen.queryByLabelText('All areas')).toBeNull()
     expect(screen.getByRole('img', { name: /ticked .* things a day/ })).toBeInTheDocument()
     expect(screen.getByLabelText('Range')).toHaveValue('14')
   })

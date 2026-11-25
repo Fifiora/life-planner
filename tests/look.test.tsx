@@ -123,12 +123,14 @@ describe('colour themes', () => {
 
 describe('background picture', () => {
   beforeEach(() => localStorage.clear())
-  it('floats flowers by default, swims fish on request, and can be switched off', async () => {
+  it('is off by default, floats flowers or swims fish on request, and can be switched off', async () => {
     const { Ambient } = await import('../src/ui/Ambient')
     const { setAmbient } = await import('../src/lib/ambient')
     const { act } = await import('@testing-library/react')
     const { container } = render(<Ambient />)
-    expect(container.querySelectorAll('.amb-flower').length).toBeGreaterThan(0)
+    expect(container.querySelector('.ambient')).toBeNull()
+    act(() => setAmbient('flowers'))
+    await waitFor(() => expect(container.querySelectorAll('.amb-flower').length).toBeGreaterThan(0))
     expect(container.querySelector('.ambient')).toHaveAttribute('aria-hidden', 'true')
     act(() => setAmbient('fish'))
     await waitFor(() => expect(container.querySelectorAll('.amb-fish').length).toBeGreaterThan(0))
@@ -151,6 +153,7 @@ describe('background picture', () => {
 describe('one whole background and an organised Today', () => {
   it('uses the NGX orb layer and glass rim, not a tiled texture', async () => {
     expect(css).toMatch(/\.orbs \{[^}]*position: fixed/)
+    expect(css).not.toMatch(/body::before \{ background:[^}]*var\(--bg\)\s*;?\s*\}/)
     expect(css).toMatch(/\.card::after[^{]*\{[^}]*mask/)
     expect(css).not.toMatch(/520px 520px/)
     const { Orbs } = await import('../src/ui/Orbs')

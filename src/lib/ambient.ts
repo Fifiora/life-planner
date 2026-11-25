@@ -13,9 +13,9 @@ export const AMBIENT_EVENT = 'lp:ambient'
 export function getAmbient(): AmbientId {
   try {
     const v = localStorage.getItem(KEY)
-    return AMBIENTS.some((a) => a.id === v) ? (v as AmbientId) : 'flowers'
+    return AMBIENTS.some((a) => a.id === v) ? (v as AmbientId) : 'off'
   } catch {
-    return 'flowers'
+    return 'off'
   }
 }
 
