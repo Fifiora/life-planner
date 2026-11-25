@@ -51,7 +51,7 @@ function Shell({ boot }: { boot: BootResult }) {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      <TabBar />
+      <TabBar showSettings={!readOnly} />
     </>
   )
 }

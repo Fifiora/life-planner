@@ -12,7 +12,7 @@ const TABS: { to: string; label: string; icon: IconName; end: boolean }[] = [
   { to: '/finance', label: 'Finance', icon: 'wallet', end: false },
 ]
 
-export function TabBar() {
+export function TabBar({ showSettings = true }: { showSettings?: boolean }) {
   return (
     <nav className="tabbar" aria-label="Main">
       <div className="side-brand" aria-hidden>Life Planner</div>
@@ -22,6 +22,12 @@ export function TabBar() {
           <span>{t.label}</span>
         </NavLink>
       ))}
+      {showSettings && (
+        <NavLink to="/settings" aria-label="Settings" className={({ isActive }) => `tab tab-settings${isActive ? ' active' : ''}`}>
+          <span aria-hidden className="tab-icon"><Icon name="settings" size="lg" /></span>
+          <span className="tab-label">Settings</span>
+        </NavLink>
+      )}
       <ThemeSwitch />
     </nav>
   )

@@ -22,13 +22,6 @@ export function PageHead({ title, sub }: { title: string; sub?: string }) {
             <Icon name="user" /> {me.display_name}
           </button>
         )}
-        {!readOnly && (
-          <>
-            <Link to="/settings" className="icon-btn" aria-label="Settings" style={{ textDecoration: 'none', display: 'grid', placeItems: 'center' }}>
-              <Icon name="settings" size="lg" />
-            </Link>
-          </>
-        )}
       </div>
     </header>
   )
